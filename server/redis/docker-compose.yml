@@ -1,0 +1,12 @@
+services:
+  
+  # Visit docs: https://hub.docker.com/_/redis
+  ryvo_redis:
+    image: redis:latest
+    container_name: ryvo_redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - data:/app/data
+
+

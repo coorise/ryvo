@@ -1,0 +1,12 @@
+services:
+
+  ryvo_bunqueue:
+    image: ghcr.io/egeominotti/bunqueue:latest
+    container_name: ryvo_bunqueue
+    ports:
+      - '6789:6789'
+      - '6790:6790'
+    volumes:
+      - data:/app/data
+
+
