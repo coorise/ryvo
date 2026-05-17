@@ -1,12 +1,41 @@
+# Redis — Ryvo cache / rate limiting
+# Docs: https://hub.docker.com/_/redis
 services:
-  
-  # Visit docs: https://hub.docker.com/_/redis
   ryvo_redis:
-    image: redis:latest
-    container_name: ryvo_redis
+    image: redis:${REDIS_IMAGE_TAG:-latest}
+    container_name: ${REDIS_CONTAINER_NAME:-ryvo_redis}
     ports:
-      - '6379:6379'
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    command:
+      - sh
+      - -c
+      - |
+        if [ -n "$$REDIS_PASSWORD" ]; then
+          exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD";
+        else
+          exec redis-server --appendonly yes;
+        fi
     volumes:
-      - data:/app/data
+      - ./data:/data
+    networks:
+      - ryvo-net
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - |
+          if [ -n "$$REDIS_PASSWORD" ]; then
+            redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG;
+          else
+            redis-cli ping | grep -q PONG;
+          fi
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
-
+networks:
+  ryvo-net:
+    name: ryvo-net
+    external: true

@@ -1,0 +1,4 @@
+# Ryvo DB migrate / bootstrap (portable, no host scripts required)
+FROM postgres:15-alpine
+RUN apk add --no-cache bash curl jq coreutils python3
+WORKDIR /opt/ryvo
