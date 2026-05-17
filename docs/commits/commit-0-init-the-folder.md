@@ -239,4 +239,32 @@ $HOME/ryvo$ git commit -m "Init the folder structure."
  create mode 100644 server/supabase/volumes/proxy/caddy/Caddyfile
  create mode 100644 server/supabase/volumes/proxy/nginx/supabase-nginx.conf.tpl
  create mode 100644 server/supabase/volumes/snippets/.gitkeep
+ iautec@IAUTEC-1:~/Projects/Web/Ryvo/ryvo$ git status
+On branch dev
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+        analytics/
+        docs/commits/
+
+nothing added to commit but untracked files present (use "git add" to track)
+iautec@IAUTEC-1:~/Projects/Web/Ryvo/ryvo$ git add .
+iautec@IAUTEC-1:~/Projects/Web/Ryvo/ryvo$ git commit -m "Added remaining files for boilerplate."
+[dev 8609bd9] Added remaining files for boilerplate.
+ 2 files changed, 242 insertions(+)
+ create mode 100644 analytics/prometeus_grafana/docker-compose.yml
+ create mode 100644 docs/commits/commit-0-init-the-folder.md
+iautec@IAUTEC-1:~/Projects/Web/Ryvo/ryvo$ git push origin dev
+Enumerating objects: 322, done.
+Counting objects: 100% (322/322), done.
+Delta compression using up to 24 threads
+Compressing objects: 100% (270/270), done.
+Writing objects: 100% (321/321), 553.26 KiB | 23.05 MiB/s, done.
+Total 321 (delta 28), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (28/28), done.
+remote: 
+remote: Create a pull request for 'dev' on GitHub by visiting:
+remote:      https://github.com/coorise/ryvo/pull/new/dev
+remote: 
+To https://github.com/coorise/ryvo.git
+ * [new branch]      dev -> dev
 ```
