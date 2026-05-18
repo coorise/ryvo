@@ -23,4 +23,19 @@ export abstract class BaseService {
       token,
     } satisfies RequestOptions);
   }
+
+  protected put<T>(path: string, body: unknown, token?: string | null) {
+    return apiRequest<T>(this.serviceName, path, {
+      method: "PUT",
+      body,
+      token,
+    } satisfies RequestOptions);
+  }
+
+  protected delete<T>(path: string, token?: string | null) {
+    return apiRequest<T>(this.serviceName, path, {
+      method: "DELETE",
+      token,
+    } satisfies RequestOptions);
+  }
 }

@@ -8,18 +8,12 @@ import { toast } from "sonner";
 import { AuthFormShell } from "@/components/auth/auth-form-shell";
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
 import { ROUTES } from "@/configs";
-import { hasRole } from "@/guards/abac";
+import { dashboardPathForUser } from "@/guards/abac";
 import { authService } from "@/services";
 import { useAuthStore } from "@/stores/auth.store";
-import { loginSchema, type LoginInput, type SessionUser } from "@/types/interfaces/schemas";
+import { loginSchema, type LoginInput } from "@/types/interfaces/schemas";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-function dashboardForUser(user: SessionUser) {
-  if (hasRole(user, "admin", "super_admin", "staff", "moderator")) return ROUTES.admin.home;
-  if (hasRole(user, "driver")) return ROUTES.driver.home;
-  return ROUTES.client.home;
-}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -46,9 +40,14 @@ export default function LoginPage() {
         router.push(ROUTES.auth.verifyEmail);
         return;
       }
-      router.push(dashboardForUser(session.user));
+      router.push(dashboardPathForUser(session.user));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Sign in failed");
+      const msg = err instanceof Error ? err.message : "Sign in failed";
+      toast.error(
+        msg.includes("API key") || msg.includes("anon")
+          ? "Auth not configured — set NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local (see .env.example)"
+          : msg,
+      );
     } finally {
       setLoading(false);
     }

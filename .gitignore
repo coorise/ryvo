@@ -14,5 +14,7 @@ server/bunqueue/data/
 **/node_modules/
 **/.next/
 **/.turbo/
+**/**/out
+**/**/dist
 client/mobile/flutter/ryvo/.dart_tool/
 client/mobile/flutter/ryvo/build/

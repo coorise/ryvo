@@ -19,7 +19,7 @@ export async function assertDriverCanGoOnline(driverId: string): Promise<string 
     .eq("user_id", driverId)
     .single();
   if (!profile || profile.kyc_status !== "approved") {
-    return "Driver KYC must be approved before going online";
+    return "Drivers KYC must be approved before going online";
   }
   const { data: docs } = await db
     .from("kyc_documents")

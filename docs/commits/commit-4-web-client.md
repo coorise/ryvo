@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-18  
 **Phase:** 4 (web portal)  
-**Status:** IN PROGRESS — admin + auth wired to backend; client/driver portals are shells
+**Status:** SUPERSEDED for admin lists — see `commit-5-admin-rbac-list-ui.md`. Auth + dashboard still valid here.
 
 ## Summary
 
@@ -124,7 +124,7 @@ docker restart ryvo-functions
 
 ## What comes next
 
-- Wire admin sub-pages (rides, users, KYC queue) to existing backend services
+- ~~Wire admin sub-pages (rides, users, KYC queue)~~ → done in commit 5 for users/staff/drivers
 - Client/driver ride booking UI (trip-lifecycle, routing-engine)
 - Live map (realtime trip locations)
 - Email verification gate on web after signup

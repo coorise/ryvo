@@ -65,6 +65,32 @@ export const handle = createServiceRouter("support-service", [
     },
   },
   {
+    method: "GET",
+    path: "/v1/tickets/:ticket_id/messages",
+    auth: true,
+    handler: async (_req, ctx, params) => {
+      const db = getAdminClient();
+      const { data: ticket } = await db
+        .from("support_tickets")
+        .select("user_id")
+        .eq("id", params.ticket_id)
+        .single();
+      if (!ticket) return fail("NOT_FOUND", "Ticket not found", 404);
+      if (
+        !ctx.auth!.permissions.includes("support:reply") &&
+        ticket.user_id !== ctx.auth!.userId
+      ) {
+        return fail("FORBIDDEN", "Access denied", 403);
+      }
+      const { data } = await db
+        .from("ticket_messages")
+        .select("*")
+        .eq("ticket_id", params.ticket_id)
+        .order("created_at", { ascending: true });
+      return ok({ messages: data ?? [] });
+    },
+  },
+  {
     method: "POST",
     path: "/v1/tickets/:ticket_id/messages",
     auth: true,

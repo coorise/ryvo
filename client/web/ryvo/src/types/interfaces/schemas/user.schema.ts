@@ -5,6 +5,8 @@ export const appRoleSchema = z.enum([
   "admin",
   "staff",
   "moderator",
+  "agent",
+  "support",
   "driver",
   "client",
 ]);

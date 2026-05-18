@@ -10,6 +10,10 @@ const fontMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
 export const metadata = {
   title: "Ryvo-Line",
   description: "Ride smarter — urban mobility",
+  icons: {
+    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/icon.svg", type: "image/svg+xml" }],
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

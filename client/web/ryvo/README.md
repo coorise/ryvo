@@ -20,11 +20,21 @@ src/
   types/
 ```
 
+## Environment
+
+Login requires `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Copy from the backend:
+
+```bash
+bash scripts/sync-env.sh   # writes .env.local from server/supabase/.env
+```
+
+Or copy `ANON_KEY` and `SUPABASE_PUBLIC_URL` manually into `.env.local` (see `.env.example`).
+
 ## Commands
 
 ```bash
 bun install
-bun run dev      # http://0.0.0.0:3200
+bun run dev      # http://0.0.0.0:3200 — restart after changing .env.local
 bun run build    # static output in out/
 ```
 

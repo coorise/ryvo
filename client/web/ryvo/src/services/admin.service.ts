@@ -47,6 +47,35 @@ export class AdminService extends BaseService {
       token,
     );
   }
+
+  listTrips(token: string | null, limit = 100) {
+    return this.get<{
+      trips: {
+        id: string;
+        status: string;
+        created_at: string;
+        pickup_address: string | null;
+        dropoff_address: string | null;
+        client_id: string;
+        driver_id: string | null;
+        fare_estimate: number | null;
+      }[];
+    }>(`/v1/admin/trips?limit=${limit}`, token);
+  }
+
+  listPayments(token: string | null, limit = 100) {
+    return this.get<{
+      payments: {
+        id: string;
+        amount: number;
+        currency: string;
+        status: string;
+        created_at: string;
+        trip_id: string | null;
+        client_id: string;
+      }[];
+    }>(`/v1/admin/payments?limit=${limit}`, token);
+  }
 }
 
 export class PlatformSettingsService extends BaseService {

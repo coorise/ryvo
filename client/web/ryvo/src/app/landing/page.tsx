@@ -151,18 +151,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="bg-foreground text-background py-16">
-        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-4 sm:flex-row sm:items-center sm:px-6 lg:px-8">
-          <div>
-            <p className="text-primary text-xs font-bold tracking-[0.2em] uppercase">Admin console</p>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight">Run your fleet with precision</h2>
-          </div>
-          <RyvoButton intent="cta" size="lg" className="rounded-full" asChild>
-            <Link href={ROUTES.admin.home}>Open dashboard</Link>
-          </RyvoButton>
-        </div>
-      </section>
-
       <footer className="border-border text-muted-foreground border-t px-4 py-8 text-center text-sm sm:px-6">
         <p className="mb-2">© {new Date().getFullYear()} Ryvo-Line · Montréal, QC</p>
         <Link href={ROUTES.legal.tos} className="hover:text-foreground mr-4">

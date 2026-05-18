@@ -13,7 +13,9 @@ export function createSupabaseBrowserClient() {
   }
   if (!browserClient) {
     if (!env.supabaseAnonKey) {
-      console.warn("NEXT_PUBLIC_SUPABASE_ANON_KEY is missing");
+      throw new Error(
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY is missing. Copy ANON_KEY from server/supabase/.env into client/web/ryvo/.env.local",
+      );
     }
     browserClient = createBrowserClient(
       env.supabaseUrl,
