@@ -5,7 +5,35 @@ import { env } from "../../_shared/lib/env.ts";
 import { verifyServiceSignature } from "../../_shared/middleware/service-auth.ts";
 import { requirePermission, requireRole } from "../../_shared/middleware/auth.ts";
 import { emitAudit } from "../../_shared/lib/events.ts";
+import {
+  completePasswordReset,
+  requestPasswordReset,
+  verifyPasswordResetOtp,
+} from "../../_shared/lib/password-reset.ts";
+import { getAdminDashboard } from "../../_shared/lib/admin-dashboard.ts";
+import {
+  getPlatformPreferences,
+  updatePlatformPreferences,
+  type PlatformPreferences,
+} from "../../_shared/lib/platform-settings.ts";
 import { z } from "zod";
+
+const preferencesSchema = z.object({
+  appName: z.string().min(1).max(80).optional(),
+  timeZone: z.string().min(1).max(64).optional(),
+  defaultLanguage: z.string().min(2).max(10).optional(),
+  supportedLanguages: z.array(z.string().min(2).max(10)).optional(),
+  currency: z.string().min(3).max(3).optional(),
+  country: z.string().min(2).max(2).optional(),
+});
+
+const emailOnlySchema = z.object({ email: z.string().email() });
+const verifyOtpSchema = z.object({ email: z.string().email(), code: z.string().length(6) });
+const resetPasswordSchema = z.object({
+  email: z.string().email(),
+  reset_token: z.string().min(16),
+  password: z.string().min(8),
+});
 
 const assignRoleSchema = z.object({
   user_id: z.string().uuid(),
@@ -17,6 +45,41 @@ export const handle = createServiceRouter("auth-hooks", [
     method: "GET",
     path: "/v1/health",
     handler: async () => ok({ status: "ok", service: "auth-hooks" }),
+  },
+  {
+    method: "POST",
+    path: "/v1/auth/forgot-password",
+    auth: false,
+    handler: async (req) => {
+      const { email } = emailOnlySchema.parse(await req.json());
+      const result = await requestPasswordReset(email);
+      return ok(result);
+    },
+  },
+  {
+    method: "POST",
+    path: "/v1/auth/verify-reset-otp",
+    auth: false,
+    handler: async (req) => {
+      const { email, code } = verifyOtpSchema.parse(await req.json());
+      const result = await verifyPasswordResetOtp(email, code);
+      if (!result.ok) return fail(result.error, result.message, 400);
+      return ok({
+        reset_token: result.reset_token,
+        expires_minutes: result.expires_minutes,
+      });
+    },
+  },
+  {
+    method: "POST",
+    path: "/v1/auth/reset-password",
+    auth: false,
+    handler: async (req) => {
+      const body = resetPasswordSchema.parse(await req.json());
+      const result = await completePasswordReset(body.email, body.reset_token, body.password);
+      if (!result.ok) return fail(result.error, result.message, 400);
+      return ok({ message: result.message });
+    },
   },
   {
     method: "GET",
@@ -256,6 +319,57 @@ export const handle = createServiceRouter("auth-hooks", [
       await db.from("user_profiles").update({ banned_at: null }).eq("user_id", user_id);
       await emitAudit(ctx.auth!.userId, "user.unban", "user", user_id, {});
       return ok({ user_id, banned: false });
+    },
+  },
+  {
+    method: "GET",
+    path: "/v1/settings/public",
+    auth: false,
+    handler: async () => {
+      const preferences = await getPlatformPreferences();
+      return ok({
+        appName: preferences.appName,
+        defaultLanguage: preferences.defaultLanguage,
+        supportedLanguages: preferences.supportedLanguages,
+      });
+    },
+  },
+  {
+    method: "GET",
+    path: "/v1/admin/settings",
+    auth: true,
+    handler: async (_req, ctx) => {
+      const denied = requireRole(ctx.auth!, "super_admin", "admin");
+      if (denied) return denied;
+      const preferences = await getPlatformPreferences();
+      return ok({ preferences });
+    },
+  },
+  {
+    method: "PATCH",
+    path: "/v1/admin/settings",
+    auth: true,
+    handler: async (req, ctx) => {
+      const denied = requireRole(ctx.auth!, "super_admin", "admin");
+      if (denied) return denied;
+      const body = preferencesSchema.parse(await req.json());
+      const preferences = await updatePlatformPreferences(
+        body as Partial<PlatformPreferences>,
+        ctx.auth!.userId,
+      );
+      await emitAudit(ctx.auth!.userId, "platform_settings.update", "platform_settings", "default", body);
+      return ok({ preferences });
+    },
+  },
+  {
+    method: "GET",
+    path: "/v1/admin/dashboard",
+    auth: true,
+    handler: async (_req, ctx) => {
+      const denied = requireRole(ctx.auth!, "super_admin", "admin", "staff", "moderator");
+      if (denied) return denied;
+      const dashboard = await getAdminDashboard();
+      return ok(dashboard);
     },
   },
 ]);

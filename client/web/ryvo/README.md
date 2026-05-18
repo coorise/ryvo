@@ -1,21 +1,31 @@
-# shadcn/ui monorepo template
+# Ryvo-Line Web
 
-This is a Next.js monorepo template with shadcn/ui.
+Next.js static export app (`client/web/ryvo/`).
 
-## Adding components
+## Layout
 
-To add components to your app, run the following command at the root of your `web` app:
+```
+src/
+  app/          # routes (auth, admin, client, driver, landing)
+  components/   # UI + layout + ryvo components
+  configs/
+  core/
+  guards/
+  hooks/
+  i18n/
+  lib/
+  services/
+  stores/
+  styles/       # globals.css (Tailwind + theme)
+  types/
+```
+
+## Commands
 
 ```bash
-pnpm dlx shadcn@latest add button -c apps/web
+bun install
+bun run dev      # http://0.0.0.0:3200
+bun run build    # static output in out/
 ```
 
-This will place the ui components in the `packages/ui/src/components` directory.
-
-## Using components
-
-To use the components in your app, import them from the `ui` package.
-
-```tsx
-import { Button } from "@workspace/ui/components/button";
-```
+Shadcn components: `bunx shadcn@latest add button` (from this directory).

@@ -1,0 +1,49 @@
+{
+  "common": {
+    "appName": "Ryvo-Line",
+    "tagline": "更智能的出行",
+    "search": "搜索…",
+    "signOut": "退出登录",
+    "signIn": "登录",
+    "register": "注册",
+    "loading": "加载中…",
+    "noData": "暂无数据",
+    "viewAll": "查看全部 →",
+    "settings": "设置",
+    "save": "保存"
+  },
+  "nav": {
+    "dashboard": "仪表盘",
+    "liveMap": "实时地图",
+    "rides": "行程",
+    "users": "用户",
+    "driverKyc": "司机审核",
+    "support": "客服",
+    "payments": "支付",
+    "security": "安全日志",
+    "audit": "审计日志",
+    "operations": "运营",
+    "financeSecurity": "财务与安全"
+  },
+  "admin": {
+    "subtitle": "实时概览",
+    "rides24h": "行程（24小时）",
+    "revenueToday": "今日收入",
+    "cancelRate": "取消率",
+    "satisfaction": "满意度",
+    "weeklyActivity": "每周活动",
+    "ridesPerDay": "每日请求 · 近7天",
+    "pendingDrivers": "待审核司机",
+    "recentActivity": "最近活动",
+    "liveMontreal": "直播 · 蒙特利尔",
+    "activeRides": "进行中行程"
+  },
+  "settings": {
+    "title": "平台设置",
+    "description": "应用名称、时区和默认语言。",
+    "appName": "应用名称",
+    "timeZone": "时区",
+    "defaultLanguage": "默认语言",
+    "saved": "设置已保存"
+  }
+}

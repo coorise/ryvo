@@ -1,0 +1,49 @@
+{
+  "common": {
+    "appName": "Ryvo-Line",
+    "tagline": "Smarter unterwegs",
+    "search": "Suchen…",
+    "signOut": "Abmelden",
+    "signIn": "Anmelden",
+    "register": "Registrieren",
+    "loading": "Laden…",
+    "noData": "Noch keine Daten",
+    "viewAll": "Alle anzeigen →",
+    "settings": "Einstellungen",
+    "save": "Speichern"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "liveMap": "Live-Karte",
+    "rides": "Fahrten",
+    "users": "Benutzer",
+    "driverKyc": "Fahrer-KYC",
+    "support": "Support",
+    "payments": "Zahlungen",
+    "security": "Sicherheitslogs",
+    "audit": "Audit-Logs",
+    "operations": "Betrieb",
+    "financeSecurity": "Finanzen & Sicherheit"
+  },
+  "admin": {
+    "subtitle": "Echtzeit-Übersicht",
+    "rides24h": "Fahrten (24h)",
+    "revenueToday": "Umsatz heute",
+    "cancelRate": "Stornorate",
+    "satisfaction": "Zufriedenheit",
+    "weeklyActivity": "Wochenaktivität",
+    "ridesPerDay": "Anfragen pro Tag · letzte 7 Tage",
+    "pendingDrivers": "Ausstehende Fahrer",
+    "recentActivity": "Letzte Aktivität",
+    "liveMontreal": "Live · Montreal",
+    "activeRides": "Aktive Fahrten"
+  },
+  "settings": {
+    "title": "Plattform-Einstellungen",
+    "description": "App-Name, Zeitzone und Standardsprache.",
+    "appName": "App-Name",
+    "timeZone": "Zeitzone",
+    "defaultLanguage": "Standardsprache",
+    "saved": "Einstellungen gespeichert"
+  }
+}

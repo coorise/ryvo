@@ -1,0 +1,49 @@
+{
+  "common": {
+    "appName": "Ryvo-Line",
+    "tagline": "Déplacez-vous plus intelligemment",
+    "search": "Rechercher…",
+    "signOut": "Déconnexion",
+    "signIn": "Se connecter",
+    "register": "S'inscrire",
+    "loading": "Chargement…",
+    "noData": "Aucune donnée pour le moment",
+    "viewAll": "Voir tout →",
+    "settings": "Paramètres",
+    "save": "Enregistrer"
+  },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "liveMap": "Carte temps réel",
+    "rides": "Courses",
+    "users": "Utilisateurs",
+    "driverKyc": "Validation chauffeurs",
+    "support": "Support",
+    "payments": "Paiements",
+    "security": "Logs sécurité",
+    "audit": "Journaux d'audit",
+    "operations": "Opérations",
+    "financeSecurity": "Finances & sécurité"
+  },
+  "admin": {
+    "subtitle": "Vue d'ensemble en temps réel",
+    "rides24h": "Courses (24h)",
+    "revenueToday": "Revenus du jour",
+    "cancelRate": "Taux d'annulation",
+    "satisfaction": "Satisfaction",
+    "weeklyActivity": "Activité hebdomadaire",
+    "ridesPerDay": "Demandes par jour · 7 derniers jours",
+    "pendingDrivers": "Chauffeurs en attente",
+    "recentActivity": "Activité récente",
+    "liveMontreal": "En direct · Montréal",
+    "activeRides": "Courses en cours"
+  },
+  "settings": {
+    "title": "Paramètres plateforme",
+    "description": "Nom de l'application, fuseau horaire et langue par défaut.",
+    "appName": "Nom de l'application",
+    "timeZone": "Fuseau horaire",
+    "defaultLanguage": "Langue par défaut",
+    "saved": "Paramètres enregistrés"
+  }
+}
