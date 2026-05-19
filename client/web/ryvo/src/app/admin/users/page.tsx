@@ -5,7 +5,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { AlertTriangle, UserCheck, Users, UserX } from "lucide-react";
 
 import {
@@ -21,11 +20,14 @@ import {
   EntityGrid,
   EntityGridCard,
   InlineRowActions,
+  ListSelectCheckbox,
   shortUserId,
   SortableTableHeader,
   StatusBadge,
   UserTableCell,
 } from "@/components/admin/admin-list-ui";
+import { BulkSelectionBar } from "@/components/admin/bulk-selection-bar";
+import { DeleteEntityDialog } from "@/components/admin/delete-entity-dialog";
 import { EntityPreviewDialog, type EntityPreviewData } from "@/components/admin/entity-preview-dialog";
 import { ListLayoutToolbar } from "@/components/admin/list-layout-toolbar";
 import { ListPaginationFooter } from "@/components/admin/list-pagination-footer";
@@ -41,6 +43,8 @@ import {
 } from "@/configs/const";
 import { useAuth } from "@/hooks/use-auth";
 import { useRbac } from "@/hooks/use-rbac";
+import { useAdminDeleteFlow } from "@/hooks/use-admin-delete-flow";
+import { useBulkSelection } from "@/hooks/use-bulk-selection";
 import { compareSortable, useListControls } from "@/hooks/use-list-controls";
 import { usePaginatedSlice } from "@/hooks/use-paginated-slice";
 import { adminEditPath, adminProfilePath } from "@/lib/admin-paths";
@@ -57,6 +61,20 @@ export default function AdminUsersPage() {
   const [preview, setPreview] = useState<EntityPreviewData | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const list = useListControls(SORT_KEYS.updatedAt);
+  const selection = useBulkSelection<AdminUserRow>();
+  const canDelete = hasPermission(PERMISSIONS.users.delete);
+
+  const deleteFlow = useAdminDeleteFlow({
+    executeDelete: async (targets, mode) => {
+      for (const target of targets) {
+        await rbacService.deleteUser(accessToken, target.id, mode);
+      }
+    },
+    onComplete: () => {
+      selection.clear();
+      void qc.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: QUERY_KEYS.admin.users(ADMIN_USER_KIND.clients),
@@ -117,23 +135,6 @@ export default function AdminUsersPage() {
     { value: `${SORT_KEYS.email}:desc`, label: t("list.sortEmailDesc") },
   ];
 
-  const ban = useMutation({
-    mutationFn: (userId: string) => rbacService.banUser(accessToken, userId, "admin action"),
-    onSuccess: () => {
-      toast.success(t("users.banned"));
-      void qc.invalidateQueries({ queryKey: ["admin", "users"] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const unban = useMutation({
-    mutationFn: (userId: string) => rbacService.unbanUser(accessToken, userId),
-    onSuccess: () => {
-      toast.success(t("users.unbanned"));
-      void qc.invalidateQueries({ queryKey: ["admin", "users"] });
-    },
-  });
-
   function openView(u: AdminUserRow) {
     setPreview({
       id: u.id,
@@ -146,13 +147,20 @@ export default function AdminUsersPage() {
     setPreviewOpen(true);
   }
 
+  function userTarget(u: AdminUserRow) {
+    return { id: u.id, label: u.full_name ?? u.email, email: u.email };
+  }
+
   function renderUserActions(u: AdminUserRow) {
     return (
       <InlineRowActions
         onView={() => openView(u)}
         onEdit={() => router.push(adminEditPath("users", u.id))}
-        onToggle={() => (u.banned_at ? unban : ban).mutate(u.id)}
-        toggleSuspended={Boolean(u.banned_at)}
+        onToggle={() => router.push(adminProfilePath("users", u.id))}
+        profileLabel={t("actions.profile")}
+        onDelete={
+          canDelete ? () => deleteFlow.openDeleteDialog([userTarget(u)]) : undefined
+        }
       />
     );
   }
@@ -230,6 +238,15 @@ export default function AdminUsersPage() {
             }
           />
 
+          <BulkSelectionBar
+            count={selection.count}
+            onClear={selection.clear}
+            canDelete={canDelete}
+            onDelete={() =>
+              deleteFlow.openDeleteDialog(selection.pick(pagination.visibleItems).map(userTarget))
+            }
+          />
+
           {isLoading ? (
             <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
           ) : list.layout === LIST_LAYOUT.table ? (
@@ -240,6 +257,14 @@ export default function AdminUsersPage() {
               <AdminTable>
                 <AdminTableHead>
                   <tr>
+                    <th className="w-12 px-3 py-3.5">
+                      <ListSelectCheckbox
+                        checked={selection.isAllSelected(pagination.visibleItems)}
+                        indeterminate={selection.isSomeSelected(pagination.visibleItems)}
+                        onChange={() => selection.toggleAll(pagination.visibleItems)}
+                        ariaLabel={t("list.selectAll")}
+                      />
+                    </th>
                     <SortableTableHeader
                       label={t("list.columnUser")}
                       sortKey={SORT_KEYS.name}
@@ -260,6 +285,13 @@ export default function AdminUsersPage() {
                 <tbody>
                   {pagination.visibleItems.map((u) => (
                     <tr key={u.id} className="border-border hover:bg-muted/30 border-t transition">
+                      <td className="px-3 py-3">
+                        <ListSelectCheckbox
+                          checked={selection.isSelected(u.id)}
+                          onChange={() => selection.toggle(u.id)}
+                          ariaLabel={t("list.selectRow")}
+                        />
+                      </td>
                       <td className="px-5 py-3">
                         <UserTableCell
                           name={u.full_name ?? u.email}
@@ -288,7 +320,17 @@ export default function AdminUsersPage() {
               empty={<p className="text-muted-foreground py-12 text-center text-sm">{t("common.noData")}</p>}
             >
               {pagination.visibleItems.map((u) => (
-                <EntityGridCard key={u.id} onClick={() => openView(u)}>
+                <EntityGridCard
+                  key={u.id}
+                  onClick={() => openView(u)}
+                  selection={
+                    <ListSelectCheckbox
+                      checked={selection.isSelected(u.id)}
+                      onChange={() => selection.toggle(u.id)}
+                      ariaLabel={t("list.selectRow")}
+                    />
+                  }
+                >
                   <UserTableCell
                     name={u.full_name ?? u.email}
                     subId={shortUserId(u.id)}
@@ -337,6 +379,13 @@ export default function AdminUsersPage() {
                 }
               : undefined
           }
+        />
+
+        <DeleteEntityDialog
+          open={deleteFlow.dialogOpen}
+          onOpenChange={deleteFlow.setDialogOpen}
+          targets={deleteFlow.pendingTargets}
+          onConfirm={deleteFlow.confirmFromDialog}
         />
       </div>
     </PermissionGate>

@@ -1,6 +1,15 @@
 "use client";
 
-import { ArrowDown, ArrowUp, ArrowUpDown, Eye, Pencil, Search, UserRound } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Eye,
+  Pencil,
+  Search,
+  Trash2,
+  UserRound,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { UI } from "@/configs/const";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function AdminPageHeader({
   title,
@@ -199,9 +209,11 @@ export function SortableTableHeader({
 export function EntityGridCard({
   children,
   onClick,
+  selection,
 }: {
   children: ReactNode;
   onClick?: () => void;
+  selection?: ReactNode;
 }) {
   const Tag = onClick ? "button" : "div";
   return (
@@ -209,10 +221,11 @@ export function EntityGridCard({
       type={onClick ? "button" : undefined}
       onClick={onClick}
       className={cn(
-        "border-border bg-card hover:border-primary/40 w-full rounded-2xl border p-4 text-left shadow-sm transition",
+        "border-border bg-card hover:border-primary/40 relative w-full rounded-2xl border p-4 text-left shadow-sm transition",
         onClick && "cursor-pointer hover:shadow-md",
       )}
     >
+      {selection && <div className="absolute top-3 right-3 z-10">{selection}</div>}
       {children}
     </Tag>
   );
@@ -287,40 +300,102 @@ export function StatusBadge({
   );
 }
 
-export function InlineRowActions({
-  onView,
-  onEdit,
-  onToggle,
-  toggleSuspended,
+export function ListSelectCheckbox({
+  checked,
+  indeterminate,
+  onChange,
+  ariaLabel,
 }: {
-  onView: () => void;
-  onEdit?: () => void;
-  onToggle?: () => void;
-  toggleSuspended?: boolean;
+  checked: boolean;
+  indeterminate?: boolean;
+  onChange: () => void;
+  ariaLabel: string;
 }) {
-  const { t } = useTranslation();
+  return (
+    <input
+      type="checkbox"
+      className="border-border text-primary size-4 rounded border"
+      checked={checked}
+      ref={(el) => {
+        if (el) el.indeterminate = Boolean(indeterminate);
+      }}
+      onChange={onChange}
+      aria-label={ariaLabel}
+      onClick={(e) => e.stopPropagation()}
+    />
+  );
+}
+
+function ActionIconButton({
+  label,
+  onClick,
+  className,
+  children,
+}: {
+  label: string;
+  onClick: () => void;
+  className?: string;
+  children: ReactNode;
+}) {
   const btn =
     "hover:border-primary hover:bg-primary/5 flex size-9 items-center justify-center rounded-full border border-border bg-background transition";
 
   return (
-    <div className="flex justify-end gap-1.5">
-      <button type="button" className={btn} onClick={onView} aria-label={t("actions.view")}>
-        <Eye className="size-4" />
-      </button>
-      {onEdit && (
-        <button type="button" className={btn} onClick={onEdit} aria-label={t("actions.edit")}>
-          <Pencil className="size-4" />
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button type="button" className={cn(btn, className)} onClick={onClick} aria-label={label}>
+          {children}
         </button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+export function InlineRowActions({
+  onView,
+  onEdit,
+  onToggle,
+  onDelete,
+  toggleSuspended,
+  profileLabel,
+}: {
+  onView: () => void;
+  onEdit?: () => void;
+  onToggle?: () => void;
+  onDelete?: () => void;
+  toggleSuspended?: boolean;
+  profileLabel?: string;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="flex justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+      <ActionIconButton label={t("actions.view")} onClick={onView}>
+        <Eye className="size-4" />
+      </ActionIconButton>
+      {onEdit && (
+        <ActionIconButton label={t("actions.edit")} onClick={onEdit}>
+          <Pencil className="size-4" />
+        </ActionIconButton>
       )}
       {onToggle && (
-        <button
-          type="button"
-          className={cn(btn, toggleSuspended && "border-destructive/40 text-destructive")}
+        <ActionIconButton
+          label={profileLabel ?? t("actions.profile")}
           onClick={onToggle}
-          aria-label={t("actions.update")}
+          className={toggleSuspended ? "border-destructive/40 text-destructive" : undefined}
         >
           <UserRound className="size-4" />
-        </button>
+        </ActionIconButton>
+      )}
+      {onDelete && (
+        <ActionIconButton
+          label={t("actions.delete")}
+          onClick={onDelete}
+          className="hover:border-destructive hover:bg-destructive/10 hover:text-destructive"
+        >
+          <Trash2 className="size-4" />
+        </ActionIconButton>
       )}
     </div>
   );

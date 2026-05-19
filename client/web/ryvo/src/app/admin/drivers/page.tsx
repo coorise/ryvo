@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Car, CheckCircle2, Clock, XCircle } from "lucide-react";
@@ -20,11 +20,14 @@ import {
   EntityGrid,
   EntityGridCard,
   InlineRowActions,
+  ListSelectCheckbox,
   shortUserId,
   SortableTableHeader,
   StatusBadge,
   UserTableCell,
 } from "@/components/admin/admin-list-ui";
+import { BulkSelectionBar } from "@/components/admin/bulk-selection-bar";
+import { DeleteEntityDialog } from "@/components/admin/delete-entity-dialog";
 import { EntityPreviewDialog, type EntityPreviewData } from "@/components/admin/entity-preview-dialog";
 import { ListLayoutToolbar } from "@/components/admin/list-layout-toolbar";
 import { ListPaginationFooter } from "@/components/admin/list-pagination-footer";
@@ -34,11 +37,14 @@ import { RyvoButton } from "@/components/ryvo/ryvo-button";
 import { KYC_STATUS, LIST_LAYOUT, PERMISSIONS, QUERY_KEYS, ROUTES, SORT_KEYS } from "@/configs/const";
 import { useAuth } from "@/hooks/use-auth";
 import { useRbac } from "@/hooks/use-rbac";
+import { useAdminDeleteFlow } from "@/hooks/use-admin-delete-flow";
+import { useBulkSelection } from "@/hooks/use-bulk-selection";
 import { compareSortable, useListControls } from "@/hooks/use-list-controls";
 import { usePaginatedSlice } from "@/hooks/use-paginated-slice";
 import { adminProfilePath } from "@/lib/admin-paths";
 import { formatLastSeen } from "@/lib/format-date";
 import { driversService, type DriverDetail } from "@/services/drivers.service";
+import { rbacService } from "@/services/rbac.service";
 
 function kycVariant(status: string): "success" | "warning" | "danger" | "default" {
   if (status === KYC_STATUS.approved) return "success";
@@ -52,10 +58,25 @@ export default function AdminDriversPage() {
   const { accessToken } = useAuth();
   const { hasPermission } = useRbac();
   const router = useRouter();
+  const qc = useQueryClient();
+  const selection = useBulkSelection<DriverDetail>();
+  const canDelete = hasPermission(PERMISSIONS.drivers.delete);
   const [kycFilter, setKycFilter] = useState("all");
   const [preview, setPreview] = useState<EntityPreviewData | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const list = useListControls(SORT_KEYS.updatedAt);
+
+  const deleteFlow = useAdminDeleteFlow({
+    executeDelete: async (targets, mode) => {
+      for (const target of targets) {
+        await rbacService.deleteUser(accessToken, target.id, mode);
+      }
+    },
+    onComplete: () => {
+      selection.clear();
+      void qc.invalidateQueries({ queryKey: QUERY_KEYS.admin.drivers });
+    },
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: QUERY_KEYS.admin.drivers,
@@ -117,6 +138,10 @@ export default function AdminDriversPage() {
     { value: `${SORT_KEYS.email}:asc`, label: t("list.sortEmailAsc") },
     { value: `${SORT_KEYS.email}:desc`, label: t("list.sortEmailDesc") },
   ];
+
+  function driverTarget(d: DriverDetail) {
+    return { id: d.id, label: d.full_name ?? d.email, email: d.email };
+  }
 
   function openView(d: DriverDetail) {
     setPreview({
@@ -182,6 +207,15 @@ export default function AdminDriversPage() {
           }
         />
 
+        <BulkSelectionBar
+          count={selection.count}
+          onClear={selection.clear}
+          canDelete={canDelete}
+          onDelete={() =>
+            deleteFlow.openDeleteDialog(selection.pick(pagination.visibleItems).map(driverTarget))
+          }
+        />
+
         {isLoading ? (
           <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
         ) : list.layout === LIST_LAYOUT.table ? (
@@ -192,6 +226,14 @@ export default function AdminDriversPage() {
             <AdminTable>
               <AdminTableHead>
                 <tr>
+                  <th className="w-12 px-3 py-3.5">
+                    <ListSelectCheckbox
+                      checked={selection.isAllSelected(pagination.visibleItems)}
+                      indeterminate={selection.isSomeSelected(pagination.visibleItems)}
+                      onChange={() => selection.toggleAll(pagination.visibleItems)}
+                      ariaLabel={t("list.selectAll")}
+                    />
+                  </th>
                   <SortableTableHeader
                     label={t("list.columnUser")}
                     sortKey={SORT_KEYS.name}
@@ -213,6 +255,13 @@ export default function AdminDriversPage() {
               <tbody>
                 {pagination.visibleItems.map((d: DriverDetail) => (
                   <tr key={d.id} className="border-border hover:bg-muted/30 border-t transition">
+                    <td className="px-3 py-3">
+                      <ListSelectCheckbox
+                        checked={selection.isSelected(d.id)}
+                        onChange={() => selection.toggle(d.id)}
+                        ariaLabel={t("list.selectRow")}
+                      />
+                    </td>
                     <td className="px-5 py-3">
                       <UserTableCell name={d.full_name ?? d.email} subId={shortUserId(d.id)} email={d.email} />
                     </td>
@@ -228,6 +277,9 @@ export default function AdminDriversPage() {
                       <InlineRowActions
                         onView={() => openView(d)}
                         onEdit={() => router.push(adminProfilePath("drivers", d.id))}
+                        onDelete={
+                          canDelete ? () => deleteFlow.openDeleteDialog([driverTarget(d)]) : undefined
+                        }
                       />
                     </td>
                   </tr>
@@ -240,8 +292,18 @@ export default function AdminDriversPage() {
             isEmpty={!drivers.length}
             empty={<p className="text-muted-foreground py-12 text-center text-sm">{t("common.noData")}</p>}
           >
-            {drivers.map((d: DriverDetail) => (
-              <EntityGridCard key={d.id} onClick={() => openView(d)}>
+            {pagination.visibleItems.map((d: DriverDetail) => (
+              <EntityGridCard
+                key={d.id}
+                onClick={() => openView(d)}
+                selection={
+                  <ListSelectCheckbox
+                    checked={selection.isSelected(d.id)}
+                    onChange={() => selection.toggle(d.id)}
+                    ariaLabel={t("list.selectRow")}
+                  />
+                }
+              >
                 <UserTableCell name={d.full_name ?? d.email} subId={shortUserId(d.id)} email={d.email} />
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <StatusBadge variant={kycVariant(d.kyc_status)}>{d.kyc_status}</StatusBadge>
@@ -275,6 +337,13 @@ export default function AdminDriversPage() {
         onOpenChange={setPreviewOpen}
         entity={preview}
         profileHref={preview ? adminProfilePath("drivers", preview.id) : "#"}
+      />
+
+      <DeleteEntityDialog
+        open={deleteFlow.dialogOpen}
+        onOpenChange={deleteFlow.setDialogOpen}
+        targets={deleteFlow.pendingTargets}
+        onConfirm={deleteFlow.confirmFromDialog}
       />
     </div>
   );

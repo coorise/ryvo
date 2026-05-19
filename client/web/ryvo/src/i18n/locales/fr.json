@@ -79,7 +79,32 @@
   "actions": {
     "view": "Voir",
     "edit": "Modifier",
-    "update": "Mettre à jour"
+    "update": "Mettre à jour",
+    "delete": "Supprimer",
+    "profile": "Profil",
+    "suspend": "Suspendre / réactiver"
+  },
+  "delete": {
+    "title": "Supprimer",
+    "titleBulk": "Supprimer {{count}} éléments",
+    "description": "Choisir comment retirer « {{name}} ».",
+    "descriptionBulk": "Choisir comment retirer {{count}} éléments.",
+    "chooseMode": "Type de suppression",
+    "softTitle": "Temporaire",
+    "softHint": "Masqué des listes ; récupérable plus tard.",
+    "permanentTitle": "Permanent",
+    "permanentHint": "Suppression définitive du compte.",
+    "dangerZone": "Zone dangereuse",
+    "dangerHint": "La suppression permanente efface le compte.",
+    "typeConfirm": "Tapez {{word}} pour confirmer",
+    "confirm": "Confirmer la suppression",
+    "scheduled": "Suppression de {{count}} élément(s) dans {{seconds}}s…",
+    "undo": "Annuler",
+    "cancelled": "Suppression annulée",
+    "softDone": "Élément archivé",
+    "permanentDone": "Élément supprimé définitivement",
+    "failed": "Échec de la suppression",
+    "bulkAction": "Supprimer la sélection"
   },
   "profile": {
     "updatedAt": "Mis à jour",
@@ -137,7 +162,11 @@
     "loadMore": "Charger plus",
     "previous": "Page précédente",
     "next": "Page suivante",
-    "pageNumber": "Page {{page}}"
+    "pageNumber": "Page {{page}}",
+    "selectedCount": "{{count}} sélectionné(s)",
+    "clearSelection": "Effacer la sélection",
+    "selectAll": "Tout sélectionner (page)",
+    "selectRow": "Sélectionner la ligne"
   },
   "users": {
     "subtitle": "Comptes clients — recherche, suspension et activité.",

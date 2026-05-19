@@ -9,6 +9,7 @@ export type AdminUserRow = {
   created_at: string;
   updated_at: string;
   banned_at: string | null;
+  deleted_at: string | null;
   roles: string[];
   full_name: string | null;
   phone: string | null;
@@ -52,9 +53,11 @@ async function enrichUsers(userIds: string[]) {
 
     const { data: profile } = await db
       .from("user_profiles")
-      .select("banned_at")
+      .select("banned_at, deleted_at")
       .eq("user_id", id)
       .maybeSingle();
+
+    if (profile?.deleted_at) continue;
 
     const updatedAt =
       (authUser.user as { updated_at?: string }).updated_at ?? authUser.user.created_at;
@@ -65,6 +68,7 @@ async function enrichUsers(userIds: string[]) {
       created_at: authUser.user.created_at,
       updated_at: updatedAt,
       banned_at: profile?.banned_at ?? null,
+      deleted_at: profile?.deleted_at ?? null,
       roles,
       full_name: (authUser.user.user_metadata?.full_name as string) ?? null,
       phone: (authUser.user.user_metadata?.phone as string) ?? null,
@@ -107,6 +111,46 @@ export async function listAdminUsers(opts: {
   }
 
   return rows.slice(0, limit);
+}
+
+function canDeleteUser(actor: AuthLike, target: AdminUserRow): boolean {
+  if (hasPerm(actor, "users:delete")) return true;
+  const isDriver = target.roles.includes("driver");
+  const isStaff =
+    target.roles.some((r) => !["client", "driver"].includes(r)) &&
+    !target.roles.every((r) => r === "client" || r === "driver");
+  if (isDriver && hasPerm(actor, "drivers:delete")) return true;
+  if (isStaff && hasPerm(actor, "staff:delete")) return true;
+  return false;
+}
+
+export async function deleteAdminUser(
+  actor: AuthLike,
+  userId: string,
+  mode: "soft" | "permanent",
+) {
+  const rows = await enrichUsers([userId]);
+  const target = rows[0];
+  if (!target) throw new Error("NOT_FOUND");
+  if (!canDeleteUser(actor, target)) throw new Error("FORBIDDEN");
+
+  const db = getAdminClient();
+
+  if (mode === "soft") {
+    await db
+      .from("user_profiles")
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by: actor.userId,
+      })
+      .eq("user_id", userId);
+    await emitAudit(actor.userId, "user.soft_delete", "user", userId, {});
+    return { user_id: userId, mode: "soft" as const };
+  }
+
+  await db.auth.admin.deleteUser(userId);
+  await emitAudit(actor.userId, "user.permanent_delete", "user", userId, {});
+  return { user_id: userId, mode: "permanent" as const };
 }
 
 export async function createClientUser(

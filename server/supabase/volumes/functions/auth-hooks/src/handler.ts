@@ -16,6 +16,7 @@ import {
   createClientUser,
   updateClientUser,
   getAdminUserDetail,
+  deleteAdminUser,
 } from "../../_shared/lib/admin-users.ts";
 import {
   listPermissionsCatalog,
@@ -490,6 +491,24 @@ export const handle = createServiceRouter("auth-hooks", [
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Update failed";
         return fail("FORBIDDEN", msg, 403);
+      }
+    },
+  },
+  {
+    method: "DELETE",
+    path: "/v1/admin/users/:user_id",
+    auth: true,
+    handler: async (req, ctx, params) => {
+      const body = z
+        .object({ mode: z.enum(["soft", "permanent"]).default("soft") })
+        .parse(await req.json().catch(() => ({ mode: "soft" })));
+      try {
+        const result = await deleteAdminUser(authLike(ctx), params.user_id, body.mode);
+        return ok(result);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Delete failed";
+        const code = msg === "NOT_FOUND" ? 404 : 403;
+        return fail(code === 404 ? "NOT_FOUND" : "FORBIDDEN", msg, code);
       }
     },
   },

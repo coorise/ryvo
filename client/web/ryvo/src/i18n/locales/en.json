@@ -79,7 +79,32 @@
   "actions": {
     "view": "View",
     "edit": "Edit",
-    "update": "Update"
+    "update": "Update",
+    "delete": "Delete",
+    "profile": "Profile",
+    "suspend": "Suspend / restore"
+  },
+  "delete": {
+    "title": "Delete item",
+    "titleBulk": "Delete {{count}} items",
+    "description": "Choose how to remove “{{name}}”.",
+    "descriptionBulk": "Choose how to remove {{count}} selected items.",
+    "chooseMode": "Deletion type",
+    "softTitle": "Temporary",
+    "softHint": "Hide from lists; data can be restored later.",
+    "permanentTitle": "Permanent",
+    "permanentHint": "Remove account and data — cannot be undone.",
+    "dangerZone": "Danger zone",
+    "dangerHint": "Permanent deletion erases this account from the platform.",
+    "typeConfirm": "Type {{word}} to confirm",
+    "confirm": "Confirm deletion",
+    "scheduled": "Deleting {{count}} item(s) in {{seconds}}s…",
+    "undo": "Cancel",
+    "cancelled": "Deletion cancelled",
+    "softDone": "Item archived (temporary delete)",
+    "permanentDone": "Item permanently deleted",
+    "failed": "Deletion failed",
+    "bulkAction": "Delete selected"
   },
   "profile": {
     "updatedAt": "Updated at",
@@ -137,7 +162,11 @@
     "loadMore": "Load more",
     "previous": "Previous page",
     "next": "Next page",
-    "pageNumber": "Page {{page}}"
+    "pageNumber": "Page {{page}}",
+    "selectedCount": "{{count}} selected",
+    "clearSelection": "Clear selection",
+    "selectAll": "Select all on this page",
+    "selectRow": "Select row"
   },
   "users": {
     "subtitle": "Client accounts — search, suspend, and review activity.",

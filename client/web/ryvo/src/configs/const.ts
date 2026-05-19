@@ -112,6 +112,18 @@ export type ListLoadMode = (typeof LIST_LOAD_MODE)[keyof typeof LIST_LOAD_MODE];
 
 export const LIST_DEFAULT_PAGE_SIZE = 30;
 
+export const DELETE_MODE = {
+  soft: "soft",
+  permanent: "permanent",
+} as const;
+
+export type DeleteMode = (typeof DELETE_MODE)[keyof typeof DELETE_MODE];
+
+/** Grace period before delete executes (toast undo window). */
+export const DELETE_GRACE_MS = 10_000;
+
+export const DELETE_CONFIRM_TEXT = "DELETE";
+
 export const LIST_PAGE_SIZE = {
   min: 5,
   max: 100,

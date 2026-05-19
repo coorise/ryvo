@@ -45,6 +45,7 @@ export type AdminUserRow = {
   created_at: string;
   updated_at: string;
   banned_at: string | null;
+  deleted_at?: string | null;
   roles: string[];
   full_name: string | null;
   phone: string | null;
@@ -153,6 +154,14 @@ export class RbacService extends BaseService {
 
   unbanUser(token: string | null, userId: string) {
     return this.post("/v1/admin/users/unban", { user_id: userId }, token);
+  }
+
+  deleteUser(token: string | null, userId: string, mode: "soft" | "permanent") {
+    return this.delete<{ user_id: string; mode: string }>(
+      `/v1/admin/users/${userId}`,
+      token,
+      { mode },
+    );
   }
 }
 

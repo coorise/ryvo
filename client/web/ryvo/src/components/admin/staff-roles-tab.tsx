@@ -17,21 +17,27 @@ import {
   EntityGrid,
   EntityGridCard,
   InlineRowActions,
+  ListSelectCheckbox,
   SortableTableHeader,
   StatusBadge,
 } from "@/components/admin/admin-list-ui";
+import { BulkSelectionBar } from "@/components/admin/bulk-selection-bar";
+import { DeleteEntityDialog } from "@/components/admin/delete-entity-dialog";
 import { UI } from "@/configs/const";
 import { ListLayoutToolbar } from "@/components/admin/list-layout-toolbar";
 import { ListPaginationFooter } from "@/components/admin/list-pagination-footer";
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
 import { PermissionGate } from "@/guards/permission-gate";
 import { ADMIN_TABS, LIST_LAYOUT, PERMISSIONS, ROUTES, SORT_KEYS } from "@/configs/const";
+import { useAuth } from "@/hooks/use-auth";
+import { useAdminDeleteFlow } from "@/hooks/use-admin-delete-flow";
+import { useBulkSelection } from "@/hooks/use-bulk-selection";
 import { useRbac } from "@/hooks/use-rbac";
 import { isRolePermissionsEditable, staffListUrl } from "@/lib/admin-staff-url";
 import { compareSortable, useListControls } from "@/hooks/use-list-controls";
 import { usePaginatedSlice } from "@/hooks/use-paginated-slice";
 import { formatTimestamp } from "@/lib/format-date";
-import type { RoleRow } from "@/services/rbac.service";
+import { rbacService, type RoleRow } from "@/services/rbac.service";
 import {
   Dialog,
   DialogContent,
@@ -39,14 +45,32 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+function canDeleteRole(r: RoleRow, hasRolesDelete: boolean) {
+  return hasRolesDelete && !r.is_system;
+}
+
 export function StaffRolesTab() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { accessToken } = useAuth();
   const { matrix, hasPermission } = useRbac();
+  const selection = useBulkSelection<RoleRow>();
+  const canDelete = hasPermission(PERMISSIONS.roles.delete);
   const [viewRole, setViewRole] = useState<RoleRow | null>(null);
   const [systemFilter, setSystemFilter] = useState("all");
 
   const list = useListControls(SORT_KEYS.updatedAt);
+
+  const deleteFlow = useAdminDeleteFlow({
+    allowSoftDelete: false,
+    executeDelete: async (targets) => {
+      for (const target of targets) {
+        await rbacService.deleteRole(accessToken, target.id);
+      }
+      void matrix.refetch();
+    },
+    onComplete: () => selection.clear(),
+  });
 
   const allRoles = matrix.data?.roles ?? [];
 
@@ -85,6 +109,15 @@ export function StaffRolesTab() {
     setInfinitePages: list.setInfinitePages,
     resetDeps: [list.search, list.activeSort, systemFilter],
   });
+
+  const deletableVisible = useMemo(
+    () => pagination.visibleItems.filter((r) => canDeleteRole(r, canDelete)),
+    [pagination.visibleItems, canDelete],
+  );
+
+  function roleTarget(r: RoleRow) {
+    return { id: r.id, label: r.name };
+  }
 
   const gridSortOptions = [
     { value: `${SORT_KEYS.roleName}:asc`, label: t("list.sortNameAsc") },
@@ -147,6 +180,13 @@ export function StaffRolesTab() {
         }
       />
 
+      <BulkSelectionBar
+        count={selection.count}
+        onClear={selection.clear}
+        canDelete={canDelete}
+        onDelete={() => deleteFlow.openDeleteDialog(selection.pick(deletableVisible).map(roleTarget))}
+      />
+
       {list.layout === LIST_LAYOUT.table ? (
         <AdminTableCard
           isEmpty={!filtered.length}
@@ -155,6 +195,16 @@ export function StaffRolesTab() {
           <AdminTable>
             <AdminTableHead>
               <tr>
+                <th className="w-12 px-3 py-3.5">
+                  {canDelete && (
+                    <ListSelectCheckbox
+                      checked={selection.isAllSelected(deletableVisible)}
+                      indeterminate={selection.isSomeSelected(deletableVisible)}
+                      onChange={() => selection.toggleAll(deletableVisible)}
+                      ariaLabel={t("list.selectAll")}
+                    />
+                  )}
+                </th>
                 <SortableTableHeader
                   label={t("staff.roleName")}
                   sortKey={SORT_KEYS.roleName}
@@ -180,6 +230,15 @@ export function StaffRolesTab() {
             <tbody>
               {pagination.visibleItems.map((r) => (
                 <tr key={r.id} className="border-border hover:bg-muted/30 border-t transition">
+                  <td className="px-3 py-3">
+                    {canDeleteRole(r, canDelete) ? (
+                      <ListSelectCheckbox
+                        checked={selection.isSelected(r.id)}
+                        onChange={() => selection.toggle(r.id)}
+                        ariaLabel={t("list.selectRow")}
+                      />
+                    ) : null}
+                  </td>
                   <td className="px-5 py-3 font-medium">
                     {r.name}
                     {r.is_system && (
@@ -196,10 +255,12 @@ export function StaffRolesTab() {
                       onView={() => setViewRole(r)}
                       onEdit={
                         hasPermission(PERMISSIONS.roles.update) && isRolePermissionsEditable(r)
-                          ? () =>
-                              router.push(
-                                staffListUrl(ADMIN_TABS.staff.permissions, r.id),
-                              )
+                          ? () => router.push(staffListUrl(ADMIN_TABS.staff.permissions, r.id))
+                          : undefined
+                      }
+                      onDelete={
+                        canDeleteRole(r, canDelete)
+                          ? () => deleteFlow.openDeleteDialog([roleTarget(r)])
                           : undefined
                       }
                     />
@@ -215,7 +276,19 @@ export function StaffRolesTab() {
           empty={<p className="text-muted-foreground py-12 text-center text-sm">{t("common.noData")}</p>}
         >
           {pagination.visibleItems.map((r) => (
-            <EntityGridCard key={r.id} onClick={() => setViewRole(r)}>
+            <EntityGridCard
+              key={r.id}
+              onClick={() => setViewRole(r)}
+              selection={
+                canDeleteRole(r, canDelete) ? (
+                  <ListSelectCheckbox
+                    checked={selection.isSelected(r.id)}
+                    onChange={() => selection.toggle(r.id)}
+                    ariaLabel={t("list.selectRow")}
+                  />
+                ) : undefined
+              }
+            >
               <p className="font-bold">{r.name}</p>
               <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">{r.description ?? "—"}</p>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -241,6 +314,14 @@ export function StaffRolesTab() {
           onLoadMore={pagination.loadMore}
         />
       )}
+
+      <DeleteEntityDialog
+        open={deleteFlow.dialogOpen}
+        onOpenChange={deleteFlow.setDialogOpen}
+        targets={deleteFlow.pendingTargets}
+        allowSoftDelete={deleteFlow.allowSoftDelete}
+        onConfirm={deleteFlow.confirmFromDialog}
+      />
 
       <Dialog open={Boolean(viewRole)} onOpenChange={(o) => !o && setViewRole(null)}>
         <DialogContent className="max-h-[80vh] overflow-y-auto">

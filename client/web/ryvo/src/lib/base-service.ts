@@ -32,9 +32,10 @@ export abstract class BaseService {
     } satisfies RequestOptions);
   }
 
-  protected delete<T>(path: string, token?: string | null) {
+  protected delete<T>(path: string, token?: string | null, body?: unknown) {
     return apiRequest<T>(this.serviceName, path, {
       method: "DELETE",
+      body,
       token,
     } satisfies RequestOptions);
   }

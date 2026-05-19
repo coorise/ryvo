@@ -3,7 +3,7 @@
 **Date:** 2026-05-19  
 **Phase:** 4 (web portal) — continuation  
 **Branch:** `dev`  
-**Status:** COMPLETE for this slice — Users, Staff, Drivers admin lists + dynamic RBAC
+**Status:** COMPLETE — see also `commit-6-admin-delete-bulk-actions.md` for delete/bulk/tooltips
 
 ## Summary
 

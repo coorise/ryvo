@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Shield, UserCog, Users } from "lucide-react";
@@ -19,10 +19,13 @@ import {
   EntityGrid,
   EntityGridCard,
   InlineRowActions,
+  ListSelectCheckbox,
   shortUserId,
   SortableTableHeader,
   UserTableCell,
 } from "@/components/admin/admin-list-ui";
+import { BulkSelectionBar } from "@/components/admin/bulk-selection-bar";
+import { DeleteEntityDialog } from "@/components/admin/delete-entity-dialog";
 import { EntityPreviewDialog, type EntityPreviewData } from "@/components/admin/entity-preview-dialog";
 import { ListLayoutToolbar } from "@/components/admin/list-layout-toolbar";
 import { ListPaginationFooter } from "@/components/admin/list-pagination-footer";
@@ -38,6 +41,8 @@ import {
 } from "@/configs/const";
 import { useAuth } from "@/hooks/use-auth";
 import { useRbac } from "@/hooks/use-rbac";
+import { useAdminDeleteFlow } from "@/hooks/use-admin-delete-flow";
+import { useBulkSelection } from "@/hooks/use-bulk-selection";
 import { compareSortable, useListControls } from "@/hooks/use-list-controls";
 import { usePaginatedSlice } from "@/hooks/use-paginated-slice";
 import { adminEditPath, adminProfilePath } from "@/lib/admin-paths";
@@ -50,10 +55,25 @@ export function StaffStaffsTab() {
   const { accessToken } = useAuth();
   const { hasPermission } = useRbac();
   const router = useRouter();
+  const qc = useQueryClient();
+  const selection = useBulkSelection<AdminUserRow>();
+  const canDelete = hasPermission(PERMISSIONS.staff.delete);
   const [roleFilter, setRoleFilter] = useState("all");
   const [preview, setPreview] = useState<EntityPreviewData | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const list = useListControls(SORT_KEYS.updatedAt);
+
+  const deleteFlow = useAdminDeleteFlow({
+    executeDelete: async (targets, mode) => {
+      for (const target of targets) {
+        await rbacService.deleteUser(accessToken, target.id, mode);
+      }
+    },
+    onComplete: () => {
+      selection.clear();
+      void qc.invalidateQueries({ queryKey: QUERY_KEYS.admin.staff });
+    },
+  });
 
   const staff = useQuery({
     queryKey: QUERY_KEYS.admin.staff,
@@ -111,6 +131,10 @@ export function StaffStaffsTab() {
     { value: `${SORT_KEYS.email}:asc`, label: t("list.sortEmailAsc") },
     { value: `${SORT_KEYS.email}:desc`, label: t("list.sortEmailDesc") },
   ];
+
+  function userTarget(u: AdminUserRow) {
+    return { id: u.id, label: u.full_name ?? u.email, email: u.email };
+  }
 
   function openView(u: AdminUserRow) {
     setPreview({
@@ -190,6 +214,15 @@ export function StaffStaffsTab() {
           }
         />
 
+        <BulkSelectionBar
+          count={selection.count}
+          onClear={selection.clear}
+          canDelete={canDelete}
+          onDelete={() =>
+            deleteFlow.openDeleteDialog(selection.pick(pagination.visibleItems).map(userTarget))
+          }
+        />
+
         {list.layout === LIST_LAYOUT.table ? (
           <AdminTableCard
             isEmpty={!filtered.length}
@@ -198,6 +231,14 @@ export function StaffStaffsTab() {
             <AdminTable>
               <AdminTableHead>
                 <tr>
+                  <th className="w-12 px-3 py-3.5">
+                    <ListSelectCheckbox
+                      checked={selection.isAllSelected(pagination.visibleItems)}
+                      indeterminate={selection.isSomeSelected(pagination.visibleItems)}
+                      onChange={() => selection.toggleAll(pagination.visibleItems)}
+                      ariaLabel={t("list.selectAll")}
+                    />
+                  </th>
                   <SortableTableHeader
                     label={t("list.columnUser")}
                     sortKey={SORT_KEYS.name}
@@ -224,6 +265,13 @@ export function StaffStaffsTab() {
               <tbody>
                 {pagination.visibleItems.map((u) => (
                   <tr key={u.id} className="border-border hover:bg-muted/30 border-t transition">
+                    <td className="px-3 py-3">
+                      <ListSelectCheckbox
+                        checked={selection.isSelected(u.id)}
+                        onChange={() => selection.toggle(u.id)}
+                        ariaLabel={t("list.selectRow")}
+                      />
+                    </td>
                     <td className="px-5 py-3">
                       <UserTableCell name={u.full_name ?? u.email} subId={shortUserId(u.id)} email={u.email} />
                     </td>
@@ -248,6 +296,10 @@ export function StaffStaffsTab() {
                         onView={() => openView(u)}
                         onEdit={() => router.push(adminEditPath("staff", u.id))}
                         onToggle={() => router.push(adminProfilePath("staff", u.id))}
+                        profileLabel={t("actions.profile")}
+                        onDelete={
+                          canDelete ? () => deleteFlow.openDeleteDialog([userTarget(u)]) : undefined
+                        }
                       />
                     </td>
                   </tr>
@@ -261,7 +313,17 @@ export function StaffStaffsTab() {
             empty={<p className="text-muted-foreground py-12 text-center text-sm">{t("common.noData")}</p>}
           >
             {pagination.visibleItems.map((u) => (
-              <EntityGridCard key={u.id} onClick={() => openView(u)}>
+              <EntityGridCard
+                key={u.id}
+                onClick={() => openView(u)}
+                selection={
+                  <ListSelectCheckbox
+                    checked={selection.isSelected(u.id)}
+                    onChange={() => selection.toggle(u.id)}
+                    ariaLabel={t("list.selectRow")}
+                  />
+                }
+              >
                 <UserTableCell name={u.full_name ?? u.email} subId={shortUserId(u.id)} email={u.email} />
                 <div className="mt-3 flex flex-wrap gap-1">
                   {u.roles.map((r) => (
@@ -307,6 +369,13 @@ export function StaffStaffsTab() {
               }
             : undefined
         }
+      />
+
+      <DeleteEntityDialog
+        open={deleteFlow.dialogOpen}
+        onOpenChange={deleteFlow.setDialogOpen}
+        targets={deleteFlow.pendingTargets}
+        onConfirm={deleteFlow.confirmFromDialog}
       />
     </>
   );
