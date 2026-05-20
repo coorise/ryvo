@@ -31,9 +31,33 @@ export type TariffCornerBadge = {
   image_path: string | null;
 };
 
+export type TariffTextStyleMode = "auto" | "custom";
+
+export type TariffLabelStyle = {
+  text_color: string;
+  background_color: string;
+};
+
+export type TariffCardTextStyles = {
+  mode: TariffTextStyleMode;
+  title: TariffLabelStyle | null;
+  commission: TariffLabelStyle | null;
+  features: TariffLabelStyle | null;
+  subscription: TariffLabelStyle | null;
+};
+
 export type TariffCardDisplay = {
   background_color: string | null;
   badge: TariffCornerBadge;
+  text_styles: TariffCardTextStyles;
+};
+
+export const DEFAULT_TEXT_STYLES: TariffCardTextStyles = {
+  mode: "auto",
+  title: null,
+  commission: null,
+  features: null,
+  subscription: null,
 };
 
 export const DEFAULT_CORNER_BADGE: TariffCornerBadge = {
@@ -49,7 +73,40 @@ export const DEFAULT_CORNER_BADGE: TariffCornerBadge = {
 export const DEFAULT_CARD_DISPLAY: TariffCardDisplay = {
   background_color: null,
   badge: { ...DEFAULT_CORNER_BADGE },
+  text_styles: { ...DEFAULT_TEXT_STYLES },
 };
+
+function parseHexColor(v: unknown, fallback: string): string {
+  const s = String(v ?? "").trim();
+  return /^#[0-9A-Fa-f]{6}$/.test(s) ? s : fallback;
+}
+
+function parseLabelStyle(raw: unknown, fallback: TariffLabelStyle): TariffLabelStyle | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  return {
+    text_color: parseHexColor(o.text_color, fallback.text_color),
+    background_color: parseHexColor(o.background_color, fallback.background_color),
+  };
+}
+
+const LABEL_PARSE_FALLBACK: TariffLabelStyle = {
+  text_color: "#0f172a",
+  background_color: "#ffffff",
+};
+
+export function normalizeTextStyles(raw: unknown): TariffCardTextStyles {
+  if (!raw || typeof raw !== "object") return { ...DEFAULT_TEXT_STYLES };
+  const o = raw as Record<string, unknown>;
+  const mode: TariffTextStyleMode = o.mode === "custom" ? "custom" : "auto";
+  return {
+    mode,
+    title: parseLabelStyle(o.title, LABEL_PARSE_FALLBACK),
+    commission: parseLabelStyle(o.commission, LABEL_PARSE_FALLBACK),
+    features: parseLabelStyle(o.features, LABEL_PARSE_FALLBACK),
+    subscription: parseLabelStyle(o.subscription, LABEL_PARSE_FALLBACK),
+  };
+}
 
 export type TariffFeatures = {
   search_priority: boolean;
@@ -109,8 +166,10 @@ export function normalizeCardDisplay(raw: unknown): TariffCardDisplay {
     : "top_right";
   const kind = b.kind === "image" ? "image" : "text";
   const bg = o.background_color != null && o.background_color !== "" ? String(o.background_color) : null;
+  const background_color = bg && /^#[0-9A-Fa-f]{6}$/.test(bg) ? bg : null;
   return {
-    background_color: bg && /^#[0-9A-Fa-f]{6}$/.test(bg) ? bg : null,
+    background_color,
+    text_styles: normalizeTextStyles(o.text_styles),
     badge: {
       enabled: Boolean(b.enabled),
       position,
@@ -160,6 +219,7 @@ export function emptyTariffInput(): TariffPackageInput {
     card_display: {
       background_color: null,
       badge: { ...DEFAULT_CORNER_BADGE },
+      text_styles: { ...DEFAULT_TEXT_STYLES },
     },
   };
 }

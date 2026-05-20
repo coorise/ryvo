@@ -140,11 +140,25 @@ const tariffFeaturesSchema = z.object({
   priority_support: z.boolean().optional(),
 });
 
+const tariffLabelStyleSchema = z.object({
+  text_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  background_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+});
+
 const tariffCardDisplaySchema = z.object({
   background_color: z
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/)
     .nullable()
+    .optional(),
+  text_styles: z
+    .object({
+      mode: z.enum(["auto", "custom"]),
+      title: tariffLabelStyleSchema.nullable().optional(),
+      commission: tariffLabelStyleSchema.nullable().optional(),
+      features: tariffLabelStyleSchema.nullable().optional(),
+      subscription: tariffLabelStyleSchema.nullable().optional(),
+    })
     .optional(),
   badge: z.object({
     enabled: z.boolean(),

@@ -7,6 +7,8 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { TariffCardBadge } from "@/components/admin/finance/tariff-card-badge";
+import { TariffCardLabel, TariffCardTitle } from "@/components/admin/finance/tariff-card-labels";
+import { TARIFF_CARD_SWITCH_CLASS } from "@/lib/tariff-card-styles";
 import { TariffFeatureChips, TariffPackageForm } from "@/components/admin/finance/tariff-package-form";
 import { SimpleTable } from "@/components/admin/finance/simple-table";
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
@@ -138,15 +140,18 @@ export function TariffsPanel() {
             >
               <TariffCardBadge display={input.card_display} accessToken={accessToken} />
               <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-bold">{pkg.name}</p>
-                  <p className="text-muted-foreground text-xs">
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <TariffCardTitle display={input.card_display}>{pkg.name}</TariffCardTitle>
+                  <TariffCardLabel display={input.card_display} kind="commission">
                     {pkg.commission_percent}% · {pkg.payout_cadence.replace(/_/g, " ")}
                     {pkg.payout_delay_minutes > 0 && ` · ${pkg.payout_delay_minutes} min`}
-                  </p>
+                  </TariffCardLabel>
                 </div>
                 {canEdit && (
                   <Switch
+                    className={cn(
+                      input.card_display.background_color && TARIFF_CARD_SWITCH_CLASS,
+                    )}
                     checked={pkg.active}
                     onCheckedChange={() => toggleActive.mutate(pkg)}
                     aria-label={t("financeTariffs.form.active")}
@@ -156,11 +161,11 @@ export function TariffsPanel() {
               {pkg.description && (
                 <p className="text-muted-foreground mt-2 line-clamp-2 text-xs">{pkg.description}</p>
               )}
-              <TariffFeatureChips form={input} />
+              <TariffFeatureChips form={input} display={input.card_display} />
               {pkg.is_optional_subscription && pkg.subscription_monthly != null && (
-                <p className="text-primary mt-2 text-xs font-semibold">
+                <TariffCardLabel display={input.card_display} kind="subscription" className="mt-2">
                   ${pkg.subscription_monthly}/mo · +{pkg.search_boost} {t("financeTariffs.searchList")}
-                </p>
+                </TariffCardLabel>
               )}
               {canEdit && (
                 <div className="mt-4 flex gap-2">

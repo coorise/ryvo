@@ -5,10 +5,13 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { TariffCardPreview } from "@/components/admin/finance/tariff-card-badge";
+import { TariffCardLabel, TariffCardTitle } from "@/components/admin/finance/tariff-card-labels";
+import { autoLabelStyle, pillClassName, resolveLabelStyle } from "@/lib/tariff-card-styles";
 import {
   TARIFF_BADGE_POSITIONS,
   TARIFF_PACKAGE_TYPES,
   type TariffCardDisplay,
+  type TariffLabelStyle,
   type TariffPackageInput,
 } from "@/lib/tariff-types";
 import { Input } from "@/components/ui/input";
@@ -58,6 +61,31 @@ export function TariffPackageForm({ form, setForm, isNew, readOnly }: TariffPack
       ...form,
       card_display: { ...form.card_display, badge: { ...form.card_display.badge, ...patch } },
     });
+  }
+
+  function patchTextStyles(patch: Partial<TariffCardDisplay["text_styles"]>) {
+    setForm({
+      ...form,
+      card_display: {
+        ...form.card_display,
+        text_styles: { ...form.card_display.text_styles, ...patch },
+      },
+    });
+  }
+
+  function patchLabelStyle(
+    kind: keyof Pick<
+      TariffCardDisplay["text_styles"],
+      "title" | "commission" | "features" | "subscription"
+    >,
+    patch: Partial<TariffLabelStyle>,
+  ) {
+    const cardBg = form.card_display.background_color ?? "#ffffff";
+    const base =
+      form.card_display.text_styles[kind] ?? autoLabelStyle(cardBg);
+    patchTextStyles({
+      [kind]: { ...base, ...patch },
+    } as Partial<TariffCardDisplay["text_styles"]>);
   }
 
   async function onBadgeFile(file: File) {
@@ -249,10 +277,13 @@ export function TariffPackageForm({ form, setForm, isNew, readOnly }: TariffPack
       <section className="border-border space-y-4 rounded-xl border p-4">
         <h3 className="text-sm font-semibold">{t("financeTariffs.display.title")}</h3>
         <TariffCardPreview display={form.card_display} accessToken={accessToken} className="min-h-[88px]">
-          <p className="text-sm font-bold">{form.name || t("financeTariffs.form.name")}</p>
-          <p className="text-muted-foreground text-xs">
+          <TariffCardTitle display={form.card_display}>
+            {form.name || t("financeTariffs.form.name")}
+          </TariffCardTitle>
+          <TariffCardLabel display={form.card_display} kind="commission">
             {form.commission_percent}% · {form.payout_cadence.replace(/_/g, " ")}
-          </p>
+          </TariffCardLabel>
+          <TariffFeatureChips form={form} display={form.card_display} />
         </TariffCardPreview>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
@@ -287,6 +318,81 @@ export function TariffPackageForm({ form, setForm, isNew, readOnly }: TariffPack
               )}
             </div>
           </div>
+
+          {form.card_display.background_color && (
+            <>
+              <div className="space-y-1 sm:col-span-2">
+                <Label>{t("financeTariffs.display.textMode")}</Label>
+                <select
+                  disabled={disabled}
+                  className="border-border bg-background w-full rounded-xl border px-3 py-2 text-sm"
+                  value={form.card_display.text_styles.mode}
+                  onChange={(e) => {
+                    const mode = e.target.value as "auto" | "custom";
+                    if (mode === "custom" && form.card_display.background_color) {
+                      const auto = autoLabelStyle(form.card_display.background_color);
+                      const ts = form.card_display.text_styles;
+                      patchTextStyles({
+                        mode: "custom",
+                        title: ts.title ?? auto,
+                        commission: ts.commission ?? auto,
+                        features: ts.features ?? auto,
+                        subscription: ts.subscription ?? auto,
+                      });
+                    } else {
+                      patchTextStyles({ mode });
+                    }
+                  }}
+                >
+                  <option value="auto">{t("financeTariffs.display.textModeAuto")}</option>
+                  <option value="custom">{t("financeTariffs.display.textModeCustom")}</option>
+                </select>
+                <p className="text-muted-foreground text-xs">
+                  {form.card_display.text_styles.mode === "auto"
+                    ? t("financeTariffs.display.textModeAutoHint")
+                    : t("financeTariffs.display.textModeCustomHint")}
+                </p>
+              </div>
+              {form.card_display.text_styles.mode === "custom" && (
+                <div className="border-border space-y-4 rounded-xl border border-dashed p-3 sm:col-span-2">
+                  <LabelStyleRow
+                    label={t("financeTariffs.display.styleTitle")}
+                    disabled={disabled}
+                    style={form.card_display.text_styles.title ?? autoLabelStyle(form.card_display.background_color)}
+                    onChange={(p) => patchLabelStyle("title", p)}
+                  />
+                  <LabelStyleRow
+                    label={t("financeTariffs.display.styleCommission")}
+                    disabled={disabled}
+                    style={
+                      form.card_display.text_styles.commission ??
+                      autoLabelStyle(form.card_display.background_color)
+                    }
+                    onChange={(p) => patchLabelStyle("commission", p)}
+                  />
+                  <LabelStyleRow
+                    label={t("financeTariffs.display.styleFeatures")}
+                    disabled={disabled}
+                    style={
+                      form.card_display.text_styles.features ??
+                      autoLabelStyle(form.card_display.background_color)
+                    }
+                    onChange={(p) => patchLabelStyle("features", p)}
+                  />
+                  <LabelStyleRow
+                    label={t("financeTariffs.display.styleSubscription")}
+                    disabled={disabled}
+                    style={
+                      form.card_display.text_styles.subscription ??
+                      autoLabelStyle(form.card_display.background_color)
+                    }
+                    onChange={(p) => patchLabelStyle("subscription", p)}
+                  />
+                </div>
+              )}
+            </>
+          )}
+
           <div className="flex items-center justify-between sm:col-span-2">
             <Label>{t("financeTariffs.display.showBadge")}</Label>
             <Switch
@@ -507,8 +613,79 @@ function FeatureRow({
   );
 }
 
-export function TariffFeatureChips({ form }: { form: TariffPackageInput }) {
+function LabelStyleRow({
+  label,
+  style,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  style: TariffLabelStyle;
+  disabled?: boolean;
+  onChange: (p: Partial<TariffLabelStyle>) => void;
+}) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-[1fr_1fr_1fr] sm:items-end">
+      <p className="text-sm font-medium sm:col-span-3 sm:mb-0">{label}</p>
+      <div className="space-y-1">
+        <Label className="text-xs">Text</Label>
+        <div className="flex gap-1">
+          <input
+            type="color"
+            disabled={disabled}
+            value={style.text_color}
+            onChange={(e) => onChange({ text_color: e.target.value })}
+            className="border-border h-9 w-12 cursor-pointer rounded-lg border p-0.5"
+          />
+          <Input
+            disabled={disabled}
+            value={style.text_color}
+            onChange={(e) => onChange({ text_color: e.target.value })}
+            className="h-9"
+          />
+        </div>
+      </div>
+      <div className="space-y-1 sm:col-span-2">
+        <Label className="text-xs">Background</Label>
+        <div className="flex gap-1">
+          <input
+            type="color"
+            disabled={disabled}
+            value={
+              style.background_color.startsWith("#")
+                ? style.background_color
+                : "#ffffff"
+            }
+            onChange={(e) => onChange({ background_color: e.target.value })}
+            className="border-border h-9 w-12 cursor-pointer rounded-lg border p-0.5"
+          />
+          <Input
+            disabled={disabled}
+            value={style.background_color}
+            onChange={(e) => onChange({ background_color: e.target.value })}
+            className="h-9"
+          />
+        </div>
+      </div>
+      <span
+        className="rounded-md px-2 py-1 text-xs font-semibold sm:col-span-3"
+        style={{ color: style.text_color, backgroundColor: style.background_color }}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+export function TariffFeatureChips({
+  form,
+  display,
+}: {
+  form: TariffPackageInput;
+  display?: TariffCardDisplay;
+}) {
   const { t } = useTranslation();
+  const cardDisplay = display ?? form.card_display;
   const chips: string[] = [];
   if (form.features.search_priority) chips.push(t("financeTariffs.features.searchPriority"));
   if (form.features.promoted_listing) chips.push(t("financeTariffs.features.promotedListing"));
@@ -521,18 +698,34 @@ export function TariffFeatureChips({ form }: { form: TariffPackageInput }) {
     chips.push(form.features.badge_label);
   }
   if (form.discount_percent > 0) chips.push(`-${form.discount_percent}%`);
+
+  const featureResolved = resolveLabelStyle(cardDisplay, "features");
+  const emptyResolved = resolveLabelStyle(cardDisplay, "features");
+
   return (
     <div className="mt-2 flex flex-wrap gap-1">
       {chips.map((c) => (
         <span
           key={c}
-          className={cn("bg-muted text-muted-foreground rounded-md px-1.5 py-0.5 text-[10px] font-semibold")}
+          className={cn(
+            featureResolved.pill
+              ? pillClassName("text-[10px]")
+              : "bg-muted text-muted-foreground rounded-md px-1.5 py-0.5 text-[10px] font-semibold",
+          )}
+          style={featureResolved.pill ? featureResolved.style : undefined}
         >
           {c}
         </span>
       ))}
       {!chips.length && (
-        <span className="text-muted-foreground text-[10px]">{t("financeTariffs.noFeatures")}</span>
+        <span
+          className={cn(
+            emptyResolved.pill ? pillClassName("text-[10px]") : "text-muted-foreground text-[10px]",
+          )}
+          style={emptyResolved.pill ? emptyResolved.style : undefined}
+        >
+          {t("financeTariffs.noFeatures")}
+        </span>
       )}
     </div>
   );
