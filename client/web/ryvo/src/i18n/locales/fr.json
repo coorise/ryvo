@@ -133,7 +133,7 @@
     "createPackage": "Créer un forfait",
     "editPackage": "Modifier le forfait",
     "confirmDelete": "Supprimer ce forfait ?",
-    "confirmDeleteDesc": "Les chauffeurs sur ce plan doivent être migrés. Les modèles système ne peuvent pas être supprimés.",
+    "confirmDeleteDesc": "Supprimer « {{name}} » ? Les chauffeurs sur ce plan doivent être migrés. Action irréversible.",
     "deleted": "Forfait supprimé",
     "searchList": "boost recherche",
     "noFeatures": "Aucun avantage",

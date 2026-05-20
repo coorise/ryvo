@@ -8,7 +8,11 @@ import { toast } from "sonner";
 
 import { TariffCardBadge } from "@/components/admin/finance/tariff-card-badge";
 import { TariffCardLabel, TariffCardTitle } from "@/components/admin/finance/tariff-card-labels";
-import { TARIFF_CARD_SWITCH_CLASS } from "@/lib/tariff-card-styles";
+import {
+  TARIFF_CARD_DELETE_BUTTON_CLASS,
+  TARIFF_CARD_EDIT_BUTTON_CLASS,
+  TARIFF_CARD_SWITCH_CLASS,
+} from "@/lib/tariff-card-styles";
 import { TariffFeatureChips, TariffPackageForm } from "@/components/admin/finance/tariff-package-form";
 import { SimpleTable } from "@/components/admin/finance/simple-table";
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
@@ -49,7 +53,7 @@ export function TariffsPanel() {
   const canEdit = hasPermission(PERMISSIONS.finance.tariffsUpdate);
 
   const [editorOpen, setEditorOpen] = useState(false);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TariffPackage | null>(null);
   const [form, setForm] = useState<TariffPackageInput>(emptyTariffInput());
   const [isNew, setIsNew] = useState(false);
 
@@ -77,7 +81,7 @@ export function TariffsPanel() {
     mutationFn: (id: string) => financeService.deleteTariff(accessToken, id),
     onSuccess: () => {
       toast.success(t("financeTariffs.deleted"));
-      setDeleteId(null);
+      setDeleteTarget(null);
       void queryClient.invalidateQueries({ queryKey: ["finance", "tariffs"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -123,6 +127,7 @@ export function TariffsPanel() {
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {packages.map((pkg) => {
           const input = packageToInput(pkg);
+          const onColoredCard = Boolean(input.card_display.background_color);
           return (
             <div
               key={pkg.id}
@@ -169,18 +174,30 @@ export function TariffsPanel() {
               )}
               {canEdit && (
                 <div className="mt-4 flex gap-2">
-                  <RyvoButton intent="outline" className="h-8 flex-1 text-xs" onClick={() => openEdit(pkg)}>
+                  <RyvoButton
+                    intent="outline"
+                    className={cn(
+                      "h-8 flex-1 text-xs",
+                      onColoredCard && TARIFF_CARD_EDIT_BUTTON_CLASS,
+                    )}
+                    onClick={() => openEdit(pkg)}
+                  >
                     <Pencil className="size-3.5" /> {t("actions.edit")}
                   </RyvoButton>
-                  {!pkg.is_system && (
+                  {!pkg.is_system ? (
                     <RyvoButton
-                      intent="ghost"
-                      className="text-destructive h-8 px-2"
-                      onClick={() => setDeleteId(pkg.id)}
+                      intent="outline"
+                      className={cn(
+                        "h-8 flex-1 text-xs",
+                        onColoredCard
+                          ? TARIFF_CARD_DELETE_BUTTON_CLASS
+                          : "text-destructive border-destructive/40 hover:bg-destructive/10",
+                      )}
+                      onClick={() => setDeleteTarget(pkg)}
                     >
-                      <Trash2 className="size-4" />
+                      <Trash2 className="size-3.5" /> {t("actions.delete")}
                     </RyvoButton>
-                  )}
+                  ) : null}
                 </div>
               )}
             </div>
@@ -237,17 +254,28 @@ export function TariffsPanel() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={Boolean(deleteId)} onOpenChange={() => setDeleteId(null)}>
+      <AlertDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("financeTariffs.confirmDelete")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("financeTariffs.confirmDeleteDesc")}</AlertDialogDescription>
+            <AlertDialogDescription>
+              {t("financeTariffs.confirmDeleteDesc", { name: deleteTarget?.name ?? "" })}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogCancel disabled={remove.isPending}>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground"
-              onClick={() => deleteId && remove.mutate(deleteId)}
+              disabled={remove.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteTarget) remove.mutate(deleteTarget.id);
+              }}
             >
               {t("actions.delete")}
             </AlertDialogAction>

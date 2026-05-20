@@ -7,6 +7,13 @@ export type TariffLabelKind = "title" | "commission" | "features" | "subscriptio
 export const TARIFF_CARD_SWITCH_CLASS =
   "border-2 border-white/90 shadow-md ring-2 ring-black/25 data-checked:border-white data-checked:ring-white/40 data-unchecked:border-slate-400/80 data-unchecked:bg-white/95 dark:data-unchecked:bg-white/90";
 
+/** Visible on custom card background colors (same idea as the switch ring). */
+export const TARIFF_CARD_EDIT_BUTTON_CLASS =
+  "border-2 border-slate-500/70 bg-white/95 text-slate-900 shadow-md ring-2 ring-black/20 hover:bg-white hover:text-slate-900";
+
+export const TARIFF_CARD_DELETE_BUTTON_CLASS =
+  "border-2 border-red-500/70 bg-white/95 text-red-600 shadow-md ring-2 ring-black/20 hover:bg-red-50 hover:text-red-700";
+
 export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const m = /^#?([0-9A-Fa-f]{6})$/.exec(hex.trim());
   if (!m) return null;

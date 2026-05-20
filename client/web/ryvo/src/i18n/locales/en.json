@@ -133,7 +133,7 @@
     "createPackage": "Create package",
     "editPackage": "Edit package",
     "confirmDelete": "Delete this package?",
-    "confirmDeleteDesc": "Drivers on this plan must be migrated first. System templates cannot be deleted.",
+    "confirmDeleteDesc": "Delete “{{name}}”? Drivers on this plan must be migrated first. This cannot be undone.",
     "deleted": "Package removed",
     "searchList": "search boost",
     "noFeatures": "No extra perks",
