@@ -140,6 +140,23 @@ const tariffFeaturesSchema = z.object({
   priority_support: z.boolean().optional(),
 });
 
+const tariffCardDisplaySchema = z.object({
+  background_color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .nullable()
+    .optional(),
+  badge: z.object({
+    enabled: z.boolean(),
+    position: z.enum(["top_left", "top_right", "bottom_left", "bottom_right"]),
+    kind: z.enum(["text", "image"]),
+    text: z.string().max(24),
+    text_background_color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+    blink: z.boolean(),
+    image_path: z.string().max(512).nullable().optional(),
+  }),
+});
+
 const tariffPackageSchema = z.object({
   code: z.string().min(2).max(48).regex(/^[a-z0-9_]+$/),
   name: z.string().min(1).max(80),
@@ -164,6 +181,7 @@ const tariffPackageSchema = z.object({
   is_optional_subscription: z.boolean().optional(),
   active: z.boolean().optional(),
   features: tariffFeaturesSchema.optional(),
+  card_display: tariffCardDisplaySchema.optional(),
 });
 
 function canManageMail(auth: AuthLike): boolean {

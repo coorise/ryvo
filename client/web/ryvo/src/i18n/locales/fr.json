@@ -187,6 +187,30 @@
       "featuresTitle": "Avantages et visibilité",
       "active": "Proposé aux chauffeurs"
     },
+    "display": {
+      "title": "Apparence de la carte",
+      "cardBackground": "Couleur de fond",
+      "clearColor": "Réinitialiser",
+      "showBadge": "Badge d'angle",
+      "badgePosition": "Position du badge",
+      "badgeKind": "Type de badge",
+      "kindText": "Texte",
+      "kindImage": "Image (PNG)",
+      "badgeText": "Texte du badge",
+      "badgeTextColor": "Couleur de fond du badge",
+      "badgeBlink": "Animation clignotante",
+      "badgeImage": "Image du badge",
+      "badgeImageHint": "PNG recommandé ; fond transparent idéal.",
+      "badgeImageType": "Veuillez téléverser une image PNG.",
+      "badgeUploaded": "Image du badge téléversée",
+      "removeBadgeImage": "Supprimer l'image",
+      "positions": {
+        "top_left": "Haut gauche",
+        "top_right": "Haut droit",
+        "bottom_left": "Bas gauche",
+        "bottom_right": "Bas droite"
+      }
+    },
     "features": {
       "searchPriority": "Haut de liste recherche",
       "searchPriorityHint": "Boost plus élevé = affiché en premier",

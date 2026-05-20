@@ -187,6 +187,30 @@
       "featuresTitle": "Driver perks & visibility",
       "active": "Offered to new drivers"
     },
+    "display": {
+      "title": "Card appearance",
+      "cardBackground": "Card background color",
+      "clearColor": "Reset",
+      "showBadge": "Corner badge",
+      "badgePosition": "Badge position",
+      "badgeKind": "Badge type",
+      "kindText": "Text",
+      "kindImage": "Image (PNG)",
+      "badgeText": "Badge text",
+      "badgeTextColor": "Badge background color",
+      "badgeBlink": "Blinking animation",
+      "badgeImage": "Badge image",
+      "badgeImageHint": "PNG recommended; transparent background works best.",
+      "badgeImageType": "Please upload a PNG or image file.",
+      "badgeUploaded": "Badge image uploaded",
+      "removeBadgeImage": "Remove image",
+      "positions": {
+        "top_left": "Top left",
+        "top_right": "Top right",
+        "bottom_left": "Bottom left",
+        "bottom_right": "Bottom right"
+      }
+    },
     "features": {
       "searchPriority": "Top of search list",
       "searchPriorityHint": "Higher boost = shown first to clients",

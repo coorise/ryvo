@@ -1,15 +1,22 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 
+import { TariffCardPreview } from "@/components/admin/finance/tariff-card-badge";
 import {
+  TARIFF_BADGE_POSITIONS,
   TARIFF_PACKAGE_TYPES,
+  type TariffCardDisplay,
   type TariffPackageInput,
 } from "@/lib/tariff-types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
+import { storageService } from "@/services/storage.service";
 
 const PAYOUT_PRESETS = [
   "minutes_after_trip",
@@ -29,7 +36,10 @@ type TariffPackageFormProps = {
 
 export function TariffPackageForm({ form, setForm, isNew, readOnly }: TariffPackageFormProps) {
   const { t } = useTranslation();
+  const { accessToken } = useAuth();
   const disabled = readOnly;
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploadingBadge, setUploadingBadge] = useState(false);
 
   function patch(patch: Partial<TariffPackageInput>) {
     setForm({ ...form, ...patch });
@@ -37,6 +47,37 @@ export function TariffPackageForm({ form, setForm, isNew, readOnly }: TariffPack
 
   function patchFeatures(patch: Partial<TariffPackageInput["features"]>) {
     setForm({ ...form, features: { ...form.features, ...patch } });
+  }
+
+  function patchCardDisplay(patch: Partial<TariffCardDisplay>) {
+    setForm({ ...form, card_display: { ...form.card_display, ...patch } });
+  }
+
+  function patchBadge(patch: Partial<TariffCardDisplay["badge"]>) {
+    setForm({
+      ...form,
+      card_display: { ...form.card_display, badge: { ...form.card_display.badge, ...patch } },
+    });
+  }
+
+  async function onBadgeFile(file: File) {
+    if (!file.type.startsWith("image/")) {
+      toast.error(t("financeTariffs.display.badgeImageType"));
+      return;
+    }
+    const code = form.code.trim() || "draft";
+    const storagePath = `admin/tariff-badges/${code}/${Date.now()}.png`;
+    setUploadingBadge(true);
+    try {
+      const path = await storageService.uploadPng(accessToken, file, storagePath);
+      patchBadge({ kind: "image", image_path: path, enabled: true });
+      toast.success(t("financeTariffs.display.badgeUploaded"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploadingBadge(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
   }
 
   return (
@@ -203,6 +244,161 @@ export function TariffPackageForm({ form, setForm, isNew, readOnly }: TariffPack
             />
           </div>
         )}
+      </section>
+
+      <section className="border-border space-y-4 rounded-xl border p-4">
+        <h3 className="text-sm font-semibold">{t("financeTariffs.display.title")}</h3>
+        <TariffCardPreview display={form.card_display} accessToken={accessToken} className="min-h-[88px]">
+          <p className="text-sm font-bold">{form.name || t("financeTariffs.form.name")}</p>
+          <p className="text-muted-foreground text-xs">
+            {form.commission_percent}% · {form.payout_cadence.replace(/_/g, " ")}
+          </p>
+        </TariffCardPreview>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1">
+            <Label>{t("financeTariffs.display.cardBackground")}</Label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                disabled={disabled}
+                value={form.card_display.background_color ?? "#ffffff"}
+                onChange={(e) => patchCardDisplay({ background_color: e.target.value })}
+                className="border-border h-10 w-14 cursor-pointer rounded-lg border p-0.5"
+              />
+              <Input
+                disabled={disabled}
+                value={form.card_display.background_color ?? ""}
+                placeholder="#ffffff"
+                onChange={(e) => {
+                  const v = e.target.value.trim();
+                  patchCardDisplay({
+                    background_color: /^#[0-9A-Fa-f]{6}$/.test(v) ? v : null,
+                  });
+                }}
+              />
+              {!disabled && form.card_display.background_color && (
+                <button
+                  type="button"
+                  className="text-muted-foreground text-xs underline"
+                  onClick={() => patchCardDisplay({ background_color: null })}
+                >
+                  {t("financeTariffs.display.clearColor")}
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center justify-between sm:col-span-2">
+            <Label>{t("financeTariffs.display.showBadge")}</Label>
+            <Switch
+              disabled={disabled}
+              checked={form.card_display.badge.enabled}
+              onCheckedChange={(v) => patchBadge({ enabled: v })}
+            />
+          </div>
+          {form.card_display.badge.enabled && (
+            <>
+              <div className="space-y-1">
+                <Label>{t("financeTariffs.display.badgePosition")}</Label>
+                <select
+                  disabled={disabled}
+                  className="border-border bg-background w-full rounded-xl border px-3 py-2 text-sm"
+                  value={form.card_display.badge.position}
+                  onChange={(e) =>
+                    patchBadge({
+                      position: e.target.value as TariffCardDisplay["badge"]["position"],
+                    })
+                  }
+                >
+                  {TARIFF_BADGE_POSITIONS.map((p) => (
+                    <option key={p} value={p}>
+                      {t(`financeTariffs.display.positions.${p}`)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label>{t("financeTariffs.display.badgeKind")}</Label>
+                <select
+                  disabled={disabled}
+                  className="border-border bg-background w-full rounded-xl border px-3 py-2 text-sm"
+                  value={form.card_display.badge.kind}
+                  onChange={(e) =>
+                    patchBadge({ kind: e.target.value as "text" | "image" })
+                  }
+                >
+                  <option value="text">{t("financeTariffs.display.kindText")}</option>
+                  <option value="image">{t("financeTariffs.display.kindImage")}</option>
+                </select>
+              </div>
+              {form.card_display.badge.kind === "text" ? (
+                <>
+                  <div className="space-y-1">
+                    <Label>{t("financeTariffs.display.badgeText")}</Label>
+                    <Input
+                      disabled={disabled}
+                      maxLength={24}
+                      value={form.card_display.badge.text}
+                      onChange={(e) => patchBadge({ text: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>{t("financeTariffs.display.badgeTextColor")}</Label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        disabled={disabled}
+                        value={form.card_display.badge.text_background_color}
+                        onChange={(e) => patchBadge({ text_background_color: e.target.value })}
+                        className="border-border h-10 w-14 cursor-pointer rounded-lg border p-0.5"
+                      />
+                      <Input
+                        disabled={disabled}
+                        value={form.card_display.badge.text_background_color}
+                        onChange={(e) => patchBadge({ text_background_color: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between sm:col-span-2">
+                    <Label>{t("financeTariffs.display.badgeBlink")}</Label>
+                    <Switch
+                      disabled={disabled}
+                      checked={form.card_display.badge.blink}
+                      onCheckedChange={(v) => patchBadge({ blink: v })}
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>{t("financeTariffs.display.badgeImage")}</Label>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/png,image/webp,image/jpeg"
+                    disabled={disabled || uploadingBadge}
+                    className="text-sm"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) void onBadgeFile(f);
+                    }}
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    {t("financeTariffs.display.badgeImageHint")}
+                  </p>
+                  {form.card_display.badge.image_path && (
+                    <button
+                      type="button"
+                      className="text-destructive text-xs underline"
+                      disabled={disabled}
+                      onClick={() => patchBadge({ image_path: null })}
+                    >
+                      {t("financeTariffs.display.removeBadgeImage")}
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </section>
 
       <section className="border-border space-y-3 rounded-xl border p-4">

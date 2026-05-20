@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
+import { TariffCardBadge } from "@/components/admin/finance/tariff-card-badge";
 import { TariffFeatureChips, TariffPackageForm } from "@/components/admin/finance/tariff-package-form";
 import { SimpleTable } from "@/components/admin/finance/simple-table";
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
@@ -124,11 +125,18 @@ export function TariffsPanel() {
             <div
               key={pkg.id}
               className={cn(
-                "border-border bg-card rounded-2xl border p-5",
+                "border-border relative overflow-hidden rounded-2xl border p-5",
+                !input.card_display.background_color && "bg-card",
                 pkg.is_optional_subscription && pkg.active && "ring-primary/30 ring-2",
                 !pkg.active && "opacity-60",
               )}
+              style={
+                input.card_display.background_color
+                  ? { backgroundColor: input.card_display.background_color }
+                  : undefined
+              }
             >
+              <TariffCardBadge display={input.card_display} accessToken={accessToken} />
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-bold">{pkg.name}</p>

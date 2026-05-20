@@ -1,5 +1,6 @@
 import { BaseService } from "@/lib/base-service";
 import {
+  normalizeCardDisplay,
   normalizeFeatures,
   type TariffPackage,
   type TariffPackageInput,
@@ -26,6 +27,7 @@ function mapTariff(row: Record<string, unknown>): TariffPackage {
     is_system: Boolean(row.is_system),
     active: Boolean(row.active),
     features: normalizeFeatures(row.features),
+    card_display: normalizeCardDisplay(row.card_display),
     created_at: row.created_at as string | undefined,
     updated_at: row.updated_at as string | undefined,
   };
@@ -47,6 +49,7 @@ function bodyToApi(body: TariffPackageInput) {
     is_optional_subscription: body.is_optional_subscription,
     active: body.active,
     features: body.features,
+    card_display: body.card_display,
   };
 }
 

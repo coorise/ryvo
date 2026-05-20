@@ -11,6 +11,46 @@ export const TARIFF_PACKAGE_TYPES = [
 
 export type TariffPackageType = (typeof TARIFF_PACKAGE_TYPES)[number];
 
+export const TARIFF_BADGE_POSITIONS = [
+  "top_left",
+  "top_right",
+  "bottom_left",
+  "bottom_right",
+] as const;
+
+export type TariffBadgePosition = (typeof TARIFF_BADGE_POSITIONS)[number];
+export type TariffBadgeKind = "text" | "image";
+
+export type TariffCornerBadge = {
+  enabled: boolean;
+  position: TariffBadgePosition;
+  kind: TariffBadgeKind;
+  text: string;
+  text_background_color: string;
+  blink: boolean;
+  image_path: string | null;
+};
+
+export type TariffCardDisplay = {
+  background_color: string | null;
+  badge: TariffCornerBadge;
+};
+
+export const DEFAULT_CORNER_BADGE: TariffCornerBadge = {
+  enabled: true,
+  position: "top_right",
+  kind: "text",
+  text: "NEW",
+  text_background_color: "#16a34a",
+  blink: true,
+  image_path: null,
+};
+
+export const DEFAULT_CARD_DISPLAY: TariffCardDisplay = {
+  background_color: null,
+  badge: { ...DEFAULT_CORNER_BADGE },
+};
+
 export type TariffFeatures = {
   search_priority: boolean;
   promoted_listing: boolean;
@@ -50,6 +90,7 @@ export type TariffPackage = {
   is_system: boolean;
   active: boolean;
   features: TariffFeatures;
+  card_display: TariffCardDisplay;
   created_at?: string;
   updated_at?: string;
 };
@@ -57,6 +98,32 @@ export type TariffPackage = {
 export type TariffPackageInput = Omit<TariffPackage, "id" | "created_at" | "updated_at"> & {
   id?: string;
 };
+
+export function normalizeCardDisplay(raw: unknown): TariffCardDisplay {
+  if (!raw || typeof raw !== "object") return { ...DEFAULT_CARD_DISPLAY, badge: { ...DEFAULT_CORNER_BADGE } };
+  const o = raw as Record<string, unknown>;
+  const b = (o.badge && typeof o.badge === "object" ? o.badge : {}) as Record<string, unknown>;
+  const pos = String(b.position ?? "top_right");
+  const position = TARIFF_BADGE_POSITIONS.includes(pos as TariffBadgePosition)
+    ? (pos as TariffBadgePosition)
+    : "top_right";
+  const kind = b.kind === "image" ? "image" : "text";
+  const bg = o.background_color != null && o.background_color !== "" ? String(o.background_color) : null;
+  return {
+    background_color: bg && /^#[0-9A-Fa-f]{6}$/.test(bg) ? bg : null,
+    badge: {
+      enabled: Boolean(b.enabled),
+      position,
+      kind,
+      text: String(b.text ?? "NEW").slice(0, 24),
+      text_background_color: /^#[0-9A-Fa-f]{6}$/.test(String(b.text_background_color ?? ""))
+        ? String(b.text_background_color)
+        : "#16a34a",
+      blink: b.blink !== false,
+      image_path: b.image_path != null && b.image_path !== "" ? String(b.image_path) : null,
+    },
+  };
+}
 
 export function normalizeFeatures(raw: unknown): TariffFeatures {
   if (!raw || typeof raw !== "object") return { ...DEFAULT_TARIFF_FEATURES };
@@ -90,6 +157,10 @@ export function emptyTariffInput(): TariffPackageInput {
     is_system: false,
     active: true,
     features: { ...DEFAULT_TARIFF_FEATURES },
+    card_display: {
+      background_color: null,
+      badge: { ...DEFAULT_CORNER_BADGE },
+    },
   };
 }
 
@@ -111,5 +182,6 @@ export function packageToInput(pkg: TariffPackage): TariffPackageInput {
     is_system: pkg.is_system,
     active: pkg.active,
     features: normalizeFeatures(pkg.features),
+    card_display: normalizeCardDisplay(pkg.card_display),
   };
 }
