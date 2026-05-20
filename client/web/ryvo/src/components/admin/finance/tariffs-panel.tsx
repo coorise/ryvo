@@ -184,20 +184,18 @@ export function TariffsPanel() {
                   >
                     <Pencil className="size-3.5" /> {t("actions.edit")}
                   </RyvoButton>
-                  {!pkg.is_system ? (
-                    <RyvoButton
-                      intent="outline"
-                      className={cn(
-                        "h-8 flex-1 text-xs",
-                        onColoredCard
-                          ? TARIFF_CARD_DELETE_BUTTON_CLASS
-                          : "text-destructive border-destructive/40 hover:bg-destructive/10",
-                      )}
-                      onClick={() => setDeleteTarget(pkg)}
-                    >
-                      <Trash2 className="size-3.5" /> {t("actions.delete")}
-                    </RyvoButton>
-                  ) : null}
+                  <RyvoButton
+                    intent="outline"
+                    className={cn(
+                      "h-8 flex-1 text-xs",
+                      onColoredCard
+                        ? TARIFF_CARD_DELETE_BUTTON_CLASS
+                        : "text-destructive border-destructive/40 hover:bg-destructive/10",
+                    )}
+                    onClick={() => setDeleteTarget(pkg)}
+                  >
+                    <Trash2 className="size-3.5" /> {t("actions.delete")}
+                  </RyvoButton>
                 </div>
               )}
             </div>
@@ -262,23 +260,37 @@ export function TariffsPanel() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("financeTariffs.confirmDelete")}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {deleteTarget?.is_system
+                ? t("financeTariffs.cannotDeleteSystemTitle")
+                : t("financeTariffs.confirmDelete")}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {t("financeTariffs.confirmDeleteDesc", { name: deleteTarget?.name ?? "" })}
+              {deleteTarget?.is_system
+                ? t("financeTariffs.cannotDeleteSystemDesc", { name: deleteTarget.name })
+                : t("financeTariffs.confirmDeleteDesc", { name: deleteTarget?.name ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={remove.isPending}>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground"
-              disabled={remove.isPending}
-              onClick={(e) => {
-                e.preventDefault();
-                if (deleteTarget) remove.mutate(deleteTarget.id);
-              }}
-            >
-              {t("actions.delete")}
-            </AlertDialogAction>
+            {deleteTarget?.is_system ? (
+              <AlertDialogAction onClick={() => setDeleteTarget(null)}>
+                {t("financeTariffs.cannotDeleteSystemOk")}
+              </AlertDialogAction>
+            ) : (
+              <>
+                <AlertDialogCancel disabled={remove.isPending}>{t("common.cancel")}</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground"
+                  disabled={remove.isPending}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (deleteTarget) remove.mutate(deleteTarget.id);
+                  }}
+                >
+                  {t("actions.delete")}
+                </AlertDialogAction>
+              </>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
