@@ -4,5 +4,7 @@ export * from "./auth-password.service";
 export * from "./kyc.service";
 export * from "./notification.service";
 export * from "./rbac.service";
+export * from "./settings.service";
+export * from "./finance.service";
 export * from "./support.service";
 export * from "./supabase";

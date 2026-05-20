@@ -39,6 +39,30 @@ import {
   updatePlatformPreferences,
   type PlatformPreferences,
 } from "../../_shared/lib/platform-settings.ts";
+import { getSelfProfile, updateSelfProfile } from "../../_shared/lib/user-self-profile.ts";
+import {
+  getPaymentSettings,
+  updatePaymentSettings,
+  type PaymentSettingsConfig,
+} from "../../_shared/lib/payment-settings.ts";
+import {
+  getNotificationSettings,
+  updateNotificationSettings,
+  type NotificationSettingsConfig,
+} from "../../_shared/lib/notification-settings.ts";
+import {
+  getReferralSettings,
+  updateReferralSettings,
+  listReferrals,
+  listLoyalty,
+  listTariffs,
+  upsertTariff,
+  listPaychecks,
+  createPaycheck,
+  updatePaycheckStatus,
+  listCheckouts,
+  seedDemoFinanceIfEmpty,
+} from "../../_shared/lib/finance-admin.ts";
 import { z } from "zod";
 
 const preferencesSchema = z.object({
@@ -48,7 +72,68 @@ const preferencesSchema = z.object({
   supportedLanguages: z.array(z.string().min(2).max(10)).optional(),
   currency: z.string().min(3).max(3).optional(),
   country: z.string().min(2).max(2).optional(),
+  supportEmail: z.string().email().optional().or(z.literal("")),
+  supportPhone: z.string().max(32).optional(),
+  defaultMapCenter: z.object({ lat: z.number(), lng: z.number() }).optional(),
+  maxSearchRadiusKm: z.number().min(1).max(500).optional(),
+  cancelWindowMinutes: z.number().min(0).max(60).optional(),
+  driverAcceptTimeoutSec: z.number().min(10).max(300).optional(),
+  scheduledRideEnabled: z.boolean().optional(),
+  maintenanceMode: z.boolean().optional(),
+  maintenanceMessage: z.string().max(500).optional(),
 });
+
+const selfProfileSchema = z.object({
+  username: z.string().min(3).max(32).regex(/^[a-zA-Z0-9_]+$/).optional().nullable(),
+  display_name: z.string().max(120).optional().nullable(),
+  full_name: z.string().max(120).optional().nullable(),
+  phone: z.string().max(32).optional().nullable(),
+  avatar_url: z.string().url().max(500).optional().nullable().or(z.literal("")),
+  address_line1: z.string().max(200).optional().nullable(),
+  address_line2: z.string().max(200).optional().nullable(),
+  city: z.string().max(100).optional().nullable(),
+  region: z.string().max(100).optional().nullable(),
+  postal_code: z.string().max(20).optional().nullable(),
+  country: z.string().max(2).optional().nullable(),
+  locale: z.string().max(10).optional().nullable(),
+  bio: z.string().max(500).optional().nullable(),
+});
+
+const paymentSettingsSchema = z.object({
+  currency: z.string().length(3).optional(),
+  stripeMode: z.enum(["test", "live"]).optional(),
+  stripePublishableKey: z.string().max(200).optional(),
+  platformFeePercent: z.number().min(0).max(50).optional(),
+  driverPayoutDelayDays: z.number().min(0).max(30).optional(),
+  minTripFare: z.number().min(0).optional(),
+  cancellationFee: z.number().min(0).optional(),
+  autoCapture: z.boolean().optional(),
+  tipsEnabled: z.boolean().optional(),
+  requirePreauth: z.boolean().optional(),
+});
+
+const notificationEventSchema = z.object({
+  key: z.string().min(1),
+  enabled: z.boolean(),
+  channels: z.object({
+    push: z.boolean(),
+    email: z.boolean(),
+    sms: z.boolean(),
+  }),
+  audiences: z.object({
+    client: z.boolean(),
+    driver: z.boolean(),
+    staff: z.boolean(),
+  }),
+});
+
+function canManageMail(auth: AuthLike): boolean {
+  return hasPerm(auth, "settings:mail:read") || hasPerm(auth, "email:templates");
+}
+
+function canEditMail(auth: AuthLike): boolean {
+  return hasPerm(auth, "settings:mail:update") || hasPerm(auth, "email:templates");
+}
 
 const emailOnlySchema = z.object({ email: z.string().email() });
 const verifyOtpSchema = z.object({ email: z.string().email(), code: z.string().length(6) });
@@ -186,10 +271,40 @@ export const handle = createServiceRouter("auth-hooks", [
   },
   {
     method: "GET",
+    path: "/v1/me/profile",
+    auth: true,
+    handler: async (_req, ctx) => {
+      try {
+        const profile = await getSelfProfile(ctx.auth!.userId);
+        return ok({ profile });
+      } catch (e) {
+        return fail("PROFILE_ERROR", (e as Error).message, 400);
+      }
+    },
+  },
+  {
+    method: "PATCH",
+    path: "/v1/me/profile",
+    auth: true,
+    handler: async (req, ctx) => {
+      try {
+        const body = selfProfileSchema.parse(await req.json());
+        const profile = await updateSelfProfile(ctx.auth!.userId, body);
+        await emitAudit(ctx.auth!.userId, "profile.self_update", "user", ctx.auth!.userId, {});
+        return ok({ profile });
+      } catch (e) {
+        return fail("PROFILE_ERROR", (e as Error).message, 400);
+      }
+    },
+  },
+  {
+    method: "GET",
     path: "/v1/admin/email-templates",
     auth: true,
-    permissions: ["email:templates"],
-    handler: async () => {
+    handler: async (_req, ctx) => {
+      if (!canManageMail(authLike(ctx))) {
+        return fail("FORBIDDEN", "Missing settings:mail:read or email:templates", 403);
+      }
       const db = getAdminClient();
       const { data } = await db.from("email_templates").select("*").order("template_key");
       return ok({ templates: data });
@@ -199,8 +314,10 @@ export const handle = createServiceRouter("auth-hooks", [
     method: "PUT",
     path: "/v1/admin/email-templates/:template_key",
     auth: true,
-    permissions: ["email:templates"],
     handler: async (req, ctx, params) => {
+      if (!canEditMail(authLike(ctx))) {
+        return fail("FORBIDDEN", "Missing settings:mail:update or email:templates", 403);
+      }
       const body = await req.json();
       const db = getAdminClient();
       const { data, error } = await db
@@ -588,9 +705,113 @@ export const handle = createServiceRouter("auth-hooks", [
   },
   {
     method: "GET",
+    path: "/v1/admin/finance/referrals/settings",
+    auth: true,
+    permissions: ["finances:referrals:read"],
+    handler: async () => ok(await getReferralSettings()),
+  },
+  {
+    method: "PATCH",
+    path: "/v1/admin/finance/referrals/settings",
+    auth: true,
+    permissions: ["finances:referrals:update"],
+    handler: async (req, ctx) => {
+      const body = await req.json();
+      const data = await updateReferralSettings(body.client_config ?? {}, body.driver_config ?? {});
+      await emitAudit(ctx.auth!.userId, "referral_settings.update", "referral_settings", "default", {});
+      return ok(data);
+    },
+  },
+  {
+    method: "GET",
+    path: "/v1/admin/finance/referrals",
+    auth: true,
+    permissions: ["finances:referrals:read"],
+    handler: async () => {
+      await seedDemoFinanceIfEmpty();
+      const [referrals, loyalty] = await Promise.all([listReferrals(), listLoyalty()]);
+      return ok({ referrals, loyalty });
+    },
+  },
+  {
+    method: "GET",
+    path: "/v1/admin/finance/tariffs",
+    auth: true,
+    permissions: ["finances:tariffs:read"],
+    handler: async () => ok({ packages: await listTariffs() }),
+  },
+  {
+    method: "PUT",
+    path: "/v1/admin/finance/tariffs/:id",
+    auth: true,
+    permissions: ["finances:tariffs:update"],
+    handler: async (req, ctx, params) => {
+      const body = await req.json();
+      const row = await upsertTariff({ ...body, id: params.id });
+      await emitAudit(ctx.auth!.userId, "tariff.update", "driver_tariff_packages", params.id, {});
+      return ok({ package: row });
+    },
+  },
+  {
+    method: "GET",
+    path: "/v1/admin/finance/paychecks",
+    auth: true,
+    permissions: ["finances:paychecks:read"],
+    handler: async (req) => {
+      await seedDemoFinanceIfEmpty();
+      const url = new URL(req.url);
+      const status = url.searchParams.get("status") ?? undefined;
+      return ok({ paychecks: await listPaychecks(status) });
+    },
+  },
+  {
+    method: "POST",
+    path: "/v1/admin/finance/paychecks",
+    auth: true,
+    permissions: ["finances:paychecks:update"],
+    handler: async (req, ctx) => {
+      const body = z
+        .object({
+          driver_id: z.string().uuid(),
+          amount: z.number().positive(),
+          period_label: z.string().optional(),
+          note: z.string().optional(),
+        })
+        .parse(await req.json());
+      const row = await createPaycheck(body);
+      await emitAudit(ctx.auth!.userId, "paycheck.create", "driver_paychecks", row.id, body);
+      return ok({ paycheck: row });
+    },
+  },
+  {
+    method: "PATCH",
+    path: "/v1/admin/finance/paychecks/:id",
+    auth: true,
+    permissions: ["finances:paychecks:update"],
+    handler: async (req, ctx, params) => {
+      const { status } = z.object({ status: z.enum(["pending", "paid", "held", "cancelled"]) }).parse(await req.json());
+      const row = await updatePaycheckStatus(params.id, status, ctx.auth!.userId);
+      await emitAudit(ctx.auth!.userId, "paycheck.status", "driver_paychecks", params.id, { status });
+      return ok({ paycheck: row });
+    },
+  },
+  {
+    method: "GET",
+    path: "/v1/admin/finance/checkouts",
+    auth: true,
+    permissions: ["finances:checkouts:read"],
+    handler: async (req) => {
+      await seedDemoFinanceIfEmpty();
+      const url = new URL(req.url);
+      const status = url.searchParams.get("status") ?? undefined;
+      return ok({ sessions: await listCheckouts(status) });
+    },
+  },
+  {
+    method: "GET",
     path: "/v1/admin/payments",
     auth: true,
-    permissions: ["audit:read"],
+    permissions: ["payments:read"],
     handler: async (req) => {
       const url = new URL(req.url);
       const limit = Number(url.searchParams.get("limit") ?? 100);
@@ -649,9 +870,8 @@ export const handle = createServiceRouter("auth-hooks", [
     method: "GET",
     path: "/v1/admin/settings",
     auth: true,
-    handler: async (_req, ctx) => {
-      const denied = requireRole(ctx.auth!, "super_admin", "admin");
-      if (denied) return denied;
+    permissions: ["settings:read"],
+    handler: async () => {
       const preferences = await getPlatformPreferences();
       return ok({ preferences });
     },
@@ -660,9 +880,8 @@ export const handle = createServiceRouter("auth-hooks", [
     method: "PATCH",
     path: "/v1/admin/settings",
     auth: true,
+    permissions: ["settings:update"],
     handler: async (req, ctx) => {
-      const denied = requireRole(ctx.auth!, "super_admin", "admin");
-      if (denied) return denied;
       const body = preferencesSchema.parse(await req.json());
       const preferences = await updatePlatformPreferences(
         body as Partial<PlatformPreferences>,
@@ -670,6 +889,62 @@ export const handle = createServiceRouter("auth-hooks", [
       );
       await emitAudit(ctx.auth!.userId, "platform_settings.update", "platform_settings", "default", body);
       return ok({ preferences });
+    },
+  },
+  {
+    method: "GET",
+    path: "/v1/admin/settings/payment",
+    auth: true,
+    permissions: ["settings:payment:read"],
+    handler: async () => {
+      const config = await getPaymentSettings();
+      return ok({ config });
+    },
+  },
+  {
+    method: "PATCH",
+    path: "/v1/admin/settings/payment",
+    auth: true,
+    permissions: ["settings:payment:update"],
+    handler: async (req, ctx) => {
+      const body = paymentSettingsSchema.parse(await req.json());
+      const config = await updatePaymentSettings(
+        body as Partial<PaymentSettingsConfig>,
+        ctx.auth!.userId,
+      );
+      await emitAudit(ctx.auth!.userId, "payment_settings.update", "payment_settings", "default", body);
+      return ok({ config });
+    },
+  },
+  {
+    method: "GET",
+    path: "/v1/admin/settings/notifications",
+    auth: true,
+    permissions: ["settings:notifications:read"],
+    handler: async () => {
+      const config = await getNotificationSettings();
+      return ok({ config });
+    },
+  },
+  {
+    method: "PATCH",
+    path: "/v1/admin/settings/notifications",
+    auth: true,
+    permissions: ["settings:notifications:update"],
+    handler: async (req, ctx) => {
+      const body = z.object({ events: z.array(notificationEventSchema) }).parse(await req.json());
+      const config = await updateNotificationSettings(
+        body as NotificationSettingsConfig,
+        ctx.auth!.userId,
+      );
+      await emitAudit(
+        ctx.auth!.userId,
+        "notification_settings.update",
+        "notification_settings",
+        "default",
+        body,
+      );
+      return ok({ config });
     },
   },
   {

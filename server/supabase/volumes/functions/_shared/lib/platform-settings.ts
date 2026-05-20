@@ -7,6 +7,15 @@ export type PlatformPreferences = {
   supportedLanguages: string[];
   currency?: string;
   country?: string;
+  supportEmail?: string;
+  supportPhone?: string;
+  defaultMapCenter?: { lat: number; lng: number };
+  maxSearchRadiusKm?: number;
+  cancelWindowMinutes?: number;
+  driverAcceptTimeoutSec?: number;
+  scheduledRideEnabled?: boolean;
+  maintenanceMode?: boolean;
+  maintenanceMessage?: string;
 };
 
 const DEFAULT_PREFERENCES: PlatformPreferences = {
@@ -16,6 +25,15 @@ const DEFAULT_PREFERENCES: PlatformPreferences = {
   supportedLanguages: ["en", "fr", "es", "zh", "de"],
   currency: "CAD",
   country: "CA",
+  supportEmail: "support@ryvo-line.com",
+  supportPhone: "",
+  defaultMapCenter: { lat: 45.5017, lng: -73.5673 },
+  maxSearchRadiusKm: 50,
+  cancelWindowMinutes: 5,
+  driverAcceptTimeoutSec: 30,
+  scheduledRideEnabled: true,
+  maintenanceMode: false,
+  maintenanceMessage: "",
 };
 
 export async function getPlatformPreferences(): Promise<PlatformPreferences> {

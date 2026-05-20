@@ -1,3 +1,4 @@
+import { PERMISSIONS } from "@/configs/const";
 import type { SessionUser } from "@/types/interfaces/schemas";
 
 export function hasRole(user: SessionUser | null, ...roles: string[]): boolean {
@@ -36,7 +37,11 @@ export function canAccessDashboard(user: SessionUser | null, area: "client" | "d
         hasPermPrefix(user, "rides:") ||
         hasPermPrefix(user, "support:") ||
         hasPermPrefix(user, "audit:") ||
-        hasPermPrefix(user, "settings:")
+        hasPermPrefix(user, "settings:") ||
+        hasPermPrefix(user, "payments:") ||
+        hasPermPrefix(user, "observability:") ||
+        hasPermPrefix(user, "finances:") ||
+        hasPermPrefix(user, "analytics:")
       );
     case "driver":
       return hasRole(user, "driver");
@@ -75,6 +80,42 @@ export function canManageClientUsers(user: SessionUser | null): boolean {
 
 export function canManageDrivers(user: SessionUser | null): boolean {
   return hasPermPrefix(user, "drivers:");
+}
+
+export function canViewSettingsTab(
+  user: SessionUser | null,
+  tab: "profile" | "general" | "payment" | "mail" | "notifications",
+): boolean {
+  if (!user || !canAccessDashboard(user, "admin")) return false;
+  if (tab === "profile") return true;
+  if (tab === "general") return hasPermission(user, PERMISSIONS.settings.read);
+  if (tab === "payment") return hasPermission(user, PERMISSIONS.settings.paymentRead);
+  if (tab === "mail") {
+    return (
+      hasPermission(user, PERMISSIONS.settings.mailRead) ||
+      hasPermission(user, PERMISSIONS.settings.emailTemplates)
+    );
+  }
+  if (tab === "notifications") return hasPermission(user, PERMISSIONS.settings.notificationsRead);
+  return false;
+}
+
+export function canEditSettingsTab(
+  user: SessionUser | null,
+  tab: "profile" | "general" | "payment" | "mail" | "notifications",
+): boolean {
+  if (!user) return false;
+  if (tab === "profile") return true;
+  if (tab === "general") return hasPermission(user, PERMISSIONS.settings.update);
+  if (tab === "payment") return hasPermission(user, PERMISSIONS.settings.paymentUpdate);
+  if (tab === "mail") {
+    return (
+      hasPermission(user, PERMISSIONS.settings.mailUpdate) ||
+      hasPermission(user, PERMISSIONS.settings.emailTemplates)
+    );
+  }
+  if (tab === "notifications") return hasPermission(user, PERMISSIONS.settings.notificationsUpdate);
+  return false;
 }
 
 export function dashboardPathForUser(user: SessionUser | null): string {

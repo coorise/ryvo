@@ -1,148 +1,27 @@
 "use client";
 
-import {
-  Bell,
-  Car,
-  CreditCard,
-  FileText,
-  LayoutDashboard,
-  LogOut,
-  Map,
-  MessageSquare,
-  Moon,
-  Search,
-  Settings,
-  Shield,
-  Sun,
-  UserCheck,
-  UserCog,
-  Users,
-} from "lucide-react";
-import Link from "next/link";
+import { Bell, LogOut, Moon, Search, Sun } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { BrandLogo } from "@/components/ryvo/brand-logo";
+import { AdminSidebarNav } from "@/components/layout/admin-sidebar-nav";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
 import { ROUTES } from "@/configs/const";
-import { canViewStaffSection } from "@/guards/abac";
 import { useAdminDashboard } from "@/hooks/use-admin-dashboard";
 import { useAuth } from "@/hooks/use-auth";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useRbac } from "@/hooks/use-rbac";
-import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-
-function isNavActive(pathname: string, href: string) {
-  if (href === "/admin") return pathname === "/admin" || pathname === "/admin/";
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-type NavEntry = {
-  href: string;
-  labelKey: string;
-  icon: LucideIcon;
-  badge?: string | number;
-  badgeLive?: boolean;
-  /** Any of these permission prefixes grants visibility (e.g. "users:") */
-  permPrefixes?: readonly string[];
-  /** Exact permission required if no prefix match */
-  permissions?: readonly string[];
-};
-
-const NAV_SECTIONS: { titleKey: string; items: NavEntry[] }[] = [
-  {
-    titleKey: "nav.operations",
-    items: [
-      {
-        href: "/admin",
-        labelKey: "nav.dashboard",
-        icon: LayoutDashboard,
-        permPrefixes: ["rides:", "users:", "drivers:", "staff:", "roles:", "audit:", "settings:"],
-      },
-      {
-        href: "/admin/map",
-        labelKey: "nav.liveMap",
-        icon: Map,
-        badgeLive: true,
-        permPrefixes: ["rides:"],
-      },
-      {
-        href: "/admin/rides",
-        labelKey: "nav.rides",
-        icon: Car,
-        badge: "rides",
-        permPrefixes: ["rides:"],
-      },
-      {
-        href: ROUTES.admin.users.list,
-        labelKey: "nav.users",
-        icon: Users,
-        permPrefixes: ["users:"],
-      },
-      {
-        href: ROUTES.admin.staff.list,
-        labelKey: "nav.staff",
-        icon: UserCog,
-        permPrefixes: ["staff:", "roles:"],
-      },
-      {
-        href: ROUTES.admin.drivers.list,
-        labelKey: "nav.driverKyc",
-        icon: UserCheck,
-        badge: "drivers",
-        permPrefixes: ["drivers:"],
-      },
-      {
-        href: "/admin/tickets",
-        labelKey: "nav.support",
-        icon: MessageSquare,
-        badge: "tickets",
-        permPrefixes: ["support:"],
-      },
-      {
-        href: "/admin/settings",
-        labelKey: "common.settings",
-        icon: Settings,
-        permPrefixes: ["settings:"],
-      },
-    ],
-  },
-  {
-    titleKey: "nav.financeSecurity",
-    items: [
-      {
-        href: "/admin/payments",
-        labelKey: "nav.payments",
-        icon: CreditCard,
-        permPrefixes: ["payments:"],
-      },
-      {
-        href: "/admin/security",
-        labelKey: "nav.security",
-        icon: Shield,
-        permPrefixes: ["audit:"],
-      },
-      {
-        href: "/admin/audit",
-        labelKey: "nav.audit",
-        icon: FileText,
-        permPrefixes: ["audit:"],
-      },
-    ],
-  },
-];
 
 type AdminShellProps = {
   children: ReactNode;
 };
 
 export function AdminShell({ children }: AdminShellProps) {
-  const pathname = usePathname();
   const router = useRouter();
   const { user, signOut } = useAuth();
   const { hasPermission, hasPermPrefix } = useRbac();
@@ -150,24 +29,7 @@ export function AdminShell({ children }: AdminShellProps) {
   const { t } = useTranslation();
   const { data: dashboard } = useAdminDashboard();
   const dark = theme === "dark";
-
-  function badgeFor(item: NavEntry): string | undefined {
-    if (item.badgeLive) return "Live";
-    if (!item.badge || !dashboard?.badges) return undefined;
-    const n = dashboard.badges[item.badge as keyof typeof dashboard.badges];
-    return n > 0 ? String(n) : undefined;
-  }
-
   const { data: notifications } = useNotifications();
-
-  function canSeeItem(item: NavEntry) {
-    if (!user) return false;
-    if (item.href === "/admin/staff" && !canViewStaffSection(user)) return false;
-    if (user.roles.includes("super_admin")) return true;
-    if (item.permissions?.some((p) => hasPermission(p))) return true;
-    if (item.permPrefixes?.some((p) => hasPermPrefix(p))) return true;
-    return false;
-  }
 
   return (
     <div className="bg-muted/30 text-foreground flex h-svh overflow-hidden">
@@ -175,55 +37,7 @@ export function AdminShell({ children }: AdminShellProps) {
         <div className="border-border border-b px-5 py-5">
           <BrandLogo subtitle="Admin console" href={ROUTES.admin.home} />
         </div>
-        <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
-          {NAV_SECTIONS.map((section) => {
-            const items = section.items.filter(canSeeItem);
-            if (!items.length) return null;
-            return (
-              <div key={section.titleKey}>
-                <p className="text-muted-foreground mb-2 px-3 text-[10px] font-bold tracking-[0.15em] uppercase">
-                  {t(section.titleKey)}
-                </p>
-                <div className="space-y-0.5">
-                  {items.map((item) => {
-                    const active = isNavActive(pathname, item.href);
-                    const Icon = item.icon;
-                    const badge = badgeFor(item);
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                          "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
-                          active
-                            ? "bg-primary text-primary-foreground shadow-sm"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                        )}
-                      >
-                        <Icon className="size-4" strokeWidth={active ? 2.5 : 2} />
-                        <span className="flex-1">{t(item.labelKey)}</span>
-                        {badge && (
-                          <span
-                            className={cn(
-                              "rounded-md px-1.5 py-0.5 text-[9px] font-bold tracking-wider uppercase",
-                              badge === "Live"
-                                ? "bg-primary/20 text-primary"
-                                : active
-                                  ? "bg-primary-foreground/20 text-primary-foreground"
-                                  : "bg-primary text-primary-foreground",
-                            )}
-                          >
-                            {badge}
-                          </span>
-                        )}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </nav>
+        <AdminSidebarNav hasPermission={hasPermission} hasPermPrefix={hasPermPrefix} />
         <div className="border-border border-t p-3">
           <RyvoButton
             intent="danger"

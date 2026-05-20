@@ -52,6 +52,15 @@ export const ROUTES = {
     security: "/admin/security",
     audit: "/admin/audit",
     settings: "/admin/settings",
+    observability: "/admin/observability",
+    finance: {
+      referrals: "/admin/finance/referrals",
+      tariffs: "/admin/finance/tariffs",
+      checkouts: "/admin/finance/checkouts",
+      paychecks: "/admin/finance/paychecks",
+      speculative: "/admin/finance/speculative",
+    },
+    analytics: "/admin/analytics",
   },
   legal: { tos: "/legal/tos", privacy: "/legal/privacy" },
 } as const;
@@ -89,11 +98,32 @@ export const ADMIN_TABS = {
     roles: "roles",
     permissions: "permissions",
   },
+  speculative: {
+    revenues: "revenues",
+    opex: "opex",
+  },
+  referrals: {
+    bonus: "bonus",
+    referrals: "referrals",
+    settings: "settings",
+  },
+  referralsBonus: {
+    users: "users",
+    drivers: "drivers",
+  },
+  settings: {
+    profile: "profile",
+    general: "general",
+    payment: "payment",
+    mail: "mail",
+    notifications: "notifications",
+  },
 } as const;
 
 export const ADMIN_QUERY = {
   tab: "tab",
   role: "role",
+  sub: "sub",
 } as const;
 
 export const LIST_LAYOUT = {
@@ -188,6 +218,37 @@ export const PERMISSIONS = {
     create: "roles:create",
     update: "roles:update",
     delete: "roles:delete",
+  },
+  settings: {
+    read: "settings:read",
+    update: "settings:update",
+    paymentRead: "settings:payment:read",
+    paymentUpdate: "settings:payment:update",
+    mailRead: "settings:mail:read",
+    mailUpdate: "settings:mail:update",
+    notificationsRead: "settings:notifications:read",
+    notificationsUpdate: "settings:notifications:update",
+    /** Legacy alias — still accepted by API for mail tab */
+    emailTemplates: "email:templates",
+  },
+  observability: {
+    read: "observability:read",
+  },
+  finances: {
+    speculativeRead: "finances:speculative:read",
+    speculativeUpdate: "finances:speculative:update",
+  },
+  analytics: {
+    read: "analytics:read",
+  },
+  finance: {
+    referralsRead: "finances:referrals:read",
+    referralsUpdate: "finances:referrals:update",
+    tariffsRead: "finances:tariffs:read",
+    tariffsUpdate: "finances:tariffs:update",
+    checkoutsRead: "finances:checkouts:read",
+    paychecksRead: "finances:paychecks:read",
+    paychecksUpdate: "finances:paychecks:update",
   },
 } as const;
 
@@ -289,5 +350,6 @@ export const DASHBOARD_NAV = {
     { href: ROUTES.admin.security, label: "Security logs" },
     { href: ROUTES.admin.audit, label: "Audit logs" },
     { href: ROUTES.admin.settings, label: "Settings" },
+    { href: ROUTES.admin.observability, label: "Observability" },
   ],
 } as const;

@@ -3,7 +3,7 @@
 **Date:** 2026-05-19  
 **Phase:** 4 (web portal) — continuation  
 **Branch:** `dev`  
-**Status:** COMPLETE
+**Status:** COMPLETE — see `commit-8-admin-settings-nav-finance.md` for settings, nav, finance, analytics
 
 ## Summary
 
