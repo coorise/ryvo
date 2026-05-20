@@ -31,15 +31,43 @@ export async function listLoyalty() {
 
 export async function listTariffs() {
   const db = getAdminClient();
-  const { data } = await db.from("driver_tariff_packages").select("*").order("search_boost", { ascending: false });
+  const { data } = await db
+    .from("driver_tariff_packages")
+    .select("*")
+    .order("search_boost", { ascending: false });
   return data ?? [];
 }
 
 export async function upsertTariff(row: Record<string, unknown>) {
   const db = getAdminClient();
-  const { data, error } = await db.from("driver_tariff_packages").upsert(row).select().single();
+  const payload = { ...row, updated_at: new Date().toISOString() };
+  const { data, error } = await db.from("driver_tariff_packages").upsert(payload).select().single();
   if (error) throw new Error(error.message);
   return data;
+}
+
+export async function createTariff(row: Record<string, unknown>) {
+  const db = getAdminClient();
+  const { id: _id, ...rest } = row;
+  const { data, error } = await db
+    .from("driver_tariff_packages")
+    .insert({ ...rest, updated_at: new Date().toISOString() })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function deleteTariff(id: string) {
+  const db = getAdminClient();
+  const { data: existing } = await db
+    .from("driver_tariff_packages")
+    .select("is_system")
+    .eq("id", id)
+    .maybeSingle();
+  if (existing?.is_system) throw new Error("Cannot delete system package");
+  const { error } = await db.from("driver_tariff_packages").delete().eq("id", id);
+  if (error) throw new Error(error.message);
 }
 
 export async function listPaychecks(status?: string) {

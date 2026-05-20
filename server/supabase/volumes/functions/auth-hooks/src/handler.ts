@@ -57,6 +57,8 @@ import {
   listLoyalty,
   listTariffs,
   upsertTariff,
+  createTariff,
+  deleteTariff,
   listPaychecks,
   createPaycheck,
   updatePaycheckStatus,
@@ -125,6 +127,43 @@ const notificationEventSchema = z.object({
     driver: z.boolean(),
     staff: z.boolean(),
   }),
+});
+
+const tariffFeaturesSchema = z.object({
+  search_priority: z.boolean().optional(),
+  promoted_listing: z.boolean().optional(),
+  media_gallery: z.boolean().optional(),
+  max_photos: z.number().min(0).max(20).optional(),
+  max_videos: z.number().min(0).max(5).optional(),
+  custom_badge: z.boolean().optional(),
+  badge_label: z.string().max(32).optional(),
+  priority_support: z.boolean().optional(),
+});
+
+const tariffPackageSchema = z.object({
+  code: z.string().min(2).max(48).regex(/^[a-z0-9_]+$/),
+  name: z.string().min(1).max(80),
+  package_type: z.enum([
+    "essential",
+    "pro",
+    "per_drive",
+    "per_quota",
+    "per_daily",
+    "per_weekly",
+    "per_monthly",
+    "custom",
+  ]),
+  description: z.string().max(500).optional().nullable(),
+  commission_percent: z.number().min(0).max(50),
+  subscription_monthly: z.number().min(0).nullable().optional(),
+  payout_cadence: z.string().min(1).max(64),
+  payout_delay_minutes: z.number().min(0).max(525600).optional(),
+  quota_trips: z.number().min(0).nullable().optional(),
+  discount_percent: z.number().min(0).max(100).optional(),
+  search_boost: z.number().min(0).max(100).optional(),
+  is_optional_subscription: z.boolean().optional(),
+  active: z.boolean().optional(),
+  features: tariffFeaturesSchema.optional(),
 });
 
 function canManageMail(auth: AuthLike): boolean {
@@ -741,15 +780,38 @@ export const handle = createServiceRouter("auth-hooks", [
     handler: async () => ok({ packages: await listTariffs() }),
   },
   {
+    method: "POST",
+    path: "/v1/admin/finance/tariffs",
+    auth: true,
+    permissions: ["finances:tariffs:update"],
+    handler: async (req, ctx) => {
+      const body = tariffPackageSchema.parse(await req.json());
+      const row = await createTariff(body);
+      await emitAudit(ctx.auth!.userId, "tariff.create", "driver_tariff_packages", row.id, { code: body.code });
+      return ok({ package: row });
+    },
+  },
+  {
     method: "PUT",
     path: "/v1/admin/finance/tariffs/:id",
     auth: true,
     permissions: ["finances:tariffs:update"],
     handler: async (req, ctx, params) => {
-      const body = await req.json();
+      const body = tariffPackageSchema.parse(await req.json());
       const row = await upsertTariff({ ...body, id: params.id });
       await emitAudit(ctx.auth!.userId, "tariff.update", "driver_tariff_packages", params.id, {});
       return ok({ package: row });
+    },
+  },
+  {
+    method: "DELETE",
+    path: "/v1/admin/finance/tariffs/:id",
+    auth: true,
+    permissions: ["finances:tariffs:update"],
+    handler: async (_req, ctx, params) => {
+      await deleteTariff(params.id);
+      await emitAudit(ctx.auth!.userId, "tariff.delete", "driver_tariff_packages", params.id, {});
+      return ok({ deleted: true });
     },
   },
   {

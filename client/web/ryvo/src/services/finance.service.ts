@@ -1,4 +1,54 @@
 import { BaseService } from "@/lib/base-service";
+import {
+  normalizeFeatures,
+  type TariffPackage,
+  type TariffPackageInput,
+} from "@/lib/tariff-types";
+
+export type { TariffPackage, TariffPackageInput, TariffFeatures } from "@/lib/tariff-types";
+
+function mapTariff(row: Record<string, unknown>): TariffPackage {
+  return {
+    id: String(row.id),
+    code: String(row.code),
+    name: String(row.name),
+    package_type: String(row.package_type),
+    description: row.description != null ? String(row.description) : null,
+    commission_percent: Number(row.commission_percent),
+    subscription_monthly:
+      row.subscription_monthly != null ? Number(row.subscription_monthly) : null,
+    payout_cadence: String(row.payout_cadence),
+    payout_delay_minutes: Number(row.payout_delay_minutes ?? 0),
+    quota_trips: row.quota_trips != null ? Number(row.quota_trips) : null,
+    discount_percent: Number(row.discount_percent ?? 0),
+    search_boost: Number(row.search_boost ?? 0),
+    is_optional_subscription: Boolean(row.is_optional_subscription),
+    is_system: Boolean(row.is_system),
+    active: Boolean(row.active),
+    features: normalizeFeatures(row.features),
+    created_at: row.created_at as string | undefined,
+    updated_at: row.updated_at as string | undefined,
+  };
+}
+
+function bodyToApi(body: TariffPackageInput) {
+  return {
+    code: body.code,
+    name: body.name,
+    package_type: body.package_type,
+    description: body.description || null,
+    commission_percent: body.commission_percent,
+    subscription_monthly: body.is_optional_subscription ? body.subscription_monthly : null,
+    payout_cadence: body.payout_cadence,
+    payout_delay_minutes: body.payout_delay_minutes,
+    quota_trips: body.package_type === "per_quota" ? body.quota_trips : null,
+    discount_percent: body.discount_percent,
+    search_boost: body.search_boost,
+    is_optional_subscription: body.is_optional_subscription,
+    active: body.active,
+    features: body.features,
+  };
+}
 
 export class FinanceService extends BaseService {
   constructor() {
@@ -26,12 +76,32 @@ export class FinanceService extends BaseService {
     }>("/v1/admin/finance/referrals", token);
   }
 
-  getTariffs(token: string | null) {
-    return this.get<{ packages: TariffPackage[] }>("/v1/admin/finance/tariffs", token);
+  async getTariffs(token: string | null) {
+    const res = await this.get<{ packages: Record<string, unknown>[] }>(
+      "/v1/admin/finance/tariffs",
+      token,
+    );
+    return { packages: (res.packages ?? []).map(mapTariff) };
   }
 
-  updateTariff(token: string | null, id: string, body: Partial<TariffPackage>) {
-    return this.put(`/v1/admin/finance/tariffs/${id}`, body, token);
+  createTariff(token: string | null, body: TariffPackageInput) {
+    return this.post<{ package: Record<string, unknown> }>(
+      "/v1/admin/finance/tariffs",
+      bodyToApi(body),
+      token,
+    ).then((r) => ({ package: mapTariff(r.package) }));
+  }
+
+  updateTariff(token: string | null, id: string, body: TariffPackageInput) {
+    return this.put<{ package: Record<string, unknown> }>(
+      `/v1/admin/finance/tariffs/${id}`,
+      bodyToApi(body),
+      token,
+    ).then((r) => ({ package: mapTariff(r.package) }));
+  }
+
+  deleteTariff(token: string | null, id: string) {
+    return this.delete<{ deleted: boolean }>(`/v1/admin/finance/tariffs/${id}`, token);
   }
 
   getPaychecks(token: string | null, status?: string) {
@@ -77,19 +147,6 @@ export type LoyaltyRow = {
   points: number;
   cash_balance: number;
   updated_at: string;
-};
-
-export type TariffPackage = {
-  id: string;
-  code: string;
-  name: string;
-  package_type: string;
-  commission_percent: number;
-  subscription_monthly: number | null;
-  payout_cadence: string;
-  search_boost: number;
-  is_optional_subscription: boolean;
-  active: boolean;
 };
 
 export type PaycheckStatus = "pending" | "paid" | "held" | "cancelled";
