@@ -5,11 +5,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
-import { SimpleTable } from "@/components/admin/finance/simple-table";
+import { ReferralsBonusPanel, ReferralsProgramsPanel } from "@/components/admin/finance/referrals-panels";
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
 import { ADMIN_QUERY, ADMIN_TABS } from "@/configs/const";
 import { useAuth } from "@/hooks/use-auth";
-import { financeService, type ReferralEntry } from "@/services/finance.service";
+import { financeService } from "@/services/finance.service";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,6 +20,13 @@ type ReferralsTabsProps = {
   onTabChange: (v: string) => void;
 };
 
+const INVITE_RULES = [
+  ["clientInviteClient", "financeReferrals.rules.clientInviteClient"],
+  ["clientInviteDriver", "financeReferrals.rules.clientInviteDriver"],
+  ["driverInviteClient", "financeReferrals.rules.driverInviteClient"],
+  ["driverInviteDriver", "financeReferrals.rules.driverInviteDriver"],
+] as const;
+
 export function ReferralsTabs({ tab, onTabChange }: ReferralsTabsProps) {
   const { t } = useTranslation();
   const { accessToken } = useAuth();
@@ -27,8 +34,18 @@ export function ReferralsTabs({ tab, onTabChange }: ReferralsTabsProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
   const bonusSub =
-    searchParams.get(ADMIN_QUERY.sub) ?? ADMIN_TABS.referralsBonus.users;
+    searchParams.get(ADMIN_QUERY.sub) === ADMIN_TABS.referralsBonus.drivers
+      ? ADMIN_TABS.referralsBonus.drivers
+      : ADMIN_TABS.referralsBonus.clients;
+
+  const programsSub = (() => {
+    const raw = searchParams.get(ADMIN_QUERY.sub);
+    const allowed = Object.values(ADMIN_TABS.referralsPrograms);
+    if (raw && allowed.includes(raw as (typeof allowed)[number])) return raw;
+    return ADMIN_TABS.referralsPrograms.loyalty;
+  })();
 
   const { data, isLoading } = useQuery({
     queryKey: ["finance", "referrals"],
@@ -65,13 +82,10 @@ export function ReferralsTabs({ tab, onTabChange }: ReferralsTabsProps) {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const clientReferrals = (data?.referrals ?? []).filter((r) => r.role === "client");
-  const driverReferrals = (data?.referrals ?? []).filter((r) => r.role === "driver");
-
-  const setBonusSub = useCallback(
-    (sub: string) => {
+  const setSub = useCallback(
+    (sub: string, mainTab: string) => {
       const params = new URLSearchParams(searchParams.toString());
-      params.set(ADMIN_QUERY.tab, ADMIN_TABS.referrals.bonus);
+      params.set(ADMIN_QUERY.tab, mainTab);
       params.set(ADMIN_QUERY.sub, sub);
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     },
@@ -94,92 +108,42 @@ export function ReferralsTabs({ tab, onTabChange }: ReferralsTabsProps) {
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value={ADMIN_TABS.referrals.bonus} className="mt-6 space-y-4">
-        <Tabs value={bonusSub} onValueChange={setBonusSub}>
-          <TabsList>
-            <TabsTrigger value={ADMIN_TABS.referralsBonus.users}>
-              {t("financeReferrals.bonus.users")}
-            </TabsTrigger>
-            <TabsTrigger value={ADMIN_TABS.referralsBonus.drivers}>
-              {t("financeReferrals.bonus.drivers")}
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value={ADMIN_TABS.referralsBonus.users} className="mt-4">
-            <SimpleTable
-              empty={t("common.noData")}
-              rows={data?.loyalty ?? []}
-              columns={[
-                { key: "u", header: t("financeReferrals.col.user"), cell: (r) => r.user_id.slice(0, 8) },
-                { key: "p", header: t("financeReferrals.col.points"), cell: (r) => r.points },
-                { key: "c", header: t("financeReferrals.col.cash"), cell: (r) => `$${r.cash_balance}` },
-              ]}
-            />
-          </TabsContent>
-          <TabsContent value={ADMIN_TABS.referralsBonus.drivers} className="mt-4">
-            <SimpleTable
-              empty={t("common.noData")}
-              rows={driverReferrals.filter((r) => r.status === "credited")}
-              columns={referralCols(t)}
-            />
-          </TabsContent>
-        </Tabs>
+      <TabsContent value={ADMIN_TABS.referrals.bonus} className="mt-6">
+        <ReferralsBonusPanel
+          audience={bonusSub}
+          onAudienceChange={(sub) => setSub(sub, ADMIN_TABS.referrals.bonus)}
+          data={data}
+        />
       </TabsContent>
 
-      <TabsContent value={ADMIN_TABS.referrals.referrals} className="mt-6 space-y-8">
-        <section>
-          <h3 className="mb-3 font-semibold">{t("financeReferrals.clientsTable")}</h3>
-          <SimpleTable empty={t("common.noData")} rows={clientReferrals} columns={referralCols(t)} />
-        </section>
-        <section>
-          <h3 className="mb-3 font-semibold">{t("financeReferrals.driversTable")}</h3>
-          <SimpleTable empty={t("common.noData")} rows={driverReferrals} columns={referralCols(t)} />
-        </section>
-        <section>
-          <h3 className="mb-3 font-semibold">{t("financeReferrals.loyaltyTable")}</h3>
-          <SimpleTable
-            empty={t("common.noData")}
-            rows={data?.loyalty ?? []}
-            columns={[
-              { key: "u", header: t("financeReferrals.col.user"), cell: (r) => r.user_id.slice(0, 8) },
-              { key: "p", header: t("financeReferrals.col.points"), cell: (r) => r.points },
-              {
-                key: "c",
-                header: t("financeReferrals.col.redeemable"),
-                cell: (r) => `$${r.cash_balance}`,
-              },
-            ]}
-          />
-        </section>
+      <TabsContent value={ADMIN_TABS.referrals.referrals} className="mt-6">
+        <ReferralsProgramsPanel
+          audience={programsSub}
+          onAudienceChange={(sub) => setSub(sub, ADMIN_TABS.referrals.referrals)}
+          data={data}
+        />
       </TabsContent>
 
-      <TabsContent value={ADMIN_TABS.referrals.settings} className="mt-6">
+      <TabsContent value={ADMIN_TABS.referrals.settings} className="mt-6 space-y-6">
+        <p className="text-muted-foreground text-sm">{t("financeReferrals.settingsIntro")}</p>
         <div className="grid gap-6 lg:grid-cols-2">
           <SettingsBlock
             title={t("financeReferrals.clientRules")}
             hint={t("financeReferrals.clientRulesHint")}
             cfg={clientCfg}
             setCfg={setClientCfg}
-            fields={[
-              ["maxReferrals", t("financeReferrals.maxReferrals")],
-              ["referrerBonusCad", t("financeReferrals.referrerBonus")],
-              ["refereeBonusCad", t("financeReferrals.refereeBonus")],
-            ]}
+            t={t}
           />
           <SettingsBlock
             title={t("financeReferrals.driverRules")}
             hint={t("financeReferrals.driverRulesHint")}
             cfg={driverCfg}
             setCfg={setDriverCfg}
-            fields={[
-              ["maxReferrals", t("financeReferrals.maxReferrals")],
-              ["referrerBonusCad", t("financeReferrals.referrerBonus")],
-              ["commissionReductionPercent", t("financeReferrals.commissionCut")],
-            ]}
+            t={t}
           />
         </div>
         <RyvoButton
           intent="cta"
-          className="mt-6"
           disabled={saveSettings.isPending}
           onClick={() => saveSettings.mutate()}
         >
@@ -190,57 +154,70 @@ export function ReferralsTabs({ tab, onTabChange }: ReferralsTabsProps) {
   );
 }
 
-function referralCols(t: (k: string) => string) {
-  return [
-    {
-      key: "ref",
-      header: t("financeReferrals.col.referrer"),
-      cell: (r: ReferralEntry) => r.referrer_id.slice(0, 8),
-    },
-    {
-      key: "new",
-      header: t("financeReferrals.col.referee"),
-      cell: (r: ReferralEntry) => r.referee_id.slice(0, 8),
-    },
-    {
-      key: "ch",
-      header: t("financeReferrals.col.channel"),
-      cell: (r: ReferralEntry) => (r.channel === "coupon" ? r.coupon_code ?? "coupon" : "link"),
-    },
-    { key: "b", header: t("financeReferrals.col.bonus"), cell: (r: ReferralEntry) => `$${r.bonus_earned}` },
-    { key: "s", header: t("financeReferrals.col.status"), cell: (r: ReferralEntry) => r.status },
-  ];
-}
-
 function SettingsBlock({
   title,
   hint,
   cfg,
   setCfg,
-  fields,
+  t,
 }: {
   title: string;
   hint: string;
   cfg: Record<string, unknown>;
   setCfg: (c: Record<string, unknown>) => void;
-  fields: [string, string][];
+  t: (k: string) => string;
 }) {
+  function patchRule(key: string, field: "condition" | "targetBonus", value: number) {
+    const rule = { ...((cfg[key] as Record<string, number>) ?? {}) };
+    rule[field] = value;
+    setCfg({ ...cfg, [key]: rule });
+  }
+
+  function ruleVal(key: string, field: "condition" | "targetBonus") {
+    const rule = cfg[key] as { condition?: number; targetBonus?: number } | undefined;
+    return Number(rule?.[field] ?? 0);
+  }
+
   return (
-    <div className="border-border bg-card space-y-3 rounded-2xl border p-5">
+    <div className="border-border bg-card space-y-4 rounded-2xl border p-5">
       <div>
         <h3 className="font-semibold">{title}</h3>
         <p className="text-muted-foreground text-xs">{hint}</p>
       </div>
-      {fields.map(([key, label]) => (
-        <div key={key} className="space-y-1">
-          <Label>{label}</Label>
-          <Input
-            type="number"
-            value={String(cfg[key] ?? "")}
-            onChange={(e) => setCfg({ ...cfg, [key]: Number(e.target.value) })}
-          />
-        </div>
-      ))}
+      <div className="space-y-1">
+        <Label>{t("financeReferrals.pointsPerDollar")}</Label>
+        <Input
+          type="number"
+          value={String(cfg.pointsPerDollar ?? 1000)}
+          onChange={(e) => setCfg({ ...cfg, pointsPerDollar: Number(e.target.value) })}
+        />
+        <p className="text-muted-foreground text-xs">{t("financeReferrals.pointsPerDollarHint")}</p>
+      </div>
+      <div className="space-y-3">
+        <p className="text-sm font-semibold">{t("financeReferrals.inviteRulesTitle")}</p>
+        {INVITE_RULES.map(([key, labelKey]) => (
+          <div key={key} className="border-border grid grid-cols-2 gap-2 rounded-xl border p-3">
+            <p className="text-muted-foreground col-span-2 text-xs font-medium">{t(labelKey)}</p>
+            <div className="space-y-1">
+              <Label className="text-xs">{t("financeReferrals.col.condition")}</Label>
+              <Input
+                type="number"
+                value={ruleVal(key, "condition")}
+                onChange={(e) => patchRule(key, "condition", Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">{t("financeReferrals.col.targetBonus")}</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={ruleVal(key, "targetBonus")}
+                onChange={(e) => patchRule(key, "targetBonus", Number(e.target.value))}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

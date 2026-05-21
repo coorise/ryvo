@@ -73,10 +73,82 @@ export class FinanceService extends BaseService {
   }
 
   getReferrals(token: string | null) {
-    return this.get<{
-      referrals: ReferralEntry[];
-      loyalty: LoyaltyRow[];
-    }>("/v1/admin/finance/referrals", token);
+    return this.get<ReferralsBundle>("/v1/admin/finance/referrals", token);
+  }
+
+  createBonus(
+    token: string | null,
+    body: { email: string; account_type: "client" | "driver"; channel?: string; balance: number },
+  ) {
+    return this.post<{ bonus: BonusAccountRow }>("/v1/admin/finance/referrals/bonuses", body, token);
+  }
+
+  updateBonus(
+    token: string | null,
+    id: string,
+    body: { channel?: string; balance?: number },
+  ) {
+    return this.patch<{ bonus: BonusAccountRow }>(
+      `/v1/admin/finance/referrals/bonuses/${id}`,
+      body,
+      token,
+    );
+  }
+
+  deleteBonus(token: string | null, id: string) {
+    return this.delete<{ deleted: boolean }>(`/v1/admin/finance/referrals/bonuses/${id}`, token);
+  }
+
+  createLoyalty(token: string | null, body: { email: string; points: number }) {
+    return this.post<{ loyalty: LoyaltyRowEnriched }>(
+      "/v1/admin/finance/referrals/loyalty",
+      body,
+      token,
+    );
+  }
+
+  createCampaign(
+    token: string | null,
+    body: {
+      referrer_email: string;
+      referrer_role: "client" | "driver";
+      invitation_type: "client" | "driver";
+      channel: "link" | "coupon" | "manual";
+      condition_required: number;
+      target_bonus: number;
+      goal?: "pending" | "achieved";
+      joined_emails?: string[];
+    },
+  ) {
+    return this.post<{ campaign: ReferralCampaignRow }>(
+      "/v1/admin/finance/referrals/campaigns",
+      body,
+      token,
+    );
+  }
+
+  updateCampaign(
+    token: string | null,
+    id: string,
+    body: {
+      channel?: string;
+      condition_required?: number;
+      target_bonus?: number;
+      goal?: "pending" | "achieved";
+    },
+  ) {
+    return this.patch<{ campaign: ReferralCampaignRow }>(
+      `/v1/admin/finance/referrals/campaigns/${id}`,
+      body,
+      token,
+    );
+  }
+
+  deleteCampaign(token: string | null, id: string) {
+    return this.delete<{ deleted: boolean }>(
+      `/v1/admin/finance/referrals/campaigns/${id}`,
+      token,
+    );
   }
 
   async getTariffs(token: string | null) {
@@ -133,6 +205,49 @@ export class FinanceService extends BaseService {
   }
 }
 
+export type BonusAccountRow = {
+  id: string;
+  user_id: string;
+  email: string;
+  account_type: "client" | "driver";
+  channel: string;
+  balance: number;
+  updated_at: string;
+};
+
+export type LoyaltyRowEnriched = {
+  user_id: string;
+  email: string;
+  points: number;
+  cash_balance: number;
+  updated_at: string;
+};
+
+export type ReferralCampaignRow = {
+  id: string;
+  referrer_id: string;
+  referrer_email: string;
+  referrer_role: "client" | "driver";
+  invitation_type: "client" | "driver";
+  channel: string;
+  coupon_code: string | null;
+  condition_required: number;
+  target_bonus: number;
+  goal: "pending" | "achieved";
+  updated_at: string;
+  joined_emails: string[];
+  joined_count: number;
+};
+
+export type ReferralsBundle = {
+  clientBonuses: BonusAccountRow[];
+  driverBonuses: BonusAccountRow[];
+  loyalty: LoyaltyRowEnriched[];
+  clientCampaigns: ReferralCampaignRow[];
+  driverCampaigns: ReferralCampaignRow[];
+};
+
+/** @deprecated legacy row shape */
 export type ReferralEntry = {
   id: string;
   referrer_id: string;
@@ -145,12 +260,7 @@ export type ReferralEntry = {
   created_at: string;
 };
 
-export type LoyaltyRow = {
-  user_id: string;
-  points: number;
-  cash_balance: number;
-  updated_at: string;
-};
+export type LoyaltyRow = LoyaltyRowEnriched;
 
 export type PaycheckStatus = "pending" | "paid" | "held" | "cancelled";
 

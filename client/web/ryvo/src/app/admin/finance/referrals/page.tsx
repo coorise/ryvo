@@ -10,7 +10,7 @@ import { ADMIN_QUERY, ADMIN_TABS } from "@/configs/const";
 function parseTab(raw: string | null) {
   const v = Object.values(ADMIN_TABS.referrals);
   if (raw && v.includes(raw as (typeof v)[number])) return raw;
-  return ADMIN_TABS.referrals.referrals;
+  return ADMIN_TABS.referrals.bonus;
 }
 
 function ReferralsPageContent() {
@@ -24,7 +24,13 @@ function ReferralsPageContent() {
     (value: string) => {
       const params = new URLSearchParams(searchParams.toString());
       params.set(ADMIN_QUERY.tab, value);
-      if (value !== ADMIN_TABS.referrals.bonus) params.delete(ADMIN_QUERY.sub);
+      if (value === ADMIN_TABS.referrals.bonus) {
+        params.set(ADMIN_QUERY.sub, ADMIN_TABS.referralsBonus.clients);
+      } else if (value === ADMIN_TABS.referrals.referrals) {
+        params.set(ADMIN_QUERY.sub, ADMIN_TABS.referralsPrograms.loyalty);
+      } else {
+        params.delete(ADMIN_QUERY.sub);
+      }
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     },
     [pathname, router, searchParams],

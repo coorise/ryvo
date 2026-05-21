@@ -108,8 +108,13 @@ export const ADMIN_TABS = {
     settings: "settings",
   },
   referralsBonus: {
-    users: "users",
+    clients: "clients",
     drivers: "drivers",
+  },
+  referralsPrograms: {
+    loyalty: "loyalty",
+    clientReferrals: "client-referrals",
+    driverReferrals: "driver-referrals",
   },
   settings: {
     profile: "profile",
