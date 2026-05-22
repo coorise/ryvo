@@ -6,12 +6,23 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { ReferralsBonusPanel, ReferralsProgramsPanel } from "@/components/admin/finance/referrals-panels";
+import {
+  ClientProgramSettingsPanel,
+  DriverProgramSettingsPanel,
+} from "@/components/admin/finance/referral-settings-panel";
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
-import { ADMIN_QUERY, ADMIN_TABS } from "@/configs/const";
+import { ADMIN_QUERY, ADMIN_TABS, PERMISSIONS } from "@/configs/const";
 import { useAuth } from "@/hooks/use-auth";
+import { useRbac } from "@/hooks/use-rbac";
+import {
+  DEFAULT_CLIENT_PROGRAM,
+  DEFAULT_DRIVER_PROGRAM,
+  normalizeClientProgram,
+  normalizeDriverProgram,
+  type ClientProgramConfig,
+  type DriverProgramConfig,
+} from "@/lib/referral-settings-config";
 import { financeService } from "@/services/finance.service";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
@@ -20,16 +31,11 @@ type ReferralsTabsProps = {
   onTabChange: (v: string) => void;
 };
 
-const INVITE_RULES = [
-  ["clientInviteClient", "financeReferrals.rules.clientInviteClient"],
-  ["clientInviteDriver", "financeReferrals.rules.clientInviteDriver"],
-  ["driverInviteClient", "financeReferrals.rules.driverInviteClient"],
-  ["driverInviteDriver", "financeReferrals.rules.driverInviteDriver"],
-] as const;
-
 export function ReferralsTabs({ tab, onTabChange }: ReferralsTabsProps) {
   const { t } = useTranslation();
   const { accessToken } = useAuth();
+  const { hasPermission } = useRbac();
+  const canEdit = hasPermission(PERMISSIONS.finance.referralsUpdate);
   const queryClient = useQueryClient();
   const router = useRouter();
   const pathname = usePathname();
@@ -59,21 +65,21 @@ export function ReferralsTabs({ tab, onTabChange }: ReferralsTabsProps) {
     enabled: Boolean(accessToken),
   });
 
-  const [clientCfg, setClientCfg] = useState<Record<string, unknown>>({});
-  const [driverCfg, setDriverCfg] = useState<Record<string, unknown>>({});
+  const [clientProgram, setClientProgram] = useState<ClientProgramConfig>(DEFAULT_CLIENT_PROGRAM);
+  const [driverProgram, setDriverProgram] = useState<DriverProgramConfig>(DEFAULT_DRIVER_PROGRAM);
 
   useEffect(() => {
     if (settingsData) {
-      setClientCfg(settingsData.client_config ?? {});
-      setDriverCfg(settingsData.driver_config ?? {});
+      setClientProgram(normalizeClientProgram(settingsData.client_config ?? {}));
+      setDriverProgram(normalizeDriverProgram(settingsData.driver_config ?? {}));
     }
   }, [settingsData]);
 
   const saveSettings = useMutation({
     mutationFn: () =>
       financeService.updateReferralSettings(accessToken, {
-        client_config: clientCfg,
-        driver_config: driverCfg,
+        client_config: clientProgram as unknown as Record<string, unknown>,
+        driver_config: driverProgram as unknown as Record<string, unknown>,
       }),
     onSuccess: () => {
       toast.success(t("financeReferrals.settingsSaved"));
@@ -125,99 +131,31 @@ export function ReferralsTabs({ tab, onTabChange }: ReferralsTabsProps) {
       </TabsContent>
 
       <TabsContent value={ADMIN_TABS.referrals.settings} className="mt-6 space-y-6">
-        <p className="text-muted-foreground text-sm">{t("financeReferrals.settingsIntro")}</p>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <SettingsBlock
-            title={t("financeReferrals.clientRules")}
-            hint={t("financeReferrals.clientRulesHint")}
-            cfg={clientCfg}
-            setCfg={setClientCfg}
-            t={t}
+        <p className="text-muted-foreground max-w-3xl text-sm">
+          {t("financeReferrals.settingsIntro")}
+        </p>
+        <div className="grid gap-6 xl:grid-cols-2">
+          <ClientProgramSettingsPanel
+            config={clientProgram}
+            onChange={setClientProgram}
+            disabled={!canEdit}
           />
-          <SettingsBlock
-            title={t("financeReferrals.driverRules")}
-            hint={t("financeReferrals.driverRulesHint")}
-            cfg={driverCfg}
-            setCfg={setDriverCfg}
-            t={t}
+          <DriverProgramSettingsPanel
+            config={driverProgram}
+            onChange={setDriverProgram}
+            disabled={!canEdit}
           />
         </div>
-        <RyvoButton
-          intent="cta"
-          disabled={saveSettings.isPending}
-          onClick={() => saveSettings.mutate()}
-        >
-          {t("common.save")}
-        </RyvoButton>
+        {canEdit && (
+          <RyvoButton
+            intent="cta"
+            disabled={saveSettings.isPending}
+            onClick={() => saveSettings.mutate()}
+          >
+            {t("common.save")}
+          </RyvoButton>
+        )}
       </TabsContent>
     </Tabs>
-  );
-}
-
-function SettingsBlock({
-  title,
-  hint,
-  cfg,
-  setCfg,
-  t,
-}: {
-  title: string;
-  hint: string;
-  cfg: Record<string, unknown>;
-  setCfg: (c: Record<string, unknown>) => void;
-  t: (k: string) => string;
-}) {
-  function patchRule(key: string, field: "condition" | "targetBonus", value: number) {
-    const rule = { ...((cfg[key] as Record<string, number>) ?? {}) };
-    rule[field] = value;
-    setCfg({ ...cfg, [key]: rule });
-  }
-
-  function ruleVal(key: string, field: "condition" | "targetBonus") {
-    const rule = cfg[key] as { condition?: number; targetBonus?: number } | undefined;
-    return Number(rule?.[field] ?? 0);
-  }
-
-  return (
-    <div className="border-border bg-card space-y-4 rounded-2xl border p-5">
-      <div>
-        <h3 className="font-semibold">{title}</h3>
-        <p className="text-muted-foreground text-xs">{hint}</p>
-      </div>
-      <div className="space-y-1">
-        <Label>{t("financeReferrals.pointsPerDollar")}</Label>
-        <Input
-          type="number"
-          value={String(cfg.pointsPerDollar ?? 1000)}
-          onChange={(e) => setCfg({ ...cfg, pointsPerDollar: Number(e.target.value) })}
-        />
-        <p className="text-muted-foreground text-xs">{t("financeReferrals.pointsPerDollarHint")}</p>
-      </div>
-      <div className="space-y-3">
-        <p className="text-sm font-semibold">{t("financeReferrals.inviteRulesTitle")}</p>
-        {INVITE_RULES.map(([key, labelKey]) => (
-          <div key={key} className="border-border grid grid-cols-2 gap-2 rounded-xl border p-3">
-            <p className="text-muted-foreground col-span-2 text-xs font-medium">{t(labelKey)}</p>
-            <div className="space-y-1">
-              <Label className="text-xs">{t("financeReferrals.col.condition")}</Label>
-              <Input
-                type="number"
-                value={ruleVal(key, "condition")}
-                onChange={(e) => patchRule(key, "condition", Number(e.target.value))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">{t("financeReferrals.col.targetBonus")}</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={ruleVal(key, "targetBonus")}
-                onChange={(e) => patchRule(key, "targetBonus", Number(e.target.value))}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }

@@ -34,24 +34,34 @@ export async function resolveUserRole(userId: string): Promise<"client" | "drive
   return "client";
 }
 
-function inviteRuleKey(
-  referrerRole: "client" | "driver",
+function pickInviteRule(
+  config: Record<string, unknown>,
   invitationType: "client" | "driver",
-): string {
+): Record<string, unknown> {
+  const refs = config.referrals as Record<string, unknown> | undefined;
+  if (refs) {
+    const key = invitationType === "client" ? "invite_client" : "invite_driver";
+    if (refs[key]) return refs[key] as Record<string, unknown>;
+  }
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-  return `${referrerRole}Invite${cap(invitationType)}`;
+  const legacyKey = `clientInvite${cap(invitationType)}`;
+  const legacy = config[legacyKey] as Record<string, unknown> | undefined;
+  return legacy ?? {};
 }
 
 export function ruleFromSettings(
   config: Record<string, unknown>,
-  referrerRole: "client" | "driver",
+  _referrerRole: "client" | "driver",
   invitationType: "client" | "driver",
 ) {
-  const key = inviteRuleKey(referrerRole, invitationType);
-  const rule = (config[key] as { condition?: number; targetBonus?: number }) ?? {};
+  const rule = pickInviteRule(config, invitationType);
   return {
-    condition: Number(rule.condition ?? config.maxReferrals ?? 1),
-    targetBonus: Number(rule.targetBonus ?? config.referrerBonusCad ?? 0),
+    condition: Number(rule.invites_required ?? rule.condition ?? 1),
+    targetBonus: Number(rule.referrer_bonus_cad ?? rule.targetBonus ?? 0),
+    joinedUserBonus: Number(rule.joined_user_bonus_cad ?? rule.refereeBonusCad ?? 0),
+    firstPurchaseBonus: Number(rule.referrer_bonus_first_purchase_cad ?? 0),
+    driverEarnedBonus: Number(rule.referrer_bonus_driver_earned_cad ?? 0),
+    driverEarnThreshold: Number(rule.joined_driver_earn_threshold_cad ?? 0),
   };
 }
 
