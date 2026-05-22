@@ -104,8 +104,13 @@ export const ADMIN_TABS = {
   },
   referrals: {
     bonus: "bonus",
+    coupons: "coupons",
     referrals: "referrals",
     settings: "settings",
+  },
+  referralsCoupons: {
+    codes: "codes",
+    usedByClients: "used-by-clients",
   },
   referralsBonus: {
     clients: "clients",

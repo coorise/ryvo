@@ -130,11 +130,11 @@ export function ReferralAdminList<T extends { id?: string; user_id?: string }>({
           <span className="text-muted-foreground text-sm">{audienceLabel}</span>
           <AdminFilterSelect value={audience} options={audienceOptions} onChange={onAudienceChange} />
         </div>
-        {canEdit && (
+        {canEdit && addLabel ? (
           <RyvoButton intent="cta" onClick={onAdd}>
             {addLabel}
           </RyvoButton>
-        )}
+        ) : null}
       </div>
 
       <AdminStatGrid>

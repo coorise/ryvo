@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
+import { ReferralsCouponsPanel } from "@/components/admin/finance/referrals-coupons-panel";
 import { ReferralsBonusPanel, ReferralsProgramsPanel } from "@/components/admin/finance/referrals-panels";
 import {
   ClientProgramSettingsPanel,
@@ -45,6 +46,11 @@ export function ReferralsTabs({ tab, onTabChange }: ReferralsTabsProps) {
     searchParams.get(ADMIN_QUERY.sub) === ADMIN_TABS.referralsBonus.drivers
       ? ADMIN_TABS.referralsBonus.drivers
       : ADMIN_TABS.referralsBonus.clients;
+
+  const couponsSub =
+    searchParams.get(ADMIN_QUERY.sub) === ADMIN_TABS.referralsCoupons.usedByClients
+      ? ADMIN_TABS.referralsCoupons.usedByClients
+      : ADMIN_TABS.referralsCoupons.codes;
 
   const programsSub = (() => {
     const raw = searchParams.get(ADMIN_QUERY.sub);
@@ -106,6 +112,9 @@ export function ReferralsTabs({ tab, onTabChange }: ReferralsTabsProps) {
     <Tabs value={tab} onValueChange={onTabChange}>
       <TabsList>
         <TabsTrigger value={ADMIN_TABS.referrals.bonus}>{t("financeReferrals.tabs.bonus")}</TabsTrigger>
+        <TabsTrigger value={ADMIN_TABS.referrals.coupons}>
+          {t("financeReferrals.tabs.coupons")}
+        </TabsTrigger>
         <TabsTrigger value={ADMIN_TABS.referrals.referrals}>
           {t("financeReferrals.tabs.referrals")}
         </TabsTrigger>
@@ -119,6 +128,13 @@ export function ReferralsTabs({ tab, onTabChange }: ReferralsTabsProps) {
           audience={bonusSub}
           onAudienceChange={(sub) => setSub(sub, ADMIN_TABS.referrals.bonus)}
           data={data}
+        />
+      </TabsContent>
+
+      <TabsContent value={ADMIN_TABS.referrals.coupons} className="mt-6">
+        <ReferralsCouponsPanel
+          audience={couponsSub}
+          onAudienceChange={(sub) => setSub(sub, ADMIN_TABS.referrals.coupons)}
         />
       </TabsContent>
 

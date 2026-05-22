@@ -100,7 +100,32 @@
   "financeReferrals": {
     "title": "Referrals & bonuses",
     "pageSubtitle": "Attract clients and drivers with links, coupons, and loyalty points.",
-    "tabs": { "bonus": "Bonus", "referrals": "Referrals", "settings": "Settings" },
+    "tabs": { "bonus": "Bonus", "coupons": "Coupons", "referrals": "Referrals", "settings": "Settings" },
+    "coupons": {
+      "codes": "Coupon codes",
+      "usedByClients": "Used by clients",
+      "addCode": "Create coupon",
+      "editCode": "Edit coupon",
+      "active": "Active for checkout",
+      "searchCodes": "Search secret code…",
+      "searchUsed": "Search email or code…",
+      "usedReadOnly": "Redemptions are created when a client applies a code at checkout.",
+      "confirmDelete": "Delete coupon?",
+      "confirmDeleteDesc": "Remove code “{{code}}”? Existing redemption logs stay in history.",
+      "stats": {
+        "activeCodes": "Active codes",
+        "totalRedemptions": "Total redemptions",
+        "redemptions": "Redemptions logged"
+      },
+      "col": {
+        "secretCode": "Secret code",
+        "bonus": "Bonus (CAD)",
+        "startAt": "Start at",
+        "endAt": "End at",
+        "updatedAt": "Updated at",
+        "createdAt": "Created at"
+      }
+    },
     "bonus": { "clients": "Clients", "drivers": "Drivers" },
     "programs": {
       "loyalty": "Clients loyalty",

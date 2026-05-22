@@ -76,6 +76,60 @@ export class FinanceService extends BaseService {
     return this.get<ReferralsBundle>("/v1/admin/finance/referrals", token);
   }
 
+  getCoupons(token: string | null) {
+    return this.get<{ coupons: CouponRow[]; redemptions: CouponRedemptionRow[] }>(
+      "/v1/admin/finance/coupons",
+      token,
+    );
+  }
+
+  createCoupon(
+    token: string | null,
+    body: {
+      code: string;
+      bonus_cad: number;
+      starts_at?: string | null;
+      ends_at?: string | null;
+      active?: boolean;
+    },
+  ) {
+    return this.post<{ coupon: CouponRow }>("/v1/admin/finance/coupons", body, token);
+  }
+
+  updateCoupon(
+    token: string | null,
+    id: string,
+    body: Partial<{
+      code: string;
+      bonus_cad: number;
+      starts_at: string | null;
+      ends_at: string | null;
+      active: boolean;
+    }>,
+  ) {
+    return this.patch<{ coupon: CouponRow }>(`/v1/admin/finance/coupons/${id}`, body, token);
+  }
+
+  deleteCoupon(token: string | null, id: string) {
+    return this.delete<{ deleted: boolean }>(`/v1/admin/finance/coupons/${id}`, token);
+  }
+
+  validateCoupon(token: string | null, code: string, fare: number) {
+    return this.post<{ code: string; bonus_cad: number; discount: number }>(
+      "/v1/finance/coupons/validate",
+      { code, fare },
+      token,
+    );
+  }
+
+  redeemCoupon(token: string | null, code: string, tripId?: string | null) {
+    return this.post<{ code: string; bonus_cad: number }>(
+      "/v1/finance/coupons/redeem",
+      { code, trip_id: tripId ?? null },
+      token,
+    );
+  }
+
   createBonus(
     token: string | null,
     body: { email: string; account_type: "client" | "driver"; channel?: string; balance: number },
@@ -237,6 +291,27 @@ export type ReferralCampaignRow = {
   updated_at: string;
   joined_emails: string[];
   joined_count: number;
+};
+
+export type CouponRow = {
+  id: string;
+  code: string;
+  bonus_cad: number;
+  starts_at: string | null;
+  ends_at: string | null;
+  updated_at: string;
+  created_at: string;
+  active: boolean;
+  redemption_count: number;
+};
+
+export type CouponRedemptionRow = {
+  id: string;
+  user_id: string;
+  email: string;
+  code: string;
+  bonus_cad: number;
+  created_at: string;
 };
 
 export type ReferralsBundle = {

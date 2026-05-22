@@ -100,7 +100,32 @@
   "financeReferrals": {
     "title": "Parrainage et bonus",
     "pageSubtitle": "Liens, coupons et points fidélité pour clients et chauffeurs.",
-    "tabs": { "bonus": "Bonus", "referrals": "Parrainages", "settings": "Paramètres" },
+    "tabs": { "bonus": "Bonus", "coupons": "Coupons", "referrals": "Parrainages", "settings": "Paramètres" },
+    "coupons": {
+      "codes": "Codes promo",
+      "usedByClients": "Utilisés par les clients",
+      "addCode": "Créer un coupon",
+      "editCode": "Modifier le coupon",
+      "active": "Actif au paiement",
+      "searchCodes": "Rechercher un code…",
+      "searchUsed": "Email ou code…",
+      "usedReadOnly": "Les utilisations sont enregistrées au paiement.",
+      "confirmDelete": "Supprimer le coupon ?",
+      "confirmDeleteDesc": "Supprimer « {{code}} » ? L’historique d’utilisation reste visible.",
+      "stats": {
+        "activeCodes": "Codes actifs",
+        "totalRedemptions": "Utilisations totales",
+        "redemptions": "Utilisations enregistrées"
+      },
+      "col": {
+        "secretCode": "Code secret",
+        "bonus": "Bonus (CAD)",
+        "startAt": "Début",
+        "endAt": "Fin",
+        "updatedAt": "Mis à jour",
+        "createdAt": "Créé le"
+      }
+    },
     "bonus": { "clients": "Clients", "drivers": "Chauffeurs" },
     "programs": {
       "loyalty": "Fidélité clients",

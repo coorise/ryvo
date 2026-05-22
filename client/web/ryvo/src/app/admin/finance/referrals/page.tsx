@@ -26,6 +26,8 @@ function ReferralsPageContent() {
       params.set(ADMIN_QUERY.tab, value);
       if (value === ADMIN_TABS.referrals.bonus) {
         params.set(ADMIN_QUERY.sub, ADMIN_TABS.referralsBonus.clients);
+      } else if (value === ADMIN_TABS.referrals.coupons) {
+        params.set(ADMIN_QUERY.sub, ADMIN_TABS.referralsCoupons.codes);
       } else if (value === ADMIN_TABS.referrals.referrals) {
         params.set(ADMIN_QUERY.sub, ADMIN_TABS.referralsPrograms.loyalty);
       } else {

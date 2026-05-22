@@ -78,7 +78,24 @@ import {
   getUserIdByEmail,
   getUserEmail,
 } from "../../_shared/lib/finance-referrals.ts";
+import {
+  listCouponsAdmin,
+  createCouponAdmin,
+  updateCouponAdmin,
+  deleteCouponAdmin,
+  listCouponRedemptionsAdmin,
+  validateCouponForCheckout,
+  redeemCouponAtCheckout,
+} from "../../_shared/lib/finance-coupons.ts";
 import { z } from "zod";
+
+const couponAdminSchema = z.object({
+  code: z.string().min(2).max(32),
+  bonus_cad: z.number().min(0),
+  starts_at: z.string().nullable().optional(),
+  ends_at: z.string().nullable().optional(),
+  active: z.boolean().optional(),
+});
 
 const preferencesSchema = z.object({
   appName: z.string().min(1).max(80).optional(),
@@ -988,6 +1005,92 @@ export const handle = createServiceRouter("auth-hooks", [
       await deleteReferralCampaign(params.id);
       await emitAudit(ctx.auth!.userId, "campaign.delete", "referral_campaigns", params.id, {});
       return ok({ deleted: true });
+    },
+  },
+  {
+    method: "GET",
+    path: "/v1/admin/finance/coupons",
+    auth: true,
+    permissions: ["finances:referrals:read"],
+    handler: async () => {
+      const [coupons, redemptions] = await Promise.all([
+        listCouponsAdmin(),
+        listCouponRedemptionsAdmin(),
+      ]);
+      return ok({ coupons, redemptions });
+    },
+  },
+  {
+    method: "POST",
+    path: "/v1/admin/finance/coupons",
+    auth: true,
+    permissions: ["finances:referrals:update"],
+    handler: async (req, ctx) => {
+      const body = couponAdminSchema.parse(await req.json());
+      const row = await createCouponAdmin(body);
+      await emitAudit(ctx.auth!.userId, "coupon.create", "coupons", row.id, { code: row.code });
+      return ok({ coupon: row });
+    },
+  },
+  {
+    method: "PATCH",
+    path: "/v1/admin/finance/coupons/:id",
+    auth: true,
+    permissions: ["finances:referrals:update"],
+    handler: async (req, ctx, params) => {
+      const body = couponAdminSchema.partial().parse(await req.json());
+      const row = await updateCouponAdmin(params.id, body);
+      await emitAudit(ctx.auth!.userId, "coupon.update", "coupons", params.id, {});
+      return ok({ coupon: row });
+    },
+  },
+  {
+    method: "DELETE",
+    path: "/v1/admin/finance/coupons/:id",
+    auth: true,
+    permissions: ["finances:referrals:update"],
+    handler: async (_req, ctx, params) => {
+      await deleteCouponAdmin(params.id);
+      await emitAudit(ctx.auth!.userId, "coupon.delete", "coupons", params.id, {});
+      return ok({ deleted: true });
+    },
+  },
+  {
+    method: "POST",
+    path: "/v1/finance/coupons/validate",
+    auth: true,
+    handler: async (req, ctx) => {
+      const body = z
+        .object({ code: z.string().min(1), fare: z.number().min(0).optional() })
+        .parse(await req.json());
+      const result = await validateCouponForCheckout(
+        body.code,
+        ctx.auth!.userId,
+        body.fare ?? 0,
+      );
+      if (!result.ok) return fail(result.error, result.message, 422);
+      return ok({
+        code: result.coupon.code,
+        bonus_cad: result.bonus_cad,
+        discount: result.discount,
+      });
+    },
+  },
+  {
+    method: "POST",
+    path: "/v1/finance/coupons/redeem",
+    auth: true,
+    handler: async (req, ctx) => {
+      const body = z
+        .object({ code: z.string().min(1), trip_id: z.string().uuid().nullable().optional() })
+        .parse(await req.json());
+      try {
+        const result = await redeemCouponAtCheckout(body.code, ctx.auth!.userId, body.trip_id);
+        return ok(result);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Redeem failed";
+        return fail("COUPON_REDEEM_FAILED", msg, 422);
+      }
     },
   },
   {
