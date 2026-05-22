@@ -273,30 +273,55 @@ function InviteRuleSection({
             onChange={(e) => onChange({ referrer_bonus_cad: Number(e.target.value) })}
           />
         </Field>
-        <Field label={t("financeReferrals.settings.joinedUserBonus")} disabled={disabled}>
-          <Input
-            type="number"
-            step="0.01"
-            disabled={disabled}
-            value={rule.joined_user_bonus_cad}
-            onChange={(e) => onChange({ joined_user_bonus_cad: Number(e.target.value) })}
-          />
-        </Field>
-        {showFirstPurchase && (
-          <Field label={t("financeReferrals.settings.firstPurchaseBonus")} disabled={disabled}>
+
+        <div className="sm:col-span-2">
+          <Field label={t("financeReferrals.settings.joinedUserBonus")} disabled={disabled}>
             <Input
               type="number"
               step="0.01"
               disabled={disabled}
-              value={rule.referrer_bonus_first_purchase_cad}
-              onChange={(e) =>
-                onChange({ referrer_bonus_first_purchase_cad: Number(e.target.value) })
-              }
+              className="max-w-md"
+              value={rule.joined_user_bonus_cad}
+              onChange={(e) => onChange({ joined_user_bonus_cad: Number(e.target.value) })}
             />
           </Field>
+        </div>
+
+        {showFirstPurchase && (
+          <>
+            <p className="text-muted-foreground sm:col-span-2 text-xs font-semibold">
+              {t("financeReferrals.settings.firstPurchaseRowTitle")}
+            </p>
+            <Field label={t("financeReferrals.settings.firstPurchaseMin")} disabled={disabled}>
+              <Input
+                type="number"
+                step="0.01"
+                disabled={disabled}
+                value={rule.first_purchase_min_amount_cad}
+                onChange={(e) =>
+                  onChange({ first_purchase_min_amount_cad: Number(e.target.value) })
+                }
+              />
+            </Field>
+            <Field label={t("financeReferrals.settings.firstPurchaseBonus")} disabled={disabled}>
+              <Input
+                type="number"
+                step="0.01"
+                disabled={disabled}
+                value={rule.referrer_bonus_first_purchase_cad}
+                onChange={(e) =>
+                  onChange({ referrer_bonus_first_purchase_cad: Number(e.target.value) })
+                }
+              />
+            </Field>
+          </>
         )}
+
         {showDriverEarned && (
           <>
+            <p className="text-muted-foreground sm:col-span-2 text-xs font-semibold">
+              {t("financeReferrals.settings.driverEarnRowTitle")}
+            </p>
             <Field label={t("financeReferrals.settings.driverEarnThreshold")} disabled={disabled}>
               <Input
                 type="number"

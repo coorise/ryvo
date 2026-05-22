@@ -59,6 +59,7 @@ export function ruleFromSettings(
     condition: Number(rule.invites_required ?? rule.condition ?? 1),
     targetBonus: Number(rule.referrer_bonus_cad ?? rule.targetBonus ?? 0),
     joinedUserBonus: Number(rule.joined_user_bonus_cad ?? rule.refereeBonusCad ?? 0),
+    firstPurchaseMinAmount: Number(rule.first_purchase_min_amount_cad ?? 0),
     firstPurchaseBonus: Number(rule.referrer_bonus_first_purchase_cad ?? 0),
     driverEarnedBonus: Number(rule.referrer_bonus_driver_earned_cad ?? 0),
     driverEarnThreshold: Number(rule.joined_driver_earn_threshold_cad ?? 0),

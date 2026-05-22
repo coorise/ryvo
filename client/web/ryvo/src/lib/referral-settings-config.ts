@@ -8,9 +8,11 @@ export type ReferralInviteRule = {
   invites_required: number;
   referrer_bonus_cad: number;
   joined_user_bonus_cad: number;
+  /** Min. first order amount (CAD) for referrer first-purchase bonus */
+  first_purchase_min_amount_cad: number;
   referrer_bonus_first_purchase_cad: number;
-  referrer_bonus_driver_earned_cad: number;
   joined_driver_earn_threshold_cad: number;
+  referrer_bonus_driver_earned_cad: number;
 };
 
 export type ClientProgramConfig = {
@@ -35,9 +37,10 @@ const DEFAULT_INVITE_RULE: ReferralInviteRule = {
   invites_required: 5,
   referrer_bonus_cad: 10,
   joined_user_bonus_cad: 8,
+  first_purchase_min_amount_cad: 5,
   referrer_bonus_first_purchase_cad: 5,
-  referrer_bonus_driver_earned_cad: 15,
   joined_driver_earn_threshold_cad: 500,
+  referrer_bonus_driver_earned_cad: 15,
 };
 
 export const DEFAULT_CLIENT_PROGRAM: ClientProgramConfig = {
@@ -54,17 +57,19 @@ export const DEFAULT_CLIENT_PROGRAM: ClientProgramConfig = {
       invites_required: 5,
       referrer_bonus_cad: 10,
       joined_user_bonus_cad: 8,
+      first_purchase_min_amount_cad: 5,
       referrer_bonus_first_purchase_cad: 5,
-      referrer_bonus_driver_earned_cad: 0,
       joined_driver_earn_threshold_cad: 0,
+      referrer_bonus_driver_earned_cad: 0,
     },
     invite_driver: {
       invites_required: 3,
       referrer_bonus_cad: 25,
       joined_user_bonus_cad: 15,
+      first_purchase_min_amount_cad: 0,
       referrer_bonus_first_purchase_cad: 0,
-      referrer_bonus_driver_earned_cad: 20,
       joined_driver_earn_threshold_cad: 500,
+      referrer_bonus_driver_earned_cad: 20,
     },
   },
 };
@@ -75,17 +80,19 @@ export const DEFAULT_DRIVER_PROGRAM: DriverProgramConfig = {
       invites_required: 5,
       referrer_bonus_cad: 15,
       joined_user_bonus_cad: 10,
+      first_purchase_min_amount_cad: 5,
       referrer_bonus_first_purchase_cad: 8,
-      referrer_bonus_driver_earned_cad: 0,
       joined_driver_earn_threshold_cad: 0,
+      referrer_bonus_driver_earned_cad: 0,
     },
     invite_driver: {
       invites_required: 3,
       referrer_bonus_cad: 30,
       joined_user_bonus_cad: 20,
+      first_purchase_min_amount_cad: 0,
       referrer_bonus_first_purchase_cad: 0,
-      referrer_bonus_driver_earned_cad: 25,
       joined_driver_earn_threshold_cad: 750,
+      referrer_bonus_driver_earned_cad: 25,
     },
   },
 };
@@ -104,14 +111,17 @@ function parseInviteRule(raw: unknown, fallback: ReferralInviteRule): ReferralIn
     joined_user_bonus_cad: Number(
       o.joined_user_bonus_cad ?? o.refereeBonusCad ?? fallback.joined_user_bonus_cad,
     ),
+    first_purchase_min_amount_cad: Number(
+      o.first_purchase_min_amount_cad ?? fallback.first_purchase_min_amount_cad,
+    ),
     referrer_bonus_first_purchase_cad: Number(
       o.referrer_bonus_first_purchase_cad ?? fallback.referrer_bonus_first_purchase_cad,
     ),
-    referrer_bonus_driver_earned_cad: Number(
-      o.referrer_bonus_driver_earned_cad ?? fallback.referrer_bonus_driver_earned_cad,
-    ),
     joined_driver_earn_threshold_cad: Number(
       o.joined_driver_earn_threshold_cad ?? fallback.joined_driver_earn_threshold_cad,
+    ),
+    referrer_bonus_driver_earned_cad: Number(
+      o.referrer_bonus_driver_earned_cad ?? fallback.referrer_bonus_driver_earned_cad,
     ),
   };
 }
