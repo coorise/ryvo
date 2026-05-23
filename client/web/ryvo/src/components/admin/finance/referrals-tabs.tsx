@@ -13,6 +13,7 @@ import {
 } from "@/components/admin/finance/referral-settings-panel";
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
 import { ADMIN_QUERY, ADMIN_TABS, PERMISSIONS } from "@/configs/const";
+import { ApiError } from "@/configs/http";
 import { useAuth } from "@/hooks/use-auth";
 import { useRbac } from "@/hooks/use-rbac";
 import {
@@ -34,13 +35,15 @@ type ReferralsTabsProps = {
 
 export function ReferralsTabs({ tab, onTabChange }: ReferralsTabsProps) {
   const { t } = useTranslation();
-  const { accessToken } = useAuth();
+  const { accessToken, isReady } = useAuth();
   const { hasPermission } = useRbac();
   const canEdit = hasPermission(PERMISSIONS.finance.referralsUpdate);
   const queryClient = useQueryClient();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  const queryEnabled = isReady && Boolean(accessToken);
 
   const bonusSub =
     searchParams.get(ADMIN_QUERY.sub) === ADMIN_TABS.referralsBonus.drivers
@@ -59,16 +62,23 @@ export function ReferralsTabs({ tab, onTabChange }: ReferralsTabsProps) {
     return ADMIN_TABS.referralsPrograms.loyalty;
   })();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading: referralsLoading } = useQuery({
     queryKey: ["finance", "referrals"],
     queryFn: () => financeService.getReferrals(accessToken),
-    enabled: Boolean(accessToken),
+    enabled: queryEnabled,
   });
+
+  const { data: couponsData, isLoading: couponsLoading, isError: couponsError, error: couponsErrorDetail } =
+    useQuery({
+      queryKey: ["finance", "coupons"],
+      queryFn: () => financeService.getCoupons(accessToken),
+      enabled: queryEnabled,
+    });
 
   const { data: settingsData } = useQuery({
     queryKey: ["finance", "referral-settings"],
     queryFn: () => financeService.getReferralSettings(accessToken),
-    enabled: Boolean(accessToken),
+    enabled: queryEnabled,
   });
 
   const [clientProgram, setClientProgram] = useState<ClientProgramConfig>(DEFAULT_CLIENT_PROGRAM);
@@ -104,7 +114,7 @@ export function ReferralsTabs({ tab, onTabChange }: ReferralsTabsProps) {
     [pathname, router, searchParams],
   );
 
-  if (isLoading && tab !== ADMIN_TABS.referrals.settings) {
+  if (!isReady) {
     return <p className="text-muted-foreground text-sm">{t("common.loading")}</p>;
   }
 
@@ -124,26 +134,41 @@ export function ReferralsTabs({ tab, onTabChange }: ReferralsTabsProps) {
       </TabsList>
 
       <TabsContent value={ADMIN_TABS.referrals.bonus} className="mt-6">
-        <ReferralsBonusPanel
-          audience={bonusSub}
-          onAudienceChange={(sub) => setSub(sub, ADMIN_TABS.referrals.bonus)}
-          data={data}
-        />
+        {tab === ADMIN_TABS.referrals.bonus && referralsLoading ? (
+          <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
+        ) : (
+          <ReferralsBonusPanel
+            audience={bonusSub}
+            onAudienceChange={(sub) => setSub(sub, ADMIN_TABS.referrals.bonus)}
+            data={data}
+          />
+        )}
       </TabsContent>
 
       <TabsContent value={ADMIN_TABS.referrals.coupons} className="mt-6">
         <ReferralsCouponsPanel
           audience={couponsSub}
           onAudienceChange={(sub) => setSub(sub, ADMIN_TABS.referrals.coupons)}
+          data={couponsData}
+          isLoading={couponsLoading}
+          isError={couponsError}
+          errorCode={
+            couponsErrorDetail instanceof ApiError ? couponsErrorDetail.code : undefined
+          }
+          errorMessage={couponsErrorDetail instanceof Error ? couponsErrorDetail.message : undefined}
         />
       </TabsContent>
 
       <TabsContent value={ADMIN_TABS.referrals.referrals} className="mt-6">
-        <ReferralsProgramsPanel
-          audience={programsSub}
-          onAudienceChange={(sub) => setSub(sub, ADMIN_TABS.referrals.referrals)}
-          data={data}
-        />
+        {tab === ADMIN_TABS.referrals.referrals && referralsLoading ? (
+          <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
+        ) : (
+          <ReferralsProgramsPanel
+            audience={programsSub}
+            onAudienceChange={(sub) => setSub(sub, ADMIN_TABS.referrals.referrals)}
+            data={data}
+          />
+        )}
       </TabsContent>
 
       <TabsContent value={ADMIN_TABS.referrals.settings} className="mt-6 space-y-6">

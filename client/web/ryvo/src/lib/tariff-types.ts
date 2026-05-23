@@ -1,15 +1,11 @@
-export const TARIFF_PACKAGE_TYPES = [
-  "essential",
-  "pro",
-  "per_drive",
-  "per_quota",
-  "per_daily",
-  "per_weekly",
-  "per_monthly",
-  "custom",
-] as const;
+export const TARIFF_PACKAGE_TYPES = ["basic", "essential", "pro", "pro_plus", "custom"] as const;
 
 export type TariffPackageType = (typeof TARIFF_PACKAGE_TYPES)[number];
+
+export const TARIFF_PAYOUT_LABELS = ["instant", "days"] as const;
+export type TariffPayoutLabel = (typeof TARIFF_PAYOUT_LABELS)[number];
+
+export const BASIC_TARIFF_CODE = "basic";
 
 export const TARIFF_BADGE_POSITIONS = [
   "top_left",
@@ -110,6 +106,7 @@ export function normalizeTextStyles(raw: unknown): TariffCardTextStyles {
 
 export type TariffFeatures = {
   search_priority: boolean;
+  search_priority_rank: number;
   promoted_listing: boolean;
   media_gallery: boolean;
   max_photos: number;
@@ -117,10 +114,12 @@ export type TariffFeatures = {
   custom_badge: boolean;
   badge_label: string;
   priority_support: boolean;
+  remove_ads: boolean;
 };
 
 export const DEFAULT_TARIFF_FEATURES: TariffFeatures = {
   search_priority: false,
+  search_priority_rank: 999,
   promoted_listing: false,
   media_gallery: false,
   max_photos: 0,
@@ -128,7 +127,10 @@ export const DEFAULT_TARIFF_FEATURES: TariffFeatures = {
   custom_badge: false,
   badge_label: "",
   priority_support: false,
+  remove_ads: false,
 };
+
+export type TariffBillingMode = "subscription" | "one_time";
 
 export type TariffPackage = {
   id: string;
@@ -138,12 +140,22 @@ export type TariffPackage = {
   description: string | null;
   commission_percent: number;
   subscription_monthly: number | null;
-  payout_cadence: string;
+  recurrence_count: number | null;
+  recurrence_unlimited: boolean;
+  valid_until: string | null;
+  valid_unlimited: boolean;
+  min_withdraw_amount: number;
+  payout_label: TariffPayoutLabel;
   payout_delay_minutes: number;
+  payout_delay_days: number;
+  payout_custom_label: string | null;
+  payout_cadence: string;
   quota_trips: number | null;
   discount_percent: number;
   search_boost: number;
   is_optional_subscription: boolean;
+  billing_mode: TariffBillingMode;
+  is_basic: boolean;
   is_system: boolean;
   active: boolean;
   features: TariffFeatures;
@@ -189,6 +201,7 @@ export function normalizeFeatures(raw: unknown): TariffFeatures {
   const o = raw as Record<string, unknown>;
   return {
     search_priority: Boolean(o.search_priority),
+    search_priority_rank: Number(o.search_priority_rank ?? 999) || 999,
     promoted_listing: Boolean(o.promoted_listing),
     media_gallery: Boolean(o.media_gallery),
     max_photos: Number(o.max_photos) || 0,
@@ -196,6 +209,7 @@ export function normalizeFeatures(raw: unknown): TariffFeatures {
     custom_badge: Boolean(o.custom_badge),
     badge_label: String(o.badge_label ?? ""),
     priority_support: Boolean(o.priority_support),
+    remove_ads: Boolean(o.remove_ads),
   };
 }
 
@@ -207,12 +221,22 @@ export function emptyTariffInput(): TariffPackageInput {
     description: "",
     commission_percent: 20,
     subscription_monthly: null,
-    payout_cadence: "weekly",
+    recurrence_count: null,
+    recurrence_unlimited: true,
+    valid_until: null,
+    valid_unlimited: true,
+    min_withdraw_amount: 25,
+    payout_label: "instant",
     payout_delay_minutes: 0,
+    payout_delay_days: 0,
+    payout_custom_label: "Instant",
+    payout_cadence: "instant",
     quota_trips: null,
     discount_percent: 0,
     search_boost: 0,
     is_optional_subscription: false,
+    billing_mode: "subscription",
+    is_basic: false,
     is_system: false,
     active: true,
     features: { ...DEFAULT_TARIFF_FEATURES },
@@ -233,15 +257,29 @@ export function packageToInput(pkg: TariffPackage): TariffPackageInput {
     description: pkg.description ?? "",
     commission_percent: pkg.commission_percent,
     subscription_monthly: pkg.subscription_monthly,
+    recurrence_count: pkg.recurrence_count,
+    recurrence_unlimited: pkg.recurrence_unlimited,
+    valid_until: pkg.valid_until,
+    valid_unlimited: pkg.valid_unlimited,
+    min_withdraw_amount: pkg.min_withdraw_amount,
+    payout_label: pkg.payout_label,
+    payout_delay_minutes: pkg.payout_delay_minutes,
+    payout_delay_days: pkg.payout_delay_days,
+    payout_custom_label: pkg.payout_custom_label,
     payout_cadence: pkg.payout_cadence,
-    payout_delay_minutes: pkg.payout_delay_minutes ?? 0,
     quota_trips: pkg.quota_trips,
     discount_percent: pkg.discount_percent ?? 0,
     search_boost: pkg.search_boost,
     is_optional_subscription: pkg.is_optional_subscription,
+    billing_mode: pkg.billing_mode ?? (pkg.code === BASIC_TARIFF_CODE ? "one_time" : "subscription"),
+    is_basic: pkg.is_basic,
     is_system: pkg.is_system,
     active: pkg.active,
     features: normalizeFeatures(pkg.features),
     card_display: normalizeCardDisplay(pkg.card_display),
   };
+}
+
+export function isBasicTariff(pkg: Pick<TariffPackage, "code" | "is_basic">) {
+  return pkg.is_basic || pkg.code === BASIC_TARIFF_CODE;
 }

@@ -63,20 +63,29 @@ export class AdminService extends BaseService {
     }>(`/v1/admin/trips?limit=${limit}`, token);
   }
 
-  listPayments(token: string | null, limit = 100) {
-    return this.get<{
-      payments: {
-        id: string;
-        amount: number;
-        currency: string;
-        status: string;
-        created_at: string;
-        trip_id: string | null;
-        client_id: string;
-      }[];
-    }>(`/v1/admin/payments?limit=${limit}`, token);
+  listPayments(token: string | null, opts?: { status?: string; limit?: number }) {
+    const params = new URLSearchParams();
+    if (opts?.status) params.set("status", opts.status);
+    if (opts?.limit) params.set("limit", String(opts.limit));
+    const q = params.toString() ? `?${params}` : "";
+    return this.get<{ payments: PaymentAdminRow[] }>(`/v1/admin/payments${q}`, token);
   }
 }
+
+export type PaymentAdminRow = {
+  id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  provider: string;
+  provider_intent_id: string | null;
+  created_at: string;
+  settled_at: string | null;
+  trip_id: string | null;
+  request_id: string | null;
+  rider_id: string;
+  rider_email: string;
+};
 
 export class PlatformSettingsService extends BaseService {
   constructor() {

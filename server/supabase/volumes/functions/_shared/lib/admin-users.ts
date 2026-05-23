@@ -13,6 +13,7 @@ export type AdminUserRow = {
   roles: string[];
   full_name: string | null;
   phone: string | null;
+  username: string | null;
 };
 
 export type AdminReviewRow = {
@@ -53,7 +54,7 @@ async function enrichUsers(userIds: string[]) {
 
     const { data: profile } = await db
       .from("user_profiles")
-      .select("banned_at, deleted_at")
+      .select("banned_at, deleted_at, username")
       .eq("user_id", id)
       .maybeSingle();
 
@@ -72,6 +73,7 @@ async function enrichUsers(userIds: string[]) {
       roles,
       full_name: (authUser.user.user_metadata?.full_name as string) ?? null,
       phone: (authUser.user.user_metadata?.phone as string) ?? null,
+      username: profile?.username != null ? String(profile.username) : null,
     });
   }
   return rows;

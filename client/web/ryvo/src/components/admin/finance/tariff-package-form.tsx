@@ -10,6 +10,8 @@ import { autoLabelStyle, pillClassName, resolveLabelStyle } from "@/lib/tariff-c
 import {
   TARIFF_BADGE_POSITIONS,
   TARIFF_PACKAGE_TYPES,
+  TARIFF_PAYOUT_LABELS,
+  isBasicTariff,
   type TariffCardDisplay,
   type TariffLabelStyle,
   type TariffPackageInput,
@@ -21,14 +23,32 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { storageService } from "@/services/storage.service";
 
-const PAYOUT_PRESETS = [
-  "minutes_after_trip",
-  "end_of_quota",
-  "daily",
-  "weekly",
-  "monthly",
-  "custom",
-] as const;
+
+function splitValidUntil(iso: string | null): { date: string; time: string } {
+  if (!iso) return { date: "", time: "00:00" };
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return { date: "", time: "00:00" };
+  const date = d.toISOString().slice(0, 10);
+  const time = d.toISOString().slice(11, 16);
+  return { date, time };
+}
+
+function mergeValidUntil(date: string, time: string): string | null {
+  if (!date) return null;
+  const t = time || "00:00";
+  return new Date(`${date}T${t}:00`).toISOString();
+}
+
+function payoutSummary(form: TariffPackageInput): string {
+  const label = form.payout_custom_label?.trim() || form.payout_label;
+  if (form.payout_label === "days") {
+    return `${label} · ${form.payout_delay_days}d`;
+  }
+  if (form.payout_delay_minutes > 0) {
+    return `${label} · ${form.payout_delay_minutes} min`;
+  }
+  return label;
+}
 
 type TariffPackageFormProps = {
   form: TariffPackageInput;
@@ -41,6 +61,8 @@ export function TariffPackageForm({ form, setForm, isNew, readOnly }: TariffPack
   const { t } = useTranslation();
   const { accessToken } = useAuth();
   const disabled = readOnly;
+  const isBasic = isBasicTariff(form);
+  const validParts = splitValidUntil(form.valid_until);
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploadingBadge, setUploadingBadge] = useState(false);
 
@@ -127,13 +149,40 @@ export function TariffPackageForm({ form, setForm, isNew, readOnly }: TariffPack
             onChange={(e) =>
               patch({ code: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "_") })
             }
-            placeholder="my_custom_plan"
+            placeholder="pro"
           />
+        </div>
+        <div className="space-y-1 sm:col-span-2">
+          <Label>{t("financeTariffs.form.recurrences")}</Label>
+          <div className="flex flex-wrap items-center gap-3">
+            <Switch
+              disabled={disabled || isBasic}
+              checked={form.recurrence_unlimited}
+              onCheckedChange={(v) =>
+                patch({ recurrence_unlimited: v, recurrence_count: v ? null : 12 })
+              }
+            />
+            <span className="text-muted-foreground text-xs">
+              {form.recurrence_unlimited
+                ? t("financeTariffs.form.unlimited")
+                : t("financeTariffs.form.recurrencesHint")}
+            </span>
+            {!form.recurrence_unlimited && (
+              <Input
+                type="number"
+                min={1}
+                className="w-28"
+                disabled={disabled || isBasic}
+                value={form.recurrence_count ?? 1}
+                onChange={(e) => patch({ recurrence_count: Number(e.target.value) })}
+              />
+            )}
+          </div>
         </div>
         <div className="space-y-1">
           <Label>{t("financeTariffs.form.type")}</Label>
           <select
-            disabled={disabled}
+            disabled={disabled || form.is_system}
             className="border-border bg-background w-full rounded-xl border px-3 py-2 text-sm"
             value={form.package_type}
             onChange={(e) => patch({ package_type: e.target.value })}
@@ -180,41 +229,17 @@ export function TariffPackageForm({ form, setForm, isNew, readOnly }: TariffPack
             onChange={(e) => patch({ discount_percent: Number(e.target.value) })}
           />
         </div>
-        <div className="flex items-center justify-between gap-4 sm:col-span-2">
-          <div>
-            <p className="text-sm font-medium">{t("financeTariffs.form.subscriptionPlan")}</p>
-            <p className="text-muted-foreground text-xs">{t("financeTariffs.form.subscriptionHint")}</p>
+        {!isBasic && (
+          <div className="space-y-1">
+            <Label>{t("financeTariffs.form.monthlyPrice")}</Label>
+            <Input
+              type="number"
+              step="0.01"
+              disabled={disabled}
+              value={form.subscription_monthly ?? 0}
+              onChange={(e) => patch({ subscription_monthly: Number(e.target.value) })}
+            />
           </div>
-          <Switch
-            disabled={disabled}
-            checked={form.is_optional_subscription}
-            onCheckedChange={(v) =>
-              patch({ is_optional_subscription: v, subscription_monthly: v ? form.subscription_monthly ?? 0 : null })
-            }
-          />
-        </div>
-        {form.is_optional_subscription && (
-          <>
-            <div className="space-y-1">
-              <Label>{t("financeTariffs.form.monthlyPrice")}</Label>
-              <Input
-                type="number"
-                step="0.01"
-                disabled={disabled}
-                value={form.subscription_monthly ?? 0}
-                onChange={(e) => patch({ subscription_monthly: Number(e.target.value) })}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>{t("financeTariffs.form.searchBoost")}</Label>
-              <Input
-                type="number"
-                disabled={disabled}
-                value={form.search_boost}
-                onChange={(e) => patch({ search_boost: Number(e.target.value) })}
-              />
-            </div>
-          </>
         )}
       </section>
 
@@ -223,22 +248,63 @@ export function TariffPackageForm({ form, setForm, isNew, readOnly }: TariffPack
           {t("financeTariffs.form.payoutSection")}
         </h3>
         <div className="space-y-1">
-          <Label>{t("financeTariffs.form.payoutCadence")}</Label>
+          <Label>{t("financeTariffs.form.minWithdraw")}</Label>
+          <Input
+            type="number"
+            step="0.01"
+            disabled={disabled}
+            value={form.min_withdraw_amount}
+            onChange={(e) => patch({ min_withdraw_amount: Number(e.target.value) })}
+          />
+        </div>
+        <div className="space-y-1 sm:col-span-2">
+          <Label>{t("financeTariffs.form.validUntil")}</Label>
+          <div className="flex flex-wrap items-center gap-3">
+            <Switch
+              disabled={disabled || isBasic}
+              checked={form.valid_unlimited}
+              onCheckedChange={(v) => patch({ valid_unlimited: v, valid_until: v ? null : form.valid_until })}
+            />
+            <span className="text-muted-foreground text-xs">
+              {form.valid_unlimited ? t("financeTariffs.form.unlimited") : t("financeTariffs.form.validUntilHint")}
+            </span>
+            {!form.valid_unlimited && (
+              <>
+                <Input
+                  type="date"
+                  className="w-40"
+                  disabled={disabled || isBasic}
+                  value={validParts.date}
+                  onChange={(e) =>
+                    patch({ valid_until: mergeValidUntil(e.target.value, validParts.time) })
+                  }
+                />
+                <Input
+                  type="time"
+                  className="w-32"
+                  disabled={disabled || isBasic}
+                  value={validParts.time}
+                  onChange={(e) =>
+                    patch({ valid_until: mergeValidUntil(validParts.date, e.target.value) })
+                  }
+                />
+              </>
+            )}
+          </div>
+        </div>
+        <div className="space-y-1">
+          <Label>{t("financeTariffs.form.payoutLabel")}</Label>
           <select
             disabled={disabled}
             className="border-border bg-background w-full rounded-xl border px-3 py-2 text-sm"
-            value={
-              PAYOUT_PRESETS.includes(form.payout_cadence as (typeof PAYOUT_PRESETS)[number])
-                ? form.payout_cadence
-                : "custom"
+            value={form.payout_label}
+            onChange={(e) =>
+              patch({ payout_label: e.target.value as TariffPackageInput["payout_label"] })
             }
-            onChange={(e) => {
-              if (e.target.value !== "custom") patch({ payout_cadence: e.target.value });
-            }}
           >
-            {PAYOUT_PRESETS.map((p) => (
+            {TARIFF_PAYOUT_LABELS.map((p) => (
               <option key={p} value={p}>
-                {t(`financeTariffs.payoutPresets.${p}`)}
+                {t(`financeTariffs.payoutLabels.${p}`)}
               </option>
             ))}
           </select>
@@ -247,29 +313,33 @@ export function TariffPackageForm({ form, setForm, isNew, readOnly }: TariffPack
           <Label>{t("financeTariffs.form.payoutCustom")}</Label>
           <Input
             disabled={disabled}
-            value={form.payout_cadence}
-            onChange={(e) => patch({ payout_cadence: e.target.value })}
+            value={form.payout_custom_label ?? ""}
+            onChange={(e) => patch({ payout_custom_label: e.target.value || null })}
+            placeholder={t("financeTariffs.form.payoutCustomPlaceholder")}
           />
         </div>
-        <div className="space-y-1">
-          <Label>{t("financeTariffs.form.payoutDelay")}</Label>
-          <Input
-            type="number"
-            disabled={disabled}
-            value={form.payout_delay_minutes}
-            onChange={(e) => patch({ payout_delay_minutes: Number(e.target.value) })}
-          />
-          <p className="text-muted-foreground text-xs">{t("financeTariffs.form.payoutDelayHint")}</p>
-        </div>
-        {form.package_type === "per_quota" && (
+        {form.payout_label === "instant" ? (
           <div className="space-y-1">
-            <Label>{t("financeTariffs.form.quotaTrips")}</Label>
+            <Label>{t("financeTariffs.form.payoutDelay")}</Label>
             <Input
               type="number"
               disabled={disabled}
-              value={form.quota_trips ?? 0}
-              onChange={(e) => patch({ quota_trips: Number(e.target.value) })}
+              value={form.payout_delay_minutes}
+              onChange={(e) => patch({ payout_delay_minutes: Number(e.target.value) })}
             />
+            <p className="text-muted-foreground text-xs">{t("financeTariffs.form.payoutDelayHint")}</p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <Label>{t("financeTariffs.form.payoutDays")}</Label>
+            <Input
+              type="number"
+              min={0}
+              disabled={disabled}
+              value={form.payout_delay_days}
+              onChange={(e) => patch({ payout_delay_days: Number(e.target.value) })}
+            />
+            <p className="text-muted-foreground text-xs">{t("financeTariffs.form.payoutDaysHint")}</p>
           </div>
         )}
       </section>
@@ -281,7 +351,7 @@ export function TariffPackageForm({ form, setForm, isNew, readOnly }: TariffPack
             {form.name || t("financeTariffs.form.name")}
           </TariffCardTitle>
           <TariffCardLabel display={form.card_display} kind="commission">
-            {form.commission_percent}% · {form.payout_cadence.replace(/_/g, " ")}
+            {form.commission_percent}% · {payoutSummary(form)}
           </TariffCardLabel>
           <TariffFeatureChips form={form} display={form.card_display} />
         </TariffCardPreview>
@@ -514,7 +584,34 @@ export function TariffPackageForm({ form, setForm, isNew, readOnly }: TariffPack
           hint={t("financeTariffs.features.searchPriorityHint")}
           checked={form.features.search_priority}
           disabled={disabled}
-          onCheckedChange={(v) => patchFeatures({ search_priority: v })}
+          onCheckedChange={(v) =>
+            patchFeatures({
+              search_priority: v,
+              search_priority_rank: v ? Math.min(form.features.search_priority_rank, 100) : 999,
+            })
+          }
+        />
+        {form.features.search_priority && (
+          <div className="space-y-1 pl-4">
+            <Label>{t("financeTariffs.features.searchPriorityRank")}</Label>
+            <Input
+              type="number"
+              min={1}
+              disabled={disabled}
+              value={form.features.search_priority_rank}
+              onChange={(e) =>
+                patchFeatures({ search_priority_rank: Number(e.target.value) || 1 })
+              }
+            />
+            <p className="text-muted-foreground text-xs">{t("financeTariffs.features.searchPriorityRankHint")}</p>
+          </div>
+        )}
+        <FeatureRow
+          label={t("financeTariffs.features.removeAds")}
+          hint={t("financeTariffs.features.removeAdsHint")}
+          checked={form.features.remove_ads}
+          disabled={disabled}
+          onCheckedChange={(v) => patchFeatures({ remove_ads: v })}
         />
         <FeatureRow
           label={t("financeTariffs.features.promotedListing")}
@@ -687,7 +784,12 @@ export function TariffFeatureChips({
   const { t } = useTranslation();
   const cardDisplay = display ?? form.card_display;
   const chips: string[] = [];
-  if (form.features.search_priority) chips.push(t("financeTariffs.features.searchPriority"));
+  if (form.features.search_priority) {
+    chips.push(
+      `${t("financeTariffs.features.searchPriority")} #${form.features.search_priority_rank}`,
+    );
+  }
+  if (form.features.remove_ads) chips.push(t("financeTariffs.features.removeAds"));
   if (form.features.promoted_listing) chips.push(t("financeTariffs.features.promotedListing"));
   if (form.features.media_gallery) {
     chips.push(

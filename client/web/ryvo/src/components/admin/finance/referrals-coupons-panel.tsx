@@ -1,7 +1,7 @@
 "use client";
 
 import { Tag, Ticket } from "lucide-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -25,14 +25,27 @@ import {
 import { ADMIN_TABS, PERMISSIONS, SORT_KEYS } from "@/configs/const";
 import { useAuth } from "@/hooks/use-auth";
 import { useRbac } from "@/hooks/use-rbac";
-import { financeService, type CouponRow } from "@/services/finance.service";
+import { financeService, type CouponRow, type CouponsBundle } from "@/services/finance.service";
 
 type ReferralsCouponsPanelProps = {
   audience: string;
   onAudienceChange: (v: string) => void;
+  data: CouponsBundle | undefined;
+  isLoading: boolean;
+  isError?: boolean;
+  errorCode?: string;
+  errorMessage?: string;
 };
 
-export function ReferralsCouponsPanel({ audience, onAudienceChange }: ReferralsCouponsPanelProps) {
+export function ReferralsCouponsPanel({
+  audience,
+  onAudienceChange,
+  data,
+  isLoading,
+  isError,
+  errorCode,
+  errorMessage,
+}: ReferralsCouponsPanelProps) {
   const { t } = useTranslation();
   const { accessToken } = useAuth();
   const { hasPermission } = useRbac();
@@ -40,12 +53,6 @@ export function ReferralsCouponsPanel({ audience, onAudienceChange }: ReferralsC
   const canEdit = hasPermission(PERMISSIONS.finance.referralsUpdate);
 
   const isUsed = audience === ADMIN_TABS.referralsCoupons.usedByClients;
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["finance", "coupons"],
-    queryFn: () => financeService.getCoupons(accessToken),
-    enabled: Boolean(accessToken),
-  });
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editRow, setEditRow] = useState<CouponRow | null>(null);
@@ -81,10 +88,6 @@ export function ReferralsCouponsPanel({ audience, onAudienceChange }: ReferralsC
     onError: (e: Error) => toast.error(e.message),
   });
 
-  if (isLoading) {
-    return <p className="text-muted-foreground text-sm">{t("common.loading")}</p>;
-  }
-
   const coupons = data?.coupons ?? [];
   const redemptions = data?.redemptions ?? [];
 
@@ -106,27 +109,56 @@ export function ReferralsCouponsPanel({ audience, onAudienceChange }: ReferralsC
     [coupons, redemptions.length, t],
   );
 
-  if (isUsed) {
-    const stats = [
+  const usedStats = useMemo(
+    () => [
       {
         label: t("financeReferrals.coupons.stats.redemptions"),
         value: redemptions.length,
         icon: Ticket,
         tone: "info" as const,
       },
-    ];
+    ],
+    [redemptions.length, t],
+  );
+
+  const audienceOptions = useMemo(
+    () => [
+      { value: ADMIN_TABS.referralsCoupons.codes, label: t("financeReferrals.coupons.codes") },
+      {
+        value: ADMIN_TABS.referralsCoupons.usedByClients,
+        label: t("financeReferrals.coupons.usedByClients"),
+      },
+    ],
+    [t],
+  );
+
+  if (isLoading) {
+    return <p className="text-muted-foreground text-sm">{t("common.loading")}</p>;
+  }
+
+  if (isError) {
+    const hint =
+      errorCode === "NOT_FOUND"
+        ? " Coupons API is not loaded — restart the functions gateway: docker restart ryvo-functions"
+        : "";
+    return (
+      <p className="text-destructive text-sm">
+        {errorMessage ?? "Failed to load coupons."}
+        {hint}
+      </p>
+    );
+  }
+
+  if (isUsed) {
     return (
       <ReferralAdminList
         rows={redemptions}
         rowKey={(r) => r.id}
-        stats={stats}
+        stats={usedStats}
         audience={audience}
         onAudienceChange={onAudienceChange}
         audienceLabel={t("financeReferrals.audience")}
-        audienceOptions={[
-          { value: ADMIN_TABS.referralsCoupons.codes, label: t("financeReferrals.coupons.codes") },
-          { value: ADMIN_TABS.referralsCoupons.usedByClients, label: t("financeReferrals.coupons.usedByClients") },
-        ]}
+        audienceOptions={audienceOptions}
         searchPlaceholder={t("financeReferrals.coupons.searchUsed")}
         searchMatch={(r, q) =>
           r.email.toLowerCase().includes(q) || r.code.toLowerCase().includes(q)
@@ -177,10 +209,7 @@ export function ReferralsCouponsPanel({ audience, onAudienceChange }: ReferralsC
         audience={audience}
         onAudienceChange={onAudienceChange}
         audienceLabel={t("financeReferrals.audience")}
-        audienceOptions={[
-          { value: ADMIN_TABS.referralsCoupons.codes, label: t("financeReferrals.coupons.codes") },
-          { value: ADMIN_TABS.referralsCoupons.usedByClients, label: t("financeReferrals.coupons.usedByClients") },
-        ]}
+        audienceOptions={audienceOptions}
         searchPlaceholder={t("financeReferrals.coupons.searchCodes")}
         searchMatch={(r, q) => r.code.toLowerCase().includes(q)}
         addLabel={t("financeReferrals.coupons.addCode")}

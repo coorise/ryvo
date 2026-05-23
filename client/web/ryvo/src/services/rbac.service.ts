@@ -49,6 +49,7 @@ export type AdminUserRow = {
   roles: string[];
   full_name: string | null;
   phone: string | null;
+  username: string | null;
 };
 
 export type AdminReviewRow = {

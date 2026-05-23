@@ -9,6 +9,7 @@ import {
 export type { TariffPackage, TariffPackageInput, TariffFeatures } from "@/lib/tariff-types";
 
 function mapTariff(row: Record<string, unknown>): TariffPackage {
+  const payoutLabel = row.payout_label === "days" ? "days" : "instant";
   return {
     id: String(row.id),
     code: String(row.code),
@@ -18,12 +19,25 @@ function mapTariff(row: Record<string, unknown>): TariffPackage {
     commission_percent: Number(row.commission_percent),
     subscription_monthly:
       row.subscription_monthly != null ? Number(row.subscription_monthly) : null,
-    payout_cadence: String(row.payout_cadence),
+    recurrence_count:
+      row.recurrence_count != null ? Number(row.recurrence_count) : null,
+    recurrence_unlimited: row.recurrence_count == null,
+    valid_until: row.valid_until != null ? String(row.valid_until) : null,
+    valid_unlimited: row.valid_until == null,
+    min_withdraw_amount: Number(row.min_withdraw_amount ?? 25),
+    payout_label: payoutLabel,
     payout_delay_minutes: Number(row.payout_delay_minutes ?? 0),
+    payout_delay_days: Number(row.payout_delay_days ?? 0),
+    payout_custom_label:
+      row.payout_custom_label != null ? String(row.payout_custom_label) : null,
+    payout_cadence: String(row.payout_cadence ?? payoutLabel),
     quota_trips: row.quota_trips != null ? Number(row.quota_trips) : null,
     discount_percent: Number(row.discount_percent ?? 0),
     search_boost: Number(row.search_boost ?? 0),
     is_optional_subscription: Boolean(row.is_optional_subscription),
+    billing_mode:
+      row.billing_mode === "subscription" ? "subscription" : ("one_time" as const),
+    is_basic: Boolean(row.is_basic),
     is_system: Boolean(row.is_system),
     active: Boolean(row.active),
     features: normalizeFeatures(row.features),
@@ -34,19 +48,31 @@ function mapTariff(row: Record<string, unknown>): TariffPackage {
 }
 
 function bodyToApi(body: TariffPackageInput) {
+  const payoutCadence =
+    body.payout_label === "days"
+      ? `days_${body.payout_delay_days}`
+      : `instant_${body.payout_delay_minutes}`;
   return {
     code: body.code,
     name: body.name,
     package_type: body.package_type,
     description: body.description || null,
     commission_percent: body.commission_percent,
-    subscription_monthly: body.is_optional_subscription ? body.subscription_monthly : null,
-    payout_cadence: body.payout_cadence,
+    subscription_monthly: body.code === "basic" ? 0 : body.subscription_monthly,
+    recurrence_count: body.recurrence_unlimited ? null : body.recurrence_count,
+    valid_until: body.valid_unlimited ? null : body.valid_until,
+    min_withdraw_amount: body.min_withdraw_amount,
+    payout_label: body.payout_label,
     payout_delay_minutes: body.payout_delay_minutes,
-    quota_trips: body.package_type === "per_quota" ? body.quota_trips : null,
+    payout_delay_days: body.payout_delay_days,
+    payout_custom_label: body.payout_custom_label,
+    payout_cadence: payoutCadence,
+    quota_trips: null,
     discount_percent: body.discount_percent,
-    search_boost: body.search_boost,
-    is_optional_subscription: body.is_optional_subscription,
+    search_boost: body.features.search_priority_rank,
+    is_optional_subscription: body.code !== "basic",
+    billing_mode: body.code === "basic" ? "one_time" : "subscription",
+    is_basic: body.is_basic,
     active: body.active,
     features: body.features,
     card_display: body.card_display,
@@ -77,10 +103,7 @@ export class FinanceService extends BaseService {
   }
 
   getCoupons(token: string | null) {
-    return this.get<{ coupons: CouponRow[]; redemptions: CouponRedemptionRow[] }>(
-      "/v1/admin/finance/coupons",
-      token,
-    );
+    return this.get<CouponsBundle>("/v1/admin/finance/coupons", token);
   }
 
   createCoupon(
@@ -253,6 +276,88 @@ export class FinanceService extends BaseService {
     );
   }
 
+  patchPaycheck(
+    token: string | null,
+    id: string,
+    body: {
+      status?: PaycheckStatus;
+      amount?: number;
+      action?: "hold" | "resume" | "cancel" | "pay";
+      reason?: string;
+      notify?: boolean;
+    },
+  ) {
+    return this.patch<{ paycheck: PaycheckRow }>(`/v1/admin/finance/paychecks/${id}`, body, token);
+  }
+
+  deletePaycheck(token: string | null, id: string) {
+    return this.delete<{ deleted: boolean }>(`/v1/admin/finance/paychecks/${id}`, token);
+  }
+
+  getTariffSubscriptions(token: string | null, status?: string) {
+    const q = status ? `?status=${status}` : "";
+    return this.get<{ subscriptions: TariffSubscriptionRow[] }>(
+      `/v1/admin/finance/tariff-subscriptions${q}`,
+      token,
+    );
+  }
+
+  createTariffSubscription(
+    token: string | null,
+    body: { driver_id: string; tariff_package_id: string; notify?: boolean },
+  ) {
+    return this.post<{ subscription: TariffSubscriptionRow }>(
+      "/v1/admin/finance/tariff-subscriptions",
+      body,
+      token,
+    );
+  }
+
+  patchTariffSubscription(
+    token: string | null,
+    id: string,
+    body:
+      | { action: "hold" | "resume" | "cancel"; reason?: string; notify?: boolean }
+      | { action: "migrate"; tariff_package_id: string; notify?: boolean },
+  ) {
+    return this.patch<{ subscription: TariffSubscriptionRow }>(
+      `/v1/admin/finance/tariff-subscriptions/${id}`,
+      body,
+      token,
+    );
+  }
+
+  getDriverEarnings(token: string | null) {
+    return this.get<{ earnings: DriverEarningRow[] }>(
+      "/v1/admin/finance/driver-earnings",
+      token,
+    );
+  }
+
+  adjustDriverEarning(
+    token: string | null,
+    driverId: string,
+    body: { delta?: number; balance?: number },
+  ) {
+    return this.patch<{ earning: { driver_id: string; balance: number } }>(
+      `/v1/admin/finance/driver-earnings/${driverId}`,
+      body,
+      token,
+    );
+  }
+
+  queuePaycheckFromEarnings(token: string | null, driverId: string, amount: number) {
+    return this.post<{ paycheck: PaycheckRow }>(
+      `/v1/admin/finance/driver-earnings/${driverId}/queue-paycheck`,
+      { amount },
+      token,
+    );
+  }
+
+  deleteTariffSubscription(token: string | null, id: string) {
+    return this.delete<{ deleted: boolean }>(`/v1/admin/finance/tariff-subscriptions/${id}`, token);
+  }
+
   getCheckouts(token: string | null, status?: string) {
     const q = status ? `?status=${status}` : "";
     return this.get<{ sessions: CheckoutSession[] }>(`/v1/admin/finance/checkouts${q}`, token);
@@ -314,6 +419,11 @@ export type CouponRedemptionRow = {
   created_at: string;
 };
 
+export type CouponsBundle = {
+  coupons: CouponRow[];
+  redemptions: CouponRedemptionRow[];
+};
+
 export type ReferralsBundle = {
   clientBonuses: BonusAccountRow[];
   driverBonuses: BonusAccountRow[];
@@ -342,14 +452,50 @@ export type PaycheckStatus = "pending" | "paid" | "held" | "cancelled";
 export type PaycheckRow = {
   id: string;
   driver_id: string;
+  driver_email?: string;
   amount: number;
   currency: string;
   status: PaycheckStatus;
   period_label: string | null;
+  period_remaining?: string;
   auto_pay: boolean;
   paid_at: string | null;
   note: string | null;
+  hold_reason?: string | null;
+  cancel_reason?: string | null;
   created_at: string;
+  tariff_package_id?: string | null;
+  tariff_name?: string | null;
+  transfer_due_at?: string | null;
+  is_subscription?: boolean;
+  source?: string;
+};
+
+export type TariffSubscriptionRow = {
+  id: string;
+  driver_id: string;
+  driver_email: string;
+  tariff_package_id: string;
+  tariff_name: string;
+  tariff_code: string;
+  billing_mode: string;
+  subscription_monthly: number | null;
+  status: "active" | "held" | "cancelled";
+  hold_reason: string | null;
+  started_at: string;
+  ends_at: string | null;
+  next_paycheck_at: string | null;
+  payout_cadence: string | null;
+  is_basic?: boolean;
+};
+
+export type DriverEarningRow = {
+  driver_id: string;
+  driver_email: string;
+  balance: number;
+  tariff_name: string | null;
+  tariff_code: string | null;
+  updated_at: string;
 };
 
 export type CheckoutSession = {

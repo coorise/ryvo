@@ -62,60 +62,27 @@ export async function deleteTariff(id: string) {
   const db = getAdminClient();
   const { data: existing } = await db
     .from("driver_tariff_packages")
-    .select("is_system")
+    .select("is_system,is_basic,code")
     .eq("id", id)
     .maybeSingle();
   if (existing?.is_system) throw new Error("Cannot delete system package");
+  if (existing?.is_basic || existing?.code === "basic") {
+    throw new Error("Basic package cannot be deleted");
+  }
   const { error } = await db.from("driver_tariff_packages").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
 
-export async function listPaychecks(status?: string) {
-  const db = getAdminClient();
-  let q = db.from("driver_paychecks").select("*").order("created_at", { ascending: false }).limit(200);
-  if (status) q = q.eq("status", status);
-  const { data } = await q;
-  return data ?? [];
-}
-
-export async function createPaycheck(input: {
-  driver_id: string;
-  amount: number;
-  period_label?: string;
-  note?: string;
-}) {
-  const db = getAdminClient();
-  const { data, error } = await db
-    .from("driver_paychecks")
-    .insert({
-      driver_id: input.driver_id,
-      amount: input.amount,
-      period_label: input.period_label ?? "Manual",
-      note: input.note,
-      status: "pending",
-      auto_pay: false,
-    })
-    .select()
-    .single();
-  if (error) throw new Error(error.message);
-  return data;
-}
-
-export async function updatePaycheckStatus(
-  id: string,
-  status: string,
-  paidBy?: string,
-) {
-  const db = getAdminClient();
-  const patch: Record<string, unknown> = { status };
-  if (status === "paid") {
-    patch.paid_at = new Date().toISOString();
-    patch.paid_by = paidBy;
-  }
-  const { data, error } = await db.from("driver_paychecks").update(patch).eq("id", id).select().single();
-  if (error) throw new Error(error.message);
-  return data;
-}
+export {
+  listPaychecksEnriched as listPaychecks,
+  createPaycheckAdmin as createPaycheck,
+  updatePaycheckStatus,
+  updatePaycheckAmount,
+  holdPaycheck,
+  resumePaycheck,
+  cancelPaycheck,
+  deletePaycheck,
+} from "./finance-paychecks.ts";
 
 export async function listCheckouts(status?: string) {
   const db = getAdminClient();

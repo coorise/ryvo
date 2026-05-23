@@ -62,9 +62,21 @@
     "title": "Estimateur live spéculatif",
     "subtitle": "Comparez OPEX production vs revenus — ROI spéculatif pour le déploiement.",
     "exportPdf": "Exporter PDF",
-    "tabs": { "revenues": "Revenus", "opex": "Configs OPEX" },
-    "period": { "weekly": "Hebdo", "monthly": "Mensuel", "yearly": "Annuel" },
-    "chart": { "line": "Courbe", "bar": "Barres", "pie": "Camembert", "band": "Bande / aire" },
+    "tabs": {
+      "revenues": "Revenus",
+      "opex": "Configs OPEX"
+    },
+    "period": {
+      "weekly": "Hebdo",
+      "monthly": "Mensuel",
+      "yearly": "Annuel"
+    },
+    "chart": {
+      "line": "Courbe",
+      "bar": "Barres",
+      "pie": "Camembert",
+      "band": "Bande / aire"
+    },
     "revenue": {
       "totalRevenue": "Revenus totaux",
       "totalOpex": "OPEX total",
@@ -100,7 +112,12 @@
   "financeReferrals": {
     "title": "Parrainage et bonus",
     "pageSubtitle": "Liens, coupons et points fidélité pour clients et chauffeurs.",
-    "tabs": { "bonus": "Bonus", "coupons": "Coupons", "referrals": "Parrainages", "settings": "Paramètres" },
+    "tabs": {
+      "bonus": "Bonus",
+      "coupons": "Coupons",
+      "referrals": "Parrainages",
+      "settings": "Paramètres"
+    },
     "coupons": {
       "codes": "Codes promo",
       "usedByClients": "Utilisés par les clients",
@@ -126,7 +143,10 @@
         "createdAt": "Créé le"
       }
     },
-    "bonus": { "clients": "Clients", "drivers": "Chauffeurs" },
+    "bonus": {
+      "clients": "Clients",
+      "drivers": "Chauffeurs"
+    },
     "programs": {
       "loyalty": "Fidélité clients",
       "clientReferrals": "Parrainages clients",
@@ -219,8 +239,12 @@
   },
   "financeTariffs": {
     "title": "Tarifs et commissions",
-    "subtitle": "Forfaits Essential/Pro ou commission par course, quota, jour, semaine, mois.",
-    "subtitleEditable": "Définissez commissions, délais de paie et avantages chauffeur. Les valeurs par défaut sont modifiables.",
+    "subtitle": "Quatre forfaits (Basic, Essential, Pro, Pro+). Commission sur les gains ; retrait à tout moment.",
+    "subtitleEditable": "Basic, Essential, Pro et Pro+ sont des forfaits intégrés. Vous pouvez aussi créer d'autres forfaits personnalisés.",
+    "tabs": {
+      "tariffs": "Tarifs",
+      "subscribers": "Abonnés"
+    },
     "createPackage": "Créer un forfait",
     "editPackage": "Modifier le forfait",
     "confirmDelete": "Supprimer ce forfait ?",
@@ -240,46 +264,44 @@
       "type": "Type",
       "payout": "Versement",
       "sub": "Abonnement/mois",
-      "quota": "Quota courses"
+      "minWithdraw": "Retrait min."
     },
     "types": {
-      "essential": "Essential (abonnement)",
-      "pro": "Pro (abonnement)",
-      "per_drive": "Par course",
-      "per_quota": "Par quota",
-      "per_daily": "Lot journalier",
-      "per_weekly": "Lot hebdomadaire",
-      "per_monthly": "Lot mensuel",
+      "basic": "Basic (défaut)",
+      "essential": "Essential",
+      "pro": "Pro",
+      "pro_plus": "Pro+",
       "custom": "Personnalisé"
     },
-    "payoutPresets": {
-      "minutes_after_trip": "Minutes après la course",
-      "end_of_quota": "Fin du quota",
-      "daily": "Quotidien",
-      "weekly": "Hebdomadaire",
-      "monthly": "Mensuel",
-      "custom": "Libellé personnalisé"
+    "payoutLabels": {
+      "instant": "Instantané",
+      "days": "Jours"
     },
     "form": {
       "name": "Nom affiché",
       "code": "Code (unique, a-z0-9_)",
-      "type": "Modèle de facturation",
+      "type": "Type de forfait",
       "description": "Description marketing",
       "pricing": "Tarification",
       "commission": "Commission plateforme (%)",
       "discount": "Remise chauffeur (%)",
-      "subscriptionPlan": "Abonnement mensuel",
-      "subscriptionHint": "Optionnel — mis en avant dans la recherche",
       "monthlyPrice": "Prix mensuel (CAD)",
-      "searchBoost": "Priorité recherche (0–100)",
       "payoutSection": "Paie et délais",
-      "payoutCadence": "Libellé de versement",
       "payoutCustom": "Texte personnalisé",
       "payoutDelay": "Délai en attente (minutes)",
       "payoutDelayHint": "Délai avant versement (ex. 5 min, 1440 = 1 jour)",
-      "quotaTrips": "Courses par quota",
       "featuresTitle": "Avantages et visibilité",
-      "active": "Proposé aux chauffeurs"
+      "active": "Proposé aux chauffeurs",
+      "recurrences": "Nombre de récurrences",
+      "recurrencesHint": "Cycles mensuels jusqu'à expiration de Validité",
+      "unlimited": "Illimité",
+      "validUntil": "Validité",
+      "validUntilHint": "Date et heure de fin du forfait",
+      "minWithdraw": "Montant minimum de retrait (CAD)",
+      "payoutLabel": "Libellé de versement",
+      "payoutCustomPlaceholder": "ex. Instantané, 3 jours ouvrables",
+      "payoutDays": "Nombre de jours",
+      "payoutDaysHint": "Jours avant transfert après demande de retrait"
     },
     "display": {
       "title": "Apparence de la carte",
@@ -316,7 +338,10 @@
     },
     "features": {
       "searchPriority": "Haut de liste recherche",
-      "searchPriorityHint": "Boost plus élevé = affiché en premier",
+      "searchPriorityRank": "Priorité recherche",
+      "searchPriorityRankHint": "Nombre plus bas = priorité plus haute",
+      "removeAds": "Sans publicité",
+      "removeAdsHint": "Masquer les petites annonces in-app",
       "promotedListing": "Fiche chauffeur promue",
       "promotedListingHint": "Mis en avant dans l'app client",
       "mediaGallery": "Galerie photo / vidéo véhicule",
@@ -326,12 +351,22 @@
       "customBadge": "Badge personnalisé",
       "badgeLabel": "Texte du badge",
       "prioritySupport": "Support prioritaire"
+    },
+    "search": "Rechercher par nom, code ou description…",
+    "filter": {
+      "all": "Tous les statuts",
+      "active": "Actifs",
+      "inactive": "Inactifs",
+      "allTypes": "Tous les types",
+      "builtin": "Intégrés",
+      "custom": "Personnalisés"
     }
   },
   "financePaychecks": {
     "title": "Paies chauffeurs",
-    "subtitle": "File auto avec paiement, blocage ou annulation manuels.",
-    "all": "Tous",
+    "subtitle": "File de retraits et soldes gagnés. Les chauffeurs demandent un retrait depuis l'app.",
+    "all": "Tous les statuts",
+    "search": "Rechercher par nom, @username ou email…",
     "driverId": "ID chauffeur",
     "amount": "Montant (CAD)",
     "addManual": "Ajouter à la file",
@@ -339,7 +374,40 @@
     "updated": "Paie mise à jour",
     "pay": "Payer",
     "hold": "Bloquer",
-    "col": { "driver": "Chauffeur", "amount": "Montant", "period": "Période", "status": "Statut" }
+    "detailTitle": "Détails de la paie",
+    "filterPending": "En attente",
+    "filterPaid": "Payé",
+    "filterHeld": "Bloqué",
+    "filterCancelled": "Annulé",
+    "sortAmountDesc": "Montant décroissant",
+    "sortAmountAsc": "Montant croissant",
+    "autoYes": "Auto",
+    "autoNo": "Manuel",
+    "stats": {
+      "total": "Total paies",
+      "totalHint": "Toutes les entrées",
+      "pending": "En attente",
+      "pendingHint": "à traiter",
+      "paid": "Payées",
+      "held": "Bloquées"
+    },
+    "col": {
+      "driver": "Chauffeur",
+      "amount": "Montant",
+      "period": "Période",
+      "status": "Statut",
+      "autoPay": "Versement",
+      "paidAt": "Payé le",
+      "note": "Note",
+      "created": "Créé"
+    },
+    "tabs": {
+      "paying": "Paiements",
+      "driversAmount": "Soldes chauffeurs"
+    },
+    "searchDriver": "Chauffeur",
+    "searchDriverPlaceholder": "Nom, @username ou email…",
+    "noDriverMatch": "Aucun chauffeur trouvé"
   },
   "financeCheckouts": {
     "title": "Entonnoir checkout",
@@ -360,8 +428,17 @@
     "title": "Analytique",
     "subtitle": "KPI interactifs — filtres et graphiques (jeux de données démo).",
     "exportPdf": "Exporter PDF",
-    "period": { "7d": "7 jours", "30d": "30 jours", "90d": "90 jours", "1y": "1 an" },
-    "audience": { "all": "Tous", "clients": "Clients", "drivers": "Chauffeurs" },
+    "period": {
+      "7d": "7 jours",
+      "30d": "30 jours",
+      "90d": "90 jours",
+      "1y": "1 an"
+    },
+    "audience": {
+      "all": "Tous",
+      "clients": "Clients",
+      "drivers": "Chauffeurs"
+    },
     "kpi": {
       "activeUsers": "Utilisateurs actifs",
       "trips": "Courses terminées",
@@ -376,8 +453,15 @@
       "experience": "Scores expérience",
       "destinations": "Destinations populaires"
     },
-    "series": { "trips": "Courses", "revenue": "Revenus" },
-    "table": { "destination": "Destination", "trips": "Courses", "share": "Part %" }
+    "series": {
+      "trips": "Courses",
+      "revenue": "Revenus"
+    },
+    "table": {
+      "destination": "Destination",
+      "trips": "Courses",
+      "share": "Part %"
+    }
   },
   "admin": {
     "subtitle": "Vue d'ensemble en temps réel",
@@ -590,6 +674,8 @@
     "sortEmailDesc": "Courriel Z–A",
     "sortUpdatedDesc": "Mis à jour récemment",
     "sortUpdatedAsc": "Plus ancien",
+    "sortCreatedDesc": "Plus récent",
+    "sortCreatedAsc": "Plus ancien",
     "sortPermissionsDesc": "Plus de permissions",
     "searchRoles": "Rechercher un rôle…",
     "totalRoles": "Rôles totaux",
@@ -668,11 +754,96 @@
     "subtitle": "Piste d'audit immuable des actions admin."
   },
   "payments": {
-    "subtitle": "Intentions de paiement et captures.",
-    "amount": "Montant"
+    "subtitle": "Paiements réussis et intentions depuis le checkout client.",
+    "amount": "Montant",
+    "search": "Rechercher email, ID paiement, course…",
+    "detailTitle": "Détails du paiement",
+    "statusSucceeded": "Réussi",
+    "statusPending": "En attente",
+    "statusFailed": "Échoué",
+    "sortAmountDesc": "Montant décroissant",
+    "sortAmountAsc": "Montant croissant",
+    "stats": {
+      "total": "Total paiements",
+      "totalHint": "Intentions enregistrées",
+      "succeeded": "Réussis",
+      "volume": "Volume capturé",
+      "volumeHint": "Charges réussies",
+      "other": "Autres statuts",
+      "otherHint": "En attente ou échoué"
+    },
+    "col": {
+      "client": "Client",
+      "amount": "Montant",
+      "status": "Statut",
+      "provider": "Fournisseur",
+      "providerRef": "Réf. fournisseur",
+      "trip": "Course",
+      "request": "Demande",
+      "created": "Créé",
+      "settled": "Réglé"
+    }
   },
   "security": {
     "subtitle": "Événements sensibles dans les journaux d'audit.",
     "viewAudit": "Voir les journaux d'audit"
+  },
+  "financeSubscribers": {
+    "addManual": "Ajouter un abonnement",
+    "added": "Abonnement créé",
+    "updated": "Abonnement mis à jour",
+    "deleted": "Abonnement supprimé",
+    "search": "Rechercher chauffeur ou forfait…",
+    "package": "Forfait",
+    "pickPackage": "Choisir un forfait",
+    "monthly": "Mensuel",
+    "started": "Début",
+    "active": "Actif",
+    "holdTitle": "Suspendre l'abonnement",
+    "holdDesc": "Pause des paies auto pour cet abonnement. Notifier le chauffeur optionnellement.",
+    "resumeTitle": "Reprendre l'abonnement",
+    "resumeDesc": "Réactiver l'abonnement.",
+    "cancelTitle": "Annuler l'abonnement",
+    "cancelDesc": "Mettre fin à cet abonnement. Le chauffeur peut être notifié.",
+    "deleteTitle": "Supprimer l'abonnement",
+    "deleteDesc": "Supprimer cet enregistrement d'abonnement.",
+    "migrate": "Migrer",
+    "migrateTitle": "Changer de forfait",
+    "migrateDesc": "Déplacer {{email}} vers un autre forfait.",
+    "migrated": "Chauffeur migré",
+    "stats": {
+      "total": "Abonnés",
+      "active": "Actifs",
+      "held": "En attente"
+    }
+  },
+  "financeDriversAmount": {
+    "search": "Rechercher chauffeur, forfait ou ID…",
+    "adjust": "Ajuster",
+    "adjustTitle": "Ajuster le solde gagné",
+    "modeDelta": "Ajouter / soustraire",
+    "modeSet": "Définir le solde",
+    "amount": "Montant (CAD)",
+    "adjusted": "Solde mis à jour",
+    "queuePaycheck": "Mettre en file de paie",
+    "queueTitle": "Créer une paie de retrait",
+    "queueDesc": "Créer une paie en attente pour {{email}} (disponible : {{balance}} $).",
+    "queueAmount": "Montant du retrait (CAD)",
+    "queued": "Paie ajoutée à l'onglet Paiements",
+    "noTariff": "Basic",
+    "stats": {
+      "drivers": "Chauffeurs",
+      "totalBalance": "Total gagné"
+    },
+    "col": {
+      "balance": "Solde gagné",
+      "updated": "Mis à jour"
+    },
+    "pay": "Payer",
+    "payTitle": "Payer le chauffeur",
+    "payDesc": "Retrait du solde de {{email}} (disponible : {{balance}} $). Une paie sera ajoutée dans Paiements.",
+    "payAmount": "Montant à payer (CAD)",
+    "payHint": "Déduit du solde gagné ; délai selon le forfait du chauffeur.",
+    "paid": "Paie ajoutée dans l'onglet Paiements"
   }
 }

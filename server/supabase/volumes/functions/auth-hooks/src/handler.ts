@@ -62,9 +62,28 @@ import {
   listPaychecks,
   createPaycheck,
   updatePaycheckStatus,
+  updatePaycheckAmount,
+  holdPaycheck,
+  resumePaycheck,
+  cancelPaycheck,
+  deletePaycheck,
   listCheckouts,
   seedDemoFinanceIfEmpty,
 } from "../../_shared/lib/finance-admin.ts";
+import {
+  listTariffSubscriptions,
+  createTariffSubscription,
+  migrateTariffSubscription,
+  holdTariffSubscription,
+  resumeTariffSubscription,
+  cancelTariffSubscription,
+  deleteTariffSubscription,
+} from "../../_shared/lib/finance-subscriptions.ts";
+import {
+  listDriverEarnings,
+  adjustDriverEarning,
+  queuePaycheckFromEarnings,
+} from "../../_shared/lib/finance-driver-earnings.ts";
 import {
   listBonusAccounts,
   upsertBonusAccount,
@@ -78,6 +97,7 @@ import {
   getUserIdByEmail,
   getUserEmail,
 } from "../../_shared/lib/finance-referrals.ts";
+import { listPaymentsAdmin } from "../../_shared/lib/admin-payments.ts";
 import {
   listCouponsAdmin,
   createCouponAdmin,
@@ -161,6 +181,7 @@ const notificationEventSchema = z.object({
 
 const tariffFeaturesSchema = z.object({
   search_priority: z.boolean().optional(),
+  search_priority_rank: z.number().min(1).max(9999).optional(),
   promoted_listing: z.boolean().optional(),
   media_gallery: z.boolean().optional(),
   max_photos: z.number().min(0).max(20).optional(),
@@ -168,6 +189,7 @@ const tariffFeaturesSchema = z.object({
   custom_badge: z.boolean().optional(),
   badge_label: z.string().max(32).optional(),
   priority_support: z.boolean().optional(),
+  remove_ads: z.boolean().optional(),
 });
 
 const tariffLabelStyleSchema = z.object({
@@ -204,25 +226,24 @@ const tariffCardDisplaySchema = z.object({
 const tariffPackageSchema = z.object({
   code: z.string().min(2).max(48).regex(/^[a-z0-9_]+$/),
   name: z.string().min(1).max(80),
-  package_type: z.enum([
-    "essential",
-    "pro",
-    "per_drive",
-    "per_quota",
-    "per_daily",
-    "per_weekly",
-    "per_monthly",
-    "custom",
-  ]),
+  package_type: z.enum(["basic", "essential", "pro", "pro_plus", "custom"]),
   description: z.string().max(500).optional().nullable(),
   commission_percent: z.number().min(0).max(50),
   subscription_monthly: z.number().min(0).nullable().optional(),
-  payout_cadence: z.string().min(1).max(64),
+  recurrence_count: z.number().min(1).nullable().optional(),
+  valid_until: z.string().datetime().nullable().optional(),
+  min_withdraw_amount: z.number().min(0).optional(),
+  payout_label: z.enum(["instant", "days"]).optional(),
   payout_delay_minutes: z.number().min(0).max(525600).optional(),
+  payout_delay_days: z.number().min(0).max(365).optional(),
+  payout_custom_label: z.string().max(64).nullable().optional(),
+  payout_cadence: z.string().min(1).max(64).optional(),
   quota_trips: z.number().min(0).nullable().optional(),
   discount_percent: z.number().min(0).max(100).optional(),
   search_boost: z.number().min(0).max(100).optional(),
   is_optional_subscription: z.boolean().optional(),
+  billing_mode: z.enum(["subscription", "one_time"]).optional(),
+  is_basic: z.boolean().optional(),
   active: z.boolean().optional(),
   features: tariffFeaturesSchema.optional(),
   card_display: tariffCardDisplaySchema.optional(),
@@ -1172,10 +1193,161 @@ export const handle = createServiceRouter("auth-hooks", [
     auth: true,
     permissions: ["finances:paychecks:update"],
     handler: async (req, ctx, params) => {
-      const { status } = z.object({ status: z.enum(["pending", "paid", "held", "cancelled"]) }).parse(await req.json());
-      const row = await updatePaycheckStatus(params.id, status, ctx.auth!.userId);
-      await emitAudit(ctx.auth!.userId, "paycheck.status", "driver_paychecks", params.id, { status });
+      const body = z
+        .object({
+          status: z.enum(["pending", "paid", "held", "cancelled"]).optional(),
+          amount: z.number().positive().optional(),
+          action: z.enum(["hold", "resume", "cancel", "pay"]).optional(),
+          reason: z.string().max(2000).optional(),
+          notify: z.boolean().optional(),
+        })
+        .parse(await req.json());
+
+      let row;
+      if (body.action === "hold") {
+        row = await holdPaycheck(params.id, { reason: body.reason, notify: body.notify ?? true });
+      } else if (body.action === "resume") {
+        row = await resumePaycheck(params.id, { notify: body.notify ?? true });
+      } else if (body.action === "cancel") {
+        row = await cancelPaycheck(params.id, { reason: body.reason, notify: body.notify ?? true });
+      } else if (body.action === "pay" || body.status === "paid") {
+        row = await updatePaycheckStatus(params.id, "paid", ctx.auth!.userId);
+      } else if (body.amount != null) {
+        row = await updatePaycheckAmount(params.id, body.amount);
+      } else if (body.status) {
+        row = await updatePaycheckStatus(params.id, body.status, ctx.auth!.userId);
+      } else {
+        return fail("VALIDATION", "No update specified", 400);
+      }
+      await emitAudit(ctx.auth!.userId, "paycheck.update", "driver_paychecks", params.id, body);
       return ok({ paycheck: row });
+    },
+  },
+  {
+    method: "DELETE",
+    path: "/v1/admin/finance/paychecks/:id",
+    auth: true,
+    permissions: ["finances:paychecks:update"],
+    handler: async (_req, ctx, params) => {
+      const result = await deletePaycheck(params.id);
+      await emitAudit(ctx.auth!.userId, "paycheck.delete", "driver_paychecks", params.id, result);
+      return ok(result);
+    },
+  },
+  {
+    method: "GET",
+    path: "/v1/admin/finance/tariff-subscriptions",
+    auth: true,
+    permissions: ["finances:subscriptions:read"],
+    handler: async (req) => {
+      const url = new URL(req.url);
+      const status = url.searchParams.get("status") ?? undefined;
+      return ok({ subscriptions: await listTariffSubscriptions(status) });
+    },
+  },
+  {
+    method: "POST",
+    path: "/v1/admin/finance/tariff-subscriptions",
+    auth: true,
+    permissions: ["finances:subscriptions:update"],
+    handler: async (req, ctx) => {
+      const body = z
+        .object({
+          driver_id: z.string().uuid(),
+          tariff_package_id: z.string().uuid(),
+          notify: z.boolean().optional(),
+        })
+        .parse(await req.json());
+      const row = await createTariffSubscription(body);
+      await emitAudit(ctx.auth!.userId, "subscription.create", "driver_tariff_subscriptions", row.id, body);
+      return ok({ subscription: row });
+    },
+  },
+  {
+    method: "PATCH",
+    path: "/v1/admin/finance/tariff-subscriptions/:id",
+    auth: true,
+    permissions: ["finances:subscriptions:update"],
+    handler: async (req, ctx, params) => {
+      const body = z
+        .object({
+          action: z.enum(["hold", "resume", "cancel", "migrate"]),
+          reason: z.string().max(2000).optional(),
+          notify: z.boolean().optional(),
+          tariff_package_id: z.string().uuid().optional(),
+        })
+        .parse(await req.json());
+      let row;
+      if (body.action === "hold") {
+        row = await holdTariffSubscription(params.id, { reason: body.reason, notify: body.notify ?? true });
+      } else if (body.action === "resume") {
+        row = await resumeTariffSubscription(params.id, { notify: body.notify ?? true });
+      } else if (body.action === "migrate") {
+        if (!body.tariff_package_id) throw new Error("tariff_package_id required for migrate");
+        const db = getAdminClient();
+        const { data: sub } = await db
+          .from("driver_tariff_subscriptions")
+          .select("driver_id")
+          .eq("id", params.id)
+          .single();
+        if (!sub) throw new Error("Subscription not found");
+        row = await migrateTariffSubscription({
+          driver_id: String(sub.driver_id),
+          tariff_package_id: body.tariff_package_id,
+          notify: body.notify ?? true,
+        });
+      } else {
+        row = await cancelTariffSubscription(params.id, { reason: body.reason, notify: body.notify ?? true });
+      }
+      await emitAudit(ctx.auth!.userId, "subscription.update", "driver_tariff_subscriptions", params.id, body);
+      return ok({ subscription: row });
+    },
+  },
+  {
+    method: "GET",
+    path: "/v1/admin/finance/driver-earnings",
+    auth: true,
+    permissions: ["finances:paychecks:read"],
+    handler: async () => ok({ earnings: await listDriverEarnings() }),
+  },
+  {
+    method: "PATCH",
+    path: "/v1/admin/finance/driver-earnings/:driverId",
+    auth: true,
+    permissions: ["finances:paychecks:update"],
+    handler: async (req, ctx, params) => {
+      const body = z
+        .object({
+          delta: z.number().optional(),
+          balance: z.number().min(0).optional(),
+        })
+        .parse(await req.json());
+      const row = await adjustDriverEarning(params.driverId, body.delta ?? 0, body.balance);
+      await emitAudit(ctx.auth!.userId, "driver_earnings.adjust", "driver_earnings", params.driverId, body);
+      return ok({ earning: row });
+    },
+  },
+  {
+    method: "POST",
+    path: "/v1/admin/finance/driver-earnings/:driverId/queue-paycheck",
+    auth: true,
+    permissions: ["finances:paychecks:update"],
+    handler: async (req, ctx, params) => {
+      const body = z.object({ amount: z.number().positive() }).parse(await req.json());
+      const paycheck = await queuePaycheckFromEarnings(params.driverId, body.amount);
+      await emitAudit(ctx.auth!.userId, "paycheck.create", "driver_paychecks", paycheck.id, body);
+      return ok({ paycheck });
+    },
+  },
+  {
+    method: "DELETE",
+    path: "/v1/admin/finance/tariff-subscriptions/:id",
+    auth: true,
+    permissions: ["finances:subscriptions:update"],
+    handler: async (_req, ctx, params) => {
+      const result = await deleteTariffSubscription(params.id);
+      await emitAudit(ctx.auth!.userId, "subscription.delete", "driver_tariff_subscriptions", params.id, result);
+      return ok(result);
     },
   },
   {
@@ -1197,14 +1369,10 @@ export const handle = createServiceRouter("auth-hooks", [
     permissions: ["payments:read"],
     handler: async (req) => {
       const url = new URL(req.url);
-      const limit = Number(url.searchParams.get("limit") ?? 100);
-      const db = getAdminClient();
-      const { data } = await db
-        .from("payment_intents")
-        .select("id,amount,currency,status,created_at,trip_id,client_id")
-        .order("created_at", { ascending: false })
-        .limit(limit);
-      return ok({ payments: data ?? [] });
+      const status = url.searchParams.get("status") ?? undefined;
+      const limit = Number(url.searchParams.get("limit") ?? 200);
+      const payments = await listPaymentsAdmin({ status, limit });
+      return ok({ payments });
     },
   },
   {

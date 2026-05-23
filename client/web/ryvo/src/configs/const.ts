@@ -174,6 +174,9 @@ export const SORT_KEYS = {
   name: "name",
   email: "email",
   updatedAt: "updated_at",
+  createdAt: "created_at",
+  amount: "amount",
+  status: "status",
   roleName: "name",
   permissionsCount: "permissions_count",
 } as const;
@@ -259,6 +262,11 @@ export const PERMISSIONS = {
     checkoutsRead: "finances:checkouts:read",
     paychecksRead: "finances:paychecks:read",
     paychecksUpdate: "finances:paychecks:update",
+    subscriptionsRead: "finances:subscriptions:read",
+    subscriptionsUpdate: "finances:subscriptions:update",
+  },
+  payments: {
+    read: "payments:read",
   },
 } as const;
 
