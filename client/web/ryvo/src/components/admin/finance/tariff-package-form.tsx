@@ -252,10 +252,42 @@ export function TariffPackageForm({ form, setForm, isNew, readOnly }: TariffPack
           <Input
             type="number"
             step="0.01"
+            min={0}
             disabled={disabled}
             value={form.min_withdraw_amount}
             onChange={(e) => patch({ min_withdraw_amount: Number(e.target.value) })}
           />
+        </div>
+        <div className="space-y-1">
+          <Label>{t("financeTariffs.form.maxWithdraw")}</Label>
+          <div className="flex flex-wrap items-center gap-3">
+            <Switch
+              disabled={disabled}
+              checked={form.max_withdraw_unlimited}
+              onCheckedChange={(v) =>
+                patch({
+                  max_withdraw_unlimited: v,
+                  max_withdraw_amount: v ? null : form.max_withdraw_amount ?? 500,
+                })
+              }
+            />
+            <span className="text-muted-foreground text-xs">
+              {form.max_withdraw_unlimited
+                ? t("financeTariffs.form.unlimited")
+                : t("financeTariffs.form.maxWithdrawHint")}
+            </span>
+            {!form.max_withdraw_unlimited && (
+              <Input
+                type="number"
+                step="0.01"
+                min={form.min_withdraw_amount}
+                className="w-32"
+                disabled={disabled}
+                value={form.max_withdraw_amount ?? 0}
+                onChange={(e) => patch({ max_withdraw_amount: Number(e.target.value) })}
+              />
+            )}
+          </div>
         </div>
         <div className="space-y-1 sm:col-span-2">
           <Label>{t("financeTariffs.form.validUntil")}</Label>

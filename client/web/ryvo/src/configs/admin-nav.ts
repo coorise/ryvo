@@ -151,7 +151,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
         href: ROUTES.admin.finance.checkouts,
         labelKey: "nav.checkouts",
         icon: ShoppingCart,
-        permPrefixes: ["finances:checkouts:", "payments:"],
+        permPrefixes: ["finances:checkouts:", "finances:checkouts:update", "payments:"],
       },
       {
         href: ROUTES.admin.payments,
@@ -182,7 +182,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
         href: ROUTES.admin.security,
         labelKey: "nav.security",
         icon: Shield,
-        permPrefixes: ["audit:"],
+        permPrefixes: ["audit:", "audit:update"],
       },
       {
         href: ROUTES.admin.audit,

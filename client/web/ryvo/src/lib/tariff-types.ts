@@ -145,6 +145,8 @@ export type TariffPackage = {
   valid_until: string | null;
   valid_unlimited: boolean;
   min_withdraw_amount: number;
+  max_withdraw_amount: number | null;
+  max_withdraw_unlimited: boolean;
   payout_label: TariffPayoutLabel;
   payout_delay_minutes: number;
   payout_delay_days: number;
@@ -226,6 +228,8 @@ export function emptyTariffInput(): TariffPackageInput {
     valid_until: null,
     valid_unlimited: true,
     min_withdraw_amount: 25,
+    max_withdraw_amount: null,
+    max_withdraw_unlimited: true,
     payout_label: "instant",
     payout_delay_minutes: 0,
     payout_delay_days: 0,
@@ -262,6 +266,8 @@ export function packageToInput(pkg: TariffPackage): TariffPackageInput {
     valid_until: pkg.valid_until,
     valid_unlimited: pkg.valid_unlimited,
     min_withdraw_amount: pkg.min_withdraw_amount,
+    max_withdraw_amount: pkg.max_withdraw_amount,
+    max_withdraw_unlimited: pkg.max_withdraw_unlimited,
     payout_label: pkg.payout_label,
     payout_delay_minutes: pkg.payout_delay_minutes,
     payout_delay_days: pkg.payout_delay_days,

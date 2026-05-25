@@ -11,13 +11,22 @@ export async function startNotificationConsumer(): Promise<void> {
       const job = JSON.parse(message.value.toString());
       const db = getAdminClient();
 
-      if (job.channel === "email" && job.payload?.to_email && job.payload?.template_key) {
+      if (job.channel === "email" && job.payload?.to_email) {
         try {
-          await sendTemplatedEmail(
-            job.payload.to_email as string,
-            job.payload.template_key as string,
-            (job.payload.vars ?? {}) as Record<string, string>,
-          );
+          if (job.payload?.use_custom_body && job.payload?.custom_body) {
+            const { sendSmtpMail } = await import("../lib/email.ts");
+            await sendSmtpMail({
+              to: job.payload.to_email as string,
+              subject: (job.payload.subject as string) ?? "Ryvo",
+              html: job.payload.custom_body as string,
+            });
+          } else if (job.payload?.template_key) {
+            await sendTemplatedEmail(
+              job.payload.to_email as string,
+              job.payload.template_key as string,
+              (job.payload.vars ?? {}) as Record<string, string>,
+            );
+          }
         } catch (e) {
           console.error("[notification] email send failed:", e);
         }

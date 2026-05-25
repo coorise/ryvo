@@ -293,8 +293,11 @@ export function TariffsPanel() {
           },
           {
             key: "w",
-            header: t("financeTariffs.col.minWithdraw"),
-            cell: (p) => `$${p.min_withdraw_amount}`,
+            header: t("financeTariffs.col.withdrawLimits"),
+            cell: (p) =>
+              p.max_withdraw_unlimited || p.max_withdraw_amount == null
+                ? `$${p.min_withdraw_amount} – ${t("financeTariffs.form.unlimited")}`
+                : `$${p.min_withdraw_amount} – $${p.max_withdraw_amount}`,
           },
           {
             key: "s",

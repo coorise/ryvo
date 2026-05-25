@@ -260,6 +260,7 @@ export const PERMISSIONS = {
     tariffsRead: "finances:tariffs:read",
     tariffsUpdate: "finances:tariffs:update",
     checkoutsRead: "finances:checkouts:read",
+    checkoutsUpdate: "finances:checkouts:update",
     paychecksRead: "finances:paychecks:read",
     paychecksUpdate: "finances:paychecks:update",
     subscriptionsRead: "finances:subscriptions:read",
@@ -267,6 +268,10 @@ export const PERMISSIONS = {
   },
   payments: {
     read: "payments:read",
+  },
+  audit: {
+    read: "audit:read",
+    update: "audit:update",
   },
 } as const;
 
@@ -361,7 +366,7 @@ export const DASHBOARD_NAV = {
     { href: ROUTES.admin.home, label: "Dashboard" },
     { href: ROUTES.admin.map, label: "Live map", badge: "Live" },
     { href: ROUTES.admin.rides, label: "Rides", badge: "4", permissions: [PERMISSIONS.users.read] },
-    { href: ROUTES.admin.users.list, label: "Users" },
+    { href: ROUTES.admin.users.list, label: "Clients" },
     { href: ROUTES.admin.drivers.list, label: "Drivers KYC", badge: "4" },
     { href: ROUTES.admin.tickets, label: "Support", badge: "3" },
     { href: ROUTES.admin.payments, label: "Payments" },

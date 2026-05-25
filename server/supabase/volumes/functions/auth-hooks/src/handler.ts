@@ -71,6 +71,10 @@ import {
   seedDemoFinanceIfEmpty,
 } from "../../_shared/lib/finance-admin.ts";
 import {
+  deleteCheckoutSession,
+  scheduleCheckoutRecovery,
+} from "../../_shared/lib/finance-checkouts.ts";
+import {
   listTariffSubscriptions,
   createTariffSubscription,
   migrateTariffSubscription,
@@ -233,6 +237,7 @@ const tariffPackageSchema = z.object({
   recurrence_count: z.number().min(1).nullable().optional(),
   valid_until: z.string().datetime().nullable().optional(),
   min_withdraw_amount: z.number().min(0).optional(),
+  max_withdraw_amount: z.number().min(0).nullable().optional(),
   payout_label: z.enum(["instant", "days"]).optional(),
   payout_delay_minutes: z.number().min(0).max(525600).optional(),
   payout_delay_days: z.number().min(0).max(365).optional(),
@@ -1360,6 +1365,53 @@ export const handle = createServiceRouter("auth-hooks", [
       const url = new URL(req.url);
       const status = url.searchParams.get("status") ?? undefined;
       return ok({ sessions: await listCheckouts(status) });
+    },
+  },
+  {
+    method: "DELETE",
+    path: "/v1/admin/finance/checkouts/:id",
+    auth: true,
+    permissions: ["finances:checkouts:update"],
+    handler: async (_req, ctx, params) => {
+      const result = await deleteCheckoutSession(params.id);
+      await emitAudit(
+        ctx.auth!.userId,
+        "checkout.delete",
+        "checkout_sessions",
+        params.id,
+        {},
+      );
+      return ok(result);
+    },
+  },
+  {
+    method: "POST",
+    path: "/v1/admin/finance/checkouts/:id/recovery-reminder",
+    auth: true,
+    permissions: ["finances:checkouts:update"],
+    handler: async (req, ctx, params) => {
+      const body = z
+        .object({
+          message: z.string().min(1).max(2000),
+          send_email: z.boolean(),
+          send_push: z.boolean(),
+          delay_minutes: z.number().min(0).max(10080),
+        })
+        .parse(await req.json());
+      const reminder = await scheduleCheckoutRecovery(params.id, ctx.auth!.userId, body);
+      await emitAudit(
+        ctx.auth!.userId,
+        "checkout.recovery_scheduled",
+        "checkout_sessions",
+        params.id,
+        {
+          reminder_id: reminder.id,
+          send_at: reminder.send_at,
+          send_email: body.send_email,
+          send_push: body.send_push,
+        },
+      );
+      return ok({ reminder });
     },
   },
   {

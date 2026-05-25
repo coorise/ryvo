@@ -4,6 +4,7 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  BellRing,
   Eye,
   Pencil,
   Search,
@@ -356,13 +357,17 @@ export function InlineRowActions({
   onView,
   onEdit,
   onToggle,
+  onRemind,
+  remindLabel,
   onDelete,
   toggleSuspended,
   profileLabel,
 }: {
-  onView: () => void;
+  onView?: () => void;
   onEdit?: () => void;
   onToggle?: () => void;
+  onRemind?: () => void;
+  remindLabel?: string;
   onDelete?: () => void;
   toggleSuspended?: boolean;
   profileLabel?: string;
@@ -371,9 +376,11 @@ export function InlineRowActions({
 
   return (
     <div className="flex justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
-      <ActionIconButton label={t("actions.view")} onClick={onView}>
-        <Eye className="size-4" />
-      </ActionIconButton>
+      {onView && (
+        <ActionIconButton label={t("actions.view")} onClick={onView}>
+          <Eye className="size-4" />
+        </ActionIconButton>
+      )}
       {onEdit && (
         <ActionIconButton label={t("actions.edit")} onClick={onEdit}>
           <Pencil className="size-4" />
@@ -386,6 +393,15 @@ export function InlineRowActions({
           className={toggleSuspended ? "border-destructive/40 text-destructive" : undefined}
         >
           <UserRound className="size-4" />
+        </ActionIconButton>
+      )}
+      {onRemind && (
+        <ActionIconButton
+          label={remindLabel ?? t("actions.remind")}
+          onClick={onRemind}
+          className="hover:border-amber-500/50 hover:bg-amber-500/10 hover:text-amber-700"
+        >
+          <BellRing className="size-4" />
         </ActionIconButton>
       )}
       {onDelete && (

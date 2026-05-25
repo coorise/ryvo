@@ -1,4 +1,5 @@
 import { getAdminClient } from "./supabase.ts";
+import { processDueCheckoutReminders } from "./finance-checkouts.ts";
 
 export async function getReferralSettings() {
   const db = getAdminClient();
@@ -85,6 +86,7 @@ export {
 } from "./finance-paychecks.ts";
 
 export async function listCheckouts(status?: string) {
+  await processDueCheckoutReminders();
   const db = getAdminClient();
   let q = db.from("checkout_sessions").select("*").order("last_event_at", { ascending: false }).limit(200);
   if (status) q = q.eq("status", status);

@@ -18,7 +18,7 @@
     "dashboard": "Dashboard",
     "liveMap": "Live map",
     "rides": "Rides",
-    "users": "Users",
+    "users": "Clients",
     "driverKyc": "Drivers KYC",
     "staff": "Staff",
     "support": "Support tickets",
@@ -252,7 +252,8 @@
       "type": "Type",
       "payout": "Payout",
       "sub": "Monthly sub",
-      "minWithdraw": "Min withdraw"
+      "minWithdraw": "Min withdraw",
+      "withdrawLimits": "Withdraw limits"
     },
     "types": {
       "basic": "Basic (default)",
@@ -276,6 +277,8 @@
       "validUntil": "Valid till",
       "validUntilHint": "Package stops renewing after this date and time",
       "minWithdraw": "Minimum amount to withdraw (CAD)",
+      "maxWithdraw": "Maximum amount to withdraw (CAD)",
+      "maxWithdrawHint": "Cap per withdrawal request",
       "pricing": "Pricing",
       "commission": "Platform commission (%)",
       "discount": "Driver discount (%)",
@@ -457,16 +460,59 @@
   "financeCheckouts": {
     "title": "Checkout funnel",
     "subtitle": "Clients who reached checkout on mobile — completed, cancelled, or abandoned (for recovery).",
-    "all": "All",
+    "search": "Search by client, driver, route, or session ID…",
+    "detailTitle": "Checkout session",
+    "sortFareDesc": "Fare (high to low)",
+    "sortFareAsc": "Fare (low to high)",
+    "status": {
+      "open": "Open",
+      "abandoned": "Abandoned",
+      "cancelled": "Cancelled",
+      "completed": "Completed"
+    },
+    "stats": {
+      "total": "Sessions",
+      "totalHint": "Checkout attempts in the last 200 events",
+      "completed": "Completed",
+      "abandoned": "Abandoned",
+      "abandonedHint": "Recovery opportunities",
+      "fareVolume": "Est. fare volume",
+      "fareVolumeHint": "Sum of fare estimates where set"
+    },
     "col": {
       "status": "Status",
       "client": "Client",
       "driver": "Driver",
+      "route": "Route",
       "pickup": "Pickup",
       "dropoff": "Dropoff",
       "fare": "Estimate",
       "planned": "Planned",
       "lastEvent": "Last event"
+    },
+    "deleted": "Checkout session removed",
+    "confirmDelete": "Delete this checkout session?",
+    "confirmDeleteDesc": "Remove this session from history? This cannot be undone.",
+    "reminderScheduled": "Recovery reminder scheduled",
+    "recovery": {
+      "title": "Recovery reminder",
+      "description": "Schedule a custom message to bring the client back to checkout. Choose email, app notification, and when to send.",
+      "message": "Reminder message",
+      "messagePlaceholder": "Write what the client should see…",
+      "defaultMessage": "You left a ride in checkout — tap to finish booking when you're ready.",
+      "sendEmail": "Email",
+      "sendEmailHint": "Send to the client's account email",
+      "sendPush": "App notification",
+      "sendPushHint": "In-app and push alert on mobile",
+      "timer": "Send timer",
+      "now": "Now",
+      "minutes": "{{count}} min",
+      "hours": "{{count}} h",
+      "days": "{{count}} d",
+      "customMinutes": "minutes from now",
+      "scheduledAt": "Will send: {{when}}",
+      "sendNow": "Immediately",
+      "schedule": "Schedule reminder"
     }
   },
   "analytics": {
@@ -635,6 +681,7 @@
     "edit": "Edit",
     "update": "Update",
     "delete": "Delete",
+    "remind": "Send recovery reminder",
     "profile": "Profile",
     "suspend": "Suspend / restore"
   },
@@ -782,6 +829,31 @@
   "audit": {
     "subtitle": "Immutable audit trail for admin actions."
   },
+  "activity": {
+    "subtitle": "General actions by staff and system — tariffs, users, payouts, referrals, and settings.",
+    "search": "Search action, target, or actor ID…",
+    "systemActor": "system",
+    "stats": {
+      "total": "Logged actions",
+      "today": "Last 24 hours",
+      "actors": "Unique actors",
+      "finance": "Finance actions"
+    },
+    "filter": {
+      "all": "All categories",
+      "users": "Users & clients",
+      "drivers": "Drivers & KYC",
+      "finance": "Finance",
+      "admin": "Roles & campaigns",
+      "other": "Other"
+    },
+    "col": {
+      "when": "When",
+      "action": "Action",
+      "target": "Target",
+      "actor": "Actor"
+    }
+  },
   "payments": {
     "subtitle": "Successful charges and payment intents from client checkout.",
     "amount": "Amount",
@@ -814,7 +886,57 @@
     }
   },
   "security": {
-    "subtitle": "Security-sensitive events are recorded in audit logs.",
-    "viewAudit": "View audit logs"
+    "subtitle": "Login attempts, authentication events, and registered devices for clients, drivers, and staff.",
+    "tabs": {
+      "authLogs": "Auth logs",
+      "devicesLogs": "Devices logs"
+    },
+    "searchAuth": "Filter type, actor, IP, details…",
+    "searchDevices": "Search user, device name, platform…",
+    "mfaYes": "Yes",
+    "mfaNo": "No",
+    "deviceRevoked": "Device revoked",
+    "revokeTitle": "Revoke device?",
+    "revokeDesc": "Disconnect “{{device}}” for {{user}}? They will need to sign in again on that device.",
+    "revokeConfirm": "Revoke device",
+    "footerMeta": "{{count}} events · Hash-chain verified ✓ · WORM storage active",
+    "footerScan": "Last integrity scan: 4 min ago",
+    "severity": {
+      "all": "all",
+      "critical": "critical",
+      "warning": "warning",
+      "info": "info"
+    },
+    "stats": {
+      "critical24h": "Critical (24h)",
+      "warnings": "Warnings",
+      "mfaActive": "MFA active",
+      "uniqueIps": "Unique IPs"
+    },
+    "deviceStats": {
+      "total": "Registered devices",
+      "active": "Active sessions",
+      "revoked": "Revoked",
+      "mobile": "Mobile platforms"
+    },
+    "deviceStatus": {
+      "active": "Active",
+      "revoked": "Revoked"
+    },
+    "col": {
+      "time": "Time",
+      "severity": "Severity",
+      "type": "Type",
+      "actor": "Actor",
+      "ipCountry": "IP / country",
+      "mfa": "MFA",
+      "details": "Details",
+      "user": "User",
+      "device": "Device",
+      "platform": "Platform",
+      "os": "OS",
+      "lastSeen": "Last seen",
+      "status": "Status"
+    }
   }
 }

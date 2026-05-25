@@ -99,6 +99,11 @@ export async function queuePaycheckFromEarnings(driverId: string, amount: number
   if (amount < minWithdraw) {
     throw new Error(`Minimum withdrawal is $${minWithdraw}`);
   }
+  const maxWithdraw =
+    tariff.max_withdraw_amount != null ? Number(tariff.max_withdraw_amount) : null;
+  if (maxWithdraw != null && amount > maxWithdraw) {
+    throw new Error(`Maximum withdrawal is $${maxWithdraw}`);
+  }
 
   const transfer_due_at = computeTransferDueAtFromTariff(tariff);
   const isBasic = Boolean(tariff.is_basic) || String(tariff.code) === "basic";

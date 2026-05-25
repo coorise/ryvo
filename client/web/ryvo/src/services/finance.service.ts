@@ -25,6 +25,9 @@ function mapTariff(row: Record<string, unknown>): TariffPackage {
     valid_until: row.valid_until != null ? String(row.valid_until) : null,
     valid_unlimited: row.valid_until == null,
     min_withdraw_amount: Number(row.min_withdraw_amount ?? 25),
+    max_withdraw_amount:
+      row.max_withdraw_amount != null ? Number(row.max_withdraw_amount) : null,
+    max_withdraw_unlimited: row.max_withdraw_amount == null,
     payout_label: payoutLabel,
     payout_delay_minutes: Number(row.payout_delay_minutes ?? 0),
     payout_delay_days: Number(row.payout_delay_days ?? 0),
@@ -62,6 +65,7 @@ function bodyToApi(body: TariffPackageInput) {
     recurrence_count: body.recurrence_unlimited ? null : body.recurrence_count,
     valid_until: body.valid_unlimited ? null : body.valid_until,
     min_withdraw_amount: body.min_withdraw_amount,
+    max_withdraw_amount: body.max_withdraw_unlimited ? null : body.max_withdraw_amount,
     payout_label: body.payout_label,
     payout_delay_minutes: body.payout_delay_minutes,
     payout_delay_days: body.payout_delay_days,
@@ -362,7 +366,40 @@ export class FinanceService extends BaseService {
     const q = status ? `?status=${status}` : "";
     return this.get<{ sessions: CheckoutSession[] }>(`/v1/admin/finance/checkouts${q}`, token);
   }
+
+  deleteCheckout(token: string | null, id: string) {
+    return this.delete<{ deleted: boolean }>(`/v1/admin/finance/checkouts/${id}`, token);
+  }
+
+  scheduleCheckoutRecovery(
+    token: string | null,
+    id: string,
+    body: {
+      message: string;
+      send_email: boolean;
+      send_push: boolean;
+      delay_minutes: number;
+    },
+  ) {
+    return this.post<{ reminder: CheckoutRecoveryReminder }>(
+      `/v1/admin/finance/checkouts/${id}/recovery-reminder`,
+      body,
+      token,
+    );
+  }
 }
+
+export type CheckoutRecoveryReminder = {
+  id: string;
+  checkout_session_id: string;
+  client_id: string;
+  message: string;
+  send_email: boolean;
+  send_push: boolean;
+  send_at: string;
+  status: string;
+  created_at: string;
+};
 
 export type BonusAccountRow = {
   id: string;

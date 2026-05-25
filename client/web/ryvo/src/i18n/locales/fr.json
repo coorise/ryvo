@@ -18,7 +18,7 @@
     "dashboard": "Tableau de bord",
     "liveMap": "Carte temps réel",
     "rides": "Courses",
-    "users": "Utilisateurs",
+    "users": "Clients",
     "staff": "Personnel",
     "driverKyc": "Validation chauffeurs",
     "support": "Tickets support",
@@ -264,7 +264,8 @@
       "type": "Type",
       "payout": "Versement",
       "sub": "Abonnement/mois",
-      "minWithdraw": "Retrait min."
+      "minWithdraw": "Retrait min.",
+      "withdrawLimits": "Limites de retrait"
     },
     "types": {
       "basic": "Basic (défaut)",
@@ -298,6 +299,8 @@
       "validUntil": "Validité",
       "validUntilHint": "Date et heure de fin du forfait",
       "minWithdraw": "Montant minimum de retrait (CAD)",
+      "maxWithdraw": "Montant maximum de retrait (CAD)",
+      "maxWithdrawHint": "Plafond par demande de retrait",
       "payoutLabel": "Libellé de versement",
       "payoutCustomPlaceholder": "ex. Instantané, 3 jours ouvrables",
       "payoutDays": "Nombre de jours",
@@ -411,17 +414,60 @@
   },
   "financeCheckouts": {
     "title": "Entonnoir checkout",
-    "subtitle": "Sessions mobile : payé, annulé ou abandonné.",
-    "all": "Tous",
+    "subtitle": "Clients ayant atteint le checkout mobile — complété, annulé ou abandonné.",
+    "search": "Rechercher client, chauffeur, trajet ou ID de session…",
+    "detailTitle": "Session checkout",
+    "sortFareDesc": "Tarif (décroissant)",
+    "sortFareAsc": "Tarif (croissant)",
+    "status": {
+      "open": "Ouvert",
+      "abandoned": "Abandonné",
+      "cancelled": "Annulé",
+      "completed": "Complété"
+    },
+    "stats": {
+      "total": "Sessions",
+      "totalHint": "200 derniers événements checkout",
+      "completed": "Complétées",
+      "abandoned": "Abandonnées",
+      "abandonedHint": "Opportunités de relance",
+      "fareVolume": "Volume estimé",
+      "fareVolumeHint": "Somme des estimations de tarif"
+    },
     "col": {
       "status": "Statut",
       "client": "Client",
       "driver": "Chauffeur",
+      "route": "Trajet",
       "pickup": "Départ",
       "dropoff": "Arrivée",
       "fare": "Estimation",
       "planned": "Planifié",
       "lastEvent": "Dernier événement"
+    },
+    "deleted": "Session checkout supprimée",
+    "confirmDelete": "Supprimer cette session ?",
+    "confirmDeleteDesc": "Retirer cette session de l'historique ? Action irréversible.",
+    "reminderScheduled": "Rappel de reprise planifié",
+    "recovery": {
+      "title": "Rappel de reprise",
+      "description": "Planifiez un message personnalisé pour ramener le client au checkout. Choisissez courriel, notification app et délai.",
+      "message": "Message de rappel",
+      "messagePlaceholder": "Texte visible par le client…",
+      "defaultMessage": "Vous avez laissé une course au checkout — revenez terminer la réservation quand vous voulez.",
+      "sendEmail": "Courriel",
+      "sendEmailHint": "Envoi à l'adresse du compte client",
+      "sendPush": "Notification app",
+      "sendPushHint": "Alerte in-app et push sur mobile",
+      "timer": "Délai d'envoi",
+      "now": "Maintenant",
+      "minutes": "{{count}} min",
+      "hours": "{{count}} h",
+      "days": "{{count}} j",
+      "customMinutes": "minutes à partir de maintenant",
+      "scheduledAt": "Envoi prévu : {{when}}",
+      "sendNow": "Immédiatement",
+      "schedule": "Planifier le rappel"
     }
   },
   "analytics": {
@@ -606,6 +652,7 @@
     "edit": "Modifier",
     "update": "Mettre à jour",
     "delete": "Supprimer",
+    "remind": "Rappel de reprise",
     "profile": "Profil",
     "suspend": "Suspendre / réactiver"
   },
@@ -753,6 +800,31 @@
   "audit": {
     "subtitle": "Piste d'audit immuable des actions admin."
   },
+  "activity": {
+    "subtitle": "Actions générales du personnel et du système — tarifs, utilisateurs, paie, parrainage, paramètres.",
+    "search": "Rechercher action, cible ou ID acteur…",
+    "systemActor": "système",
+    "stats": {
+      "total": "Actions journalisées",
+      "today": "Dernières 24 h",
+      "actors": "Acteurs uniques",
+      "finance": "Actions finance"
+    },
+    "filter": {
+      "all": "Toutes catégories",
+      "users": "Utilisateurs & clients",
+      "drivers": "Chauffeurs & KYC",
+      "finance": "Finance",
+      "admin": "Rôles & campagnes",
+      "other": "Autre"
+    },
+    "col": {
+      "when": "Quand",
+      "action": "Action",
+      "target": "Cible",
+      "actor": "Acteur"
+    }
+  },
   "payments": {
     "subtitle": "Paiements réussis et intentions depuis le checkout client.",
     "amount": "Montant",
@@ -785,8 +857,58 @@
     }
   },
   "security": {
-    "subtitle": "Événements sensibles dans les journaux d'audit.",
-    "viewAudit": "Voir les journaux d'audit"
+    "subtitle": "Tentatives de connexion, authentification et appareils enregistrés pour clients, chauffeurs et personnel.",
+    "tabs": {
+      "authLogs": "Logs auth",
+      "devicesLogs": "Logs appareils"
+    },
+    "searchAuth": "Filtrer type, acteur, IP, détails…",
+    "searchDevices": "Rechercher utilisateur, appareil, plateforme…",
+    "mfaYes": "Oui",
+    "mfaNo": "Non",
+    "deviceRevoked": "Appareil révoqué",
+    "revokeTitle": "Révoquer l'appareil ?",
+    "revokeDesc": "Déconnecter « {{device}} » pour {{user}} ? Nouvelle connexion requise sur cet appareil.",
+    "revokeConfirm": "Révoquer",
+    "footerMeta": "{{count}} événements · Hash-chain vérifié ✓ · WORM storage actif",
+    "footerScan": "Dernier scan d'intégrité : il y a 4 min",
+    "severity": {
+      "all": "tous",
+      "critical": "critical",
+      "warning": "warning",
+      "info": "info"
+    },
+    "stats": {
+      "critical24h": "Critiques (24h)",
+      "warnings": "Avertissements",
+      "mfaActive": "MFA actif",
+      "uniqueIps": "IPs uniques"
+    },
+    "deviceStats": {
+      "total": "Appareils enregistrés",
+      "active": "Sessions actives",
+      "revoked": "Révoqués",
+      "mobile": "Plateformes mobiles"
+    },
+    "deviceStatus": {
+      "active": "Actif",
+      "revoked": "Révoqué"
+    },
+    "col": {
+      "time": "Heure",
+      "severity": "Sévérité",
+      "type": "Type",
+      "actor": "Acteur",
+      "ipCountry": "IP / pays",
+      "mfa": "MFA",
+      "details": "Détails",
+      "user": "Utilisateur",
+      "device": "Appareil",
+      "platform": "Plateforme",
+      "os": "OS",
+      "lastSeen": "Dernière activité",
+      "status": "Statut"
+    }
   },
   "financeSubscribers": {
     "addManual": "Ajouter un abonnement",
