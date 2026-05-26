@@ -3,6 +3,7 @@ import { ok } from "../../_shared/core/response.ts";
 import { getAdminClient } from "../../_shared/lib/supabase.ts";
 import { verifyServiceSignature } from "../../_shared/middleware/service-auth.ts";
 import { processExpiredOffers } from "../../_shared/lib/trip-flow.ts";
+import { runDueAdminTasks } from "../../_shared/lib/admin-tasks.ts";
 
 export async function cleanupStaleDrivers(): Promise<number> {
   const db = getAdminClient();
@@ -65,6 +66,18 @@ export const handle = createServiceRouter("cron-jobs", [
       const badSig = verifyServiceSignature(req, raw);
       if (badSig) return badSig;
       const result = await processExpiredOffers();
+      return ok(result);
+    },
+  },
+  {
+    method: "POST",
+    path: "/v1/run/admin-tasks",
+    auth: false,
+    handler: async (req) => {
+      const raw = await req.text();
+      const badSig = verifyServiceSignature(req, raw);
+      if (badSig) return badSig;
+      const result = await runDueAdminTasks();
       return ok(result);
     },
   },

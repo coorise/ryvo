@@ -22,6 +22,13 @@
     "driverKyc": "Drivers KYC",
     "staff": "Staff",
     "support": "Support tickets",
+    "notifications": "Notifications",
+    "messages": "Messages",
+    "chatSupport": "Chat support",
+    "feedbacks": "Feedbacks",
+    "profile": "Profile",
+    "configurations": "Configurations",
+    "tasks": "Tasks",
     "payments": "Payments",
     "security": "Security logs",
     "activityLogs": "Activity logs",
@@ -35,9 +42,11 @@
     "analytics": "Analytics",
     "groups": {
       "main": "Main",
+      "communication": "Communication",
       "humanResources": "Human resources",
       "finances": "Finances",
       "audits": "Audits",
+      "settings": "Settings",
       "advanced": "Advanced"
     },
     "operations": "Operations",
@@ -883,6 +892,146 @@
       "request": "Request",
       "created": "Created",
       "settled": "Settled"
+    }
+  },
+  "communication": {
+    "notifications": {
+      "subtitle": "Notifications received by your staff account (platform-wide inbox coming soon).",
+      "hint": "Click a row to mark as read. Future: filter by client, driver, or campaign.",
+      "read": "Read",
+      "unread": "Unread",
+      "col": {
+        "when": "When",
+        "channel": "Channel",
+        "type": "Type",
+        "status": "Status",
+        "message": "Message"
+      }
+    },
+    "messages": {
+      "pageSubtitle": "Send instant or scheduled messages to clients or drivers — push and/or email.",
+      "subtitle": "Campaign composer (API wiring in progress).",
+      "audience": "Audience",
+      "audience_clients": "Clients",
+      "audience_drivers": "Drivers",
+      "audience_all": "All",
+      "body": "Message",
+      "bodyPlaceholder": "Write the notification body…",
+      "sendPush": "App notification",
+      "sendEmail": "Email",
+      "delay": "Delay (minutes)",
+      "delayHint": "0 = send immediately when the campaign API is live.",
+      "sendNow": "Send now",
+      "schedule": "Schedule",
+      "messageRequired": "Enter a message.",
+      "scheduledPlaceholder": "Campaign queued (demo — connect send API next)."
+    },
+    "chatSupport": {
+      "subtitle": "Reply to support tickets from clients and drivers."
+    }
+  },
+  "hr": {
+    "feedbacks": {
+      "pageSubtitle": "Service quality, satisfaction, and disputes over time.",
+      "subtitle": "Track UX, driver service, and staff interactions; manage escalations and litiges.",
+      "comingSoon": "Feedback analytics and case management will appear here.",
+      "tabs": {
+        "product": "Product & services",
+        "drivers": "Drivers & services",
+        "staff": "Staff & services"
+      },
+      "productDesc": "App quality, booking flow, pricing — general product dissatisfaction.",
+      "driversDesc": "Driver behaviour, bans, trip issues — complaints about drivers.",
+      "staffDesc": "Agent quality and high criticism — disputes with support staff."
+    }
+  },
+  "settingsTasks": {
+    "pageSubtitle": "Background jobs and scheduled maintenance (cron).",
+    "subtitle": "Delete or archive data on a schedule — once, daily, weekly, or at a specific date and time.",
+    "search": "Search tasks by name or type…",
+    "create": "Create task",
+    "createTitle": "Create scheduled task",
+    "created": "Task created",
+    "ran": "Task executed",
+    "deleted": "Task removed",
+    "active": "Active",
+    "paused": "Paused",
+    "pause": "Pause",
+    "resume": "Resume",
+    "runNow": "Run now",
+    "lastError": "Last run failed",
+    "confirmDelete": "Delete this task?",
+    "type": {
+      "purgeAbandonedCheckouts": "Purge abandoned checkouts"
+    },
+    "kind": {
+      "http": "HTTP task",
+      "preset": "Preset task"
+    },
+    "col": {
+      "name": "Task",
+      "type": "Type",
+      "kind": "Kind",
+      "schedule": "Schedule",
+      "nextRun": "Next run",
+      "lastRun": "Last run",
+      "status": "Status"
+    },
+    "schedule": {
+      "immediate": "Immediate",
+      "oneTime": "One-time",
+      "daily": "Daily @ {{time}}",
+      "weekly": "Weekly @ {{time}} (dow {{dow}})",
+      "monthly": "Monthly @ {{time}} (day {{dom}})"
+    },
+    "form": {
+      "name": "Task name",
+      "kind": "Task kind",
+      "kindHint": "HTTP tasks call existing internal APIs. Presets are built-in safe operations.",
+      "httpTitle": "HTTP request",
+      "httpHint": "MVP safety: only `cron-jobs/*` paths are allowed (service-signed).",
+      "method": "Method",
+      "path": "Path",
+      "query": "Query (JSON object)",
+      "headers": "Headers (JSON object)",
+      "body": "Body (JSON object)",
+      "preset": "Preset",
+      "choose": "Change",
+      "operation": "Operation",
+      "operationHint": "Only whitelisted operations can run automatically. More actions will be added later.",
+      "olderThanDays": "Older than (days)",
+      "limit": "Max rows per run",
+      "scheduleMode": "Schedule",
+      "runAt": "Run at",
+      "timeOfDay": "Time of day (UTC)",
+      "dayOfWeek": "Day of week (0=Sun … 6=Sat)",
+      "dayOfWeekHint": "MVP: numeric weekday. UI will become a dropdown.",
+      "dayOfMonth": "Day of month (1–28)",
+      "dayOfMonthHint": "We cap at 28 to avoid missing days.",
+      "startPaused": "Start paused",
+      "startPausedHint": "Create the task but do not run until resumed.",
+      "mode": {
+        "immediate": "Immediate",
+        "one_time": "One-time",
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "monthly": "Monthly"
+      }
+    },
+    "comingTitle": "Task scheduler",
+    "comingDesc": "Define conditions, delays, and actions (e.g. purge abandoned checkouts after 90 days).",
+    "stats": {
+      "planned": "Planned",
+      "active": "Active",
+      "paused": "Paused"
+    },
+    "examples": {
+      "deleteOldData": "Delete records matching conditions after a delay",
+      "oneTime": "One-time run at a specific date and hour",
+      "daily": "Daily / weekly / monthly recurrence"
+    },
+    "presets": {
+      "purgeAbandonedCheckouts": "Purge abandoned checkouts"
     }
   },
   "security": {

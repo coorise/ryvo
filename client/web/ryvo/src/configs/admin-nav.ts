@@ -1,18 +1,24 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
+  Bell,
   Car,
   CreditCard,
   FileText,
   Gauge,
   Gift,
   LayoutDashboard,
+  ListTodo,
+  Mail,
   Map,
   MessageSquare,
+  MessagesSquare,
+  User,
   Receipt,
   Settings,
   Shield,
   ShoppingCart,
+  Star,
   Tags,
   TrendingUp,
   UserCheck,
@@ -26,9 +32,11 @@ import { ROUTES } from "@/configs/const";
 /** Sidebar group ids — used for collapse state in localStorage */
 export const ADMIN_NAV_GROUP_IDS = {
   main: "main",
+  communication: "communication",
   hr: "hr",
   finances: "finances",
   audits: "audits",
+  settings: "settings",
   advanced: "advanced",
 } as const;
 
@@ -110,6 +118,32 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     ],
   },
   {
+    id: ADMIN_NAV_GROUP_IDS.communication,
+    labelKey: "nav.groups.communication",
+    defaultExpanded: false,
+    items: [
+      {
+        href: ROUTES.admin.communication.notifications,
+        labelKey: "nav.notifications",
+        icon: Bell,
+        permPrefixes: ["settings:notifications:", "support:"],
+      },
+      {
+        href: ROUTES.admin.communication.messages,
+        labelKey: "nav.messages",
+        icon: Mail,
+        permPrefixes: ["settings:notifications:", "support:"],
+      },
+      {
+        href: ROUTES.admin.communication.chatSupport,
+        labelKey: "nav.chatSupport",
+        icon: MessagesSquare,
+        badge: "tickets",
+        permPrefixes: ["support:"],
+      },
+    ],
+  },
+  {
     id: ADMIN_NAV_GROUP_IDS.hr,
     labelKey: "nav.groups.humanResources",
     defaultExpanded: false,
@@ -122,11 +156,10 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
         staffSection: true,
       },
       {
-        href: ROUTES.admin.tickets,
-        labelKey: "nav.support",
-        icon: MessageSquare,
-        badge: "tickets",
-        permPrefixes: ["support:"],
+        href: ROUTES.admin.hr.feedbacks,
+        labelKey: "nav.feedbacks",
+        icon: Star,
+        permPrefixes: ["support:", "users:"],
       },
     ],
   },
@@ -199,21 +232,40 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     ],
   },
   {
+    id: ADMIN_NAV_GROUP_IDS.settings,
+    labelKey: "nav.groups.settings",
+    defaultExpanded: false,
+    items: [
+      {
+        href: ROUTES.admin.settingsProfile,
+        labelKey: "nav.profile",
+        icon: User,
+        alwaysForAdmin: true,
+      },
+      {
+        href: ROUTES.admin.settingsConfigurations,
+        labelKey: "nav.configurations",
+        icon: Settings,
+        alwaysForAdmin: true,
+      },
+    ],
+  },
+  {
     id: ADMIN_NAV_GROUP_IDS.advanced,
     labelKey: "nav.groups.advanced",
     defaultExpanded: false,
     items: [
       {
+        href: ROUTES.admin.settingsTasks,
+        labelKey: "nav.tasks",
+        icon: ListTodo,
+        permPrefixes: ["settings:"],
+      },
+      {
         href: ROUTES.admin.observability,
         labelKey: "nav.observability",
         icon: Gauge,
         permPrefixes: ["observability:", "settings:"],
-      },
-      {
-        href: ROUTES.admin.settings,
-        labelKey: "common.settings",
-        icon: Settings,
-        alwaysForAdmin: true,
       },
     ],
   },

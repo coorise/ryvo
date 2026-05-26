@@ -28,9 +28,11 @@ function isNavActive(pathname: string, href: string) {
 function defaultExpandedState(): Record<AdminNavGroupId, boolean> {
   return {
     [ADMIN_NAV_GROUP_IDS.main]: true,
+    [ADMIN_NAV_GROUP_IDS.communication]: false,
     [ADMIN_NAV_GROUP_IDS.hr]: false,
     [ADMIN_NAV_GROUP_IDS.finances]: false,
     [ADMIN_NAV_GROUP_IDS.audits]: false,
+    [ADMIN_NAV_GROUP_IDS.settings]: false,
     [ADMIN_NAV_GROUP_IDS.advanced]: false,
   };
 }

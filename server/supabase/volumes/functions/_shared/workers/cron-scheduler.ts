@@ -25,5 +25,6 @@ export function startCronScheduler(): void {
   setInterval(() => callCron("cron-jobs/v1/run/stale-drivers"), 60_000);
   setInterval(() => callCron("cron-jobs/v1/run/expire-offers"), 15_000);
   setInterval(() => callCron("cron-jobs/v1/run/expire-idempotency"), 3_600_000);
+  setInterval(() => callCron("cron-jobs/v1/run/admin-tasks"), 60_000);
   console.log("[ryvo-cron] Scheduler started");
 }

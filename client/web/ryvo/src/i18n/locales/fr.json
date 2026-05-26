@@ -22,6 +22,13 @@
     "staff": "Personnel",
     "driverKyc": "Validation chauffeurs",
     "support": "Tickets support",
+    "notifications": "Notifications",
+    "messages": "Messages",
+    "chatSupport": "Chat support",
+    "feedbacks": "Retours",
+    "profile": "Profil",
+    "configurations": "Configurations",
+    "tasks": "Tâches",
     "payments": "Paiements",
     "security": "Logs sécurité",
     "activityLogs": "Journaux d'activité",
@@ -35,9 +42,11 @@
     "analytics": "Analytique",
     "groups": {
       "main": "Principal",
+      "communication": "Communication",
       "humanResources": "Ressources humaines",
       "finances": "Finances",
       "audits": "Audits",
+      "settings": "Paramètres",
       "advanced": "Avancé"
     },
     "operations": "Opérations",
@@ -854,6 +863,69 @@
       "request": "Demande",
       "created": "Créé",
       "settled": "Réglé"
+    }
+  },
+  "communication": {
+    "notifications": {
+      "subtitle": "Notifications reçues sur votre compte personnel (boîte globale à venir).",
+      "hint": "Cliquez une ligne pour marquer comme lu.",
+      "read": "Lu",
+      "unread": "Non lu",
+      "col": {
+        "when": "Quand",
+        "channel": "Canal",
+        "type": "Type",
+        "status": "Statut",
+        "message": "Message"
+      }
+    },
+    "messages": {
+      "pageSubtitle": "Messages instantanés ou planifiés pour clients ou chauffeurs — push et/ou courriel.",
+      "subtitle": "Compositeur de campagne (API à brancher).",
+      "audience": "Audience",
+      "audience_clients": "Clients",
+      "audience_drivers": "Chauffeurs",
+      "audience_all": "Tous",
+      "body": "Message",
+      "bodyPlaceholder": "Texte de la notification…",
+      "sendPush": "Notification app",
+      "sendEmail": "Courriel",
+      "delay": "Délai (minutes)",
+      "delayHint": "0 = envoi immédiat lorsque l'API sera active.",
+      "sendNow": "Envoyer",
+      "schedule": "Planifier",
+      "messageRequired": "Saisissez un message.",
+      "scheduledPlaceholder": "Campagne en file (démo)."
+    },
+    "chatSupport": {
+      "subtitle": "Répondre aux tickets des clients et chauffeurs."
+    }
+  },
+  "hr": {
+    "feedbacks": {
+      "pageSubtitle": "Qualité de service, satisfaction et litiges dans le temps.",
+      "subtitle": "UX, service chauffeur et agents — gérer les escalades.",
+      "comingSoon": "Analytique et gestion des dossiers à venir.",
+      "tabs": {
+        "product": "Produit & services",
+        "drivers": "Chauffeurs & services",
+        "staff": "Personnel & services"
+      },
+      "productDesc": "Qualité app, réservation, tarifs — insatisfaction produit.",
+      "driversDesc": "Comportement chauffeur, bannissement, course — plaintes chauffeur.",
+      "staffDesc": "Qualité agent et critiques — litiges avec le support."
+    }
+  },
+  "settingsTasks": {
+    "pageSubtitle": "Tâches de fond et maintenance planifiée (cron).",
+    "subtitle": "Supprimer ou archiver des données selon conditions et délais.",
+    "comingTitle": "Planificateur de tâches",
+    "comingDesc": "Conditions, délais et actions (ex. purger les checkouts abandonnés après 90 jours).",
+    "stats": { "planned": "Planifiées", "active": "Actives", "paused": "En pause" },
+    "examples": {
+      "deleteOldData": "Supprimer des enregistrements selon conditions",
+      "oneTime": "Exécution unique à date/heure précise",
+      "daily": "Récurrence quotidienne / hebdo / mensuelle"
     }
   },
   "security": {

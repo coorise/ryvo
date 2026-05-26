@@ -48,10 +48,21 @@ export const ROUTES = {
       profile: "/admin/drivers/profile",
     },
     tickets: "/admin/tickets",
+    communication: {
+      notifications: "/admin/communication/notifications",
+      messages: "/admin/communication/messages",
+      chatSupport: "/admin/communication/chat-support",
+    },
+    hr: {
+      feedbacks: "/admin/hr/feedbacks",
+    },
     payments: "/admin/payments",
     security: "/admin/security",
     audit: "/admin/audit",
     settings: "/admin/settings",
+    settingsProfile: "/admin/settings/profile",
+    settingsConfigurations: "/admin/settings/configurations",
+    settingsTasks: "/admin/settings/tasks",
     observability: "/admin/observability",
     finance: {
       referrals: "/admin/finance/referrals",
@@ -127,6 +138,15 @@ export const ADMIN_TABS = {
     payment: "payment",
     mail: "mail",
     notifications: "notifications",
+  },
+  chatSupport: {
+    clients: "clients",
+    drivers: "drivers",
+  },
+  feedbacks: {
+    product: "product-services",
+    drivers: "drivers-services",
+    staff: "staff-services",
   },
 } as const;
 
@@ -368,7 +388,9 @@ export const DASHBOARD_NAV = {
     { href: ROUTES.admin.rides, label: "Rides", badge: "4", permissions: [PERMISSIONS.users.read] },
     { href: ROUTES.admin.users.list, label: "Clients" },
     { href: ROUTES.admin.drivers.list, label: "Drivers KYC", badge: "4" },
-    { href: ROUTES.admin.tickets, label: "Support", badge: "3" },
+    { href: ROUTES.admin.communication.chatSupport, label: "Chat support", badge: "3" },
+    { href: ROUTES.admin.hr.feedbacks, label: "Feedbacks" },
+    { href: ROUTES.admin.settingsTasks, label: "Tasks" },
     { href: ROUTES.admin.payments, label: "Payments" },
     { href: ROUTES.admin.security, label: "Security logs" },
     { href: ROUTES.admin.audit, label: "Audit logs" },
