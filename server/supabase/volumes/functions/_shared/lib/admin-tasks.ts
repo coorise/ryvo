@@ -33,6 +33,7 @@ export type AdminTaskRow = {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  updated_by: string | null;
 };
 
 function parseTimeOfDay(s: string): { hh: number; mm: number } {

@@ -30,12 +30,14 @@ export function AdminPageHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-        {subtitle && <p className="text-muted-foreground mt-1 text-sm">{subtitle}</p>}
+    <div className="flex flex-wrap items-start justify-between gap-3 sm:gap-4">
+      <div className="min-w-0 flex-1">
+        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
+        {subtitle && (
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">{subtitle}</p>
+        )}
       </div>
-      {action}
+      {action && <div className="w-full shrink-0 sm:w-auto">{action}</div>}
     </div>
   );
 }
@@ -175,6 +177,14 @@ export function AdminTableHead({ children }: { children: ReactNode }) {
 /** Vertical stack with consistent spacing between list blocks (stats, search, table). */
 export function AdminListStack({ children }: { children: ReactNode }) {
   return <div className="flex flex-col gap-6">{children}</div>;
+}
+
+export function UpdatedByCell({ email }: { email?: string | null }) {
+  return (
+    <span className="text-muted-foreground block max-w-[200px] truncate text-sm" title={email ?? undefined}>
+      {email ?? "—"}
+    </span>
+  );
 }
 
 export function SortableTableHeader({

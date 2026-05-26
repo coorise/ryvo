@@ -51,9 +51,10 @@ function loadExpanded(): Record<AdminNavGroupId, boolean> {
 type AdminSidebarNavProps = {
   hasPermission: (p: string) => boolean;
   hasPermPrefix: (p: string) => boolean;
+  onNavigate?: () => void;
 };
 
-export function AdminSidebarNav({ hasPermission, hasPermPrefix }: AdminSidebarNavProps) {
+export function AdminSidebarNav({ hasPermission, hasPermPrefix, onNavigate }: AdminSidebarNavProps) {
   const pathname = usePathname();
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -125,6 +126,7 @@ export function AdminSidebarNav({ hasPermission, hasPermPrefix }: AdminSidebarNa
       <Link
         key={item.href}
         href={item.href}
+        onClick={onNavigate}
         className={cn(
           "group flex items-center gap-3 rounded-xl py-2.5 text-sm font-semibold transition",
           indent ? "pl-9 pr-3" : "px-3",

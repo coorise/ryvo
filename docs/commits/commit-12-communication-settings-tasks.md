@@ -20,7 +20,7 @@ Restructures the admin sidebar: **Communication** (notifications, messages, chat
 | `033_admin_tasks_scheduler.sql` | `admin_tasks`, `admin_task_runs` |
 | `034_admin_tasks_http.sql` | `kind`, `request_method`, `request_path`, `request_query`, `request_headers`, `request_body` |
 
-- **API** (auth-hooks, `settings:read` / `settings:update`): list/create/run/pause/resume/delete tasks under `/v1/admin/settings/tasks`.
+- **API** (**cron-jobs**, `settings:read` / `settings:update`): list/create/run/pause/resume/delete tasks under `/v1/admin/settings/tasks` (see commit-13 for service split).
 - **Execution**: `_shared/lib/admin-tasks.ts` — **preset** `purge_abandoned_checkouts`; **http** tasks call internal service-signed `fetch` (MVP: paths must start with `cron-jobs/`).
 - **Cron**: `cron-jobs/v1/run/admin-tasks` + `cron-scheduler` interval (60s).
 - **UI**: `tasks-panel.tsx`, `tasks.service.ts` — stats, table, create dialog (HTTP vs preset, preset dropdown, schedule modes).

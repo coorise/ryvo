@@ -1,8 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /** Fully static HTML/CSS/JS — deploy only the `out/` directory. */
-  output: "export",
-  trailingSlash: true,
+  /**
+   * Production-grade dashboard needs server rendering + dynamic routes.
+   * Keep default output (no static export).
+   */
+  trailingSlash: false,
   images: {
     unoptimized: true,
   },

@@ -1,3 +1,5 @@
-export function healthController() {
-  return Response.json({ data: { status: "ok" }, meta: { timestamp: new Date().toISOString() } });
-}
+import type { RouteHandler } from "../../../../_shared/core/router.ts";
+import { ok } from "../../../../_shared/core/response.ts";
+import { healthPayload } from "./service.ts";
+
+export const get: RouteHandler = async () => ok(healthPayload());

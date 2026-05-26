@@ -12,7 +12,11 @@ export default function CommunicationNotificationsPage() {
 
   return (
     <PermissionGate
-      permissions={[PERMISSIONS.settings.notificationsRead, "support:read"]}
+      permissions={[
+        PERMISSIONS.communication.notificationsRead,
+        PERMISSIONS.settings.notificationsRead,
+        PERMISSIONS.support.read,
+      ]}
       fallback={<p>{t("common.noData")}</p>}
     >
       <div className="space-y-6">

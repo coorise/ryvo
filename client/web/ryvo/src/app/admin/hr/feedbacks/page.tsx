@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { AdminPageHeader } from "@/components/admin/admin-list-ui";
 import { FeedbacksPanel } from "@/components/admin/hr/feedbacks-panel";
 import { PermissionGate } from "@/guards/permission-gate";
-import { ADMIN_QUERY, ADMIN_TABS } from "@/configs/const";
+import { ADMIN_QUERY, ADMIN_TABS, PERMISSIONS } from "@/configs/const";
 
 function FeedbacksPageContent() {
   const { t } = useTranslation();
@@ -41,7 +41,10 @@ function FeedbacksPageContent() {
 export default function HrFeedbacksPage() {
   const { t } = useTranslation();
   return (
-    <PermissionGate permissions={["support:read"]} fallback={<p>{t("common.noData")}</p>}>
+    <PermissionGate
+      permissions={[PERMISSIONS.feedbacks.read, PERMISSIONS.support.read]}
+      fallback={<p>{t("common.noData")}</p>}
+    >
       <Suspense fallback={<p className="text-muted-foreground text-sm">{t("common.loading")}</p>}>
         <FeedbacksPageContent />
       </Suspense>

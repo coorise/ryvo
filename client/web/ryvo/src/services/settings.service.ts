@@ -1,4 +1,4 @@
-import { BaseService } from "@/lib/base-service";
+import { apiRequest } from "@/lib/api-client";
 import type { PlatformPreferences } from "@/types/interfaces/schemas/platform.schema";
 
 export type SelfProfile = {
@@ -48,45 +48,59 @@ export type NotificationEventRule = {
   audiences: { client: boolean; driver: boolean; staff: boolean };
 };
 
-export class SettingsService extends BaseService {
-  constructor() {
-    super("auth-hooks");
-  }
-
+export class SettingsService {
   getMyProfile(token: string | null) {
-    return this.get<{ profile: SelfProfile }>("/v1/me/profile", token);
+    return apiRequest<{ profile: SelfProfile }>("profile-service", "/v1/me/profile", {
+      token,
+    });
   }
 
   updateMyProfile(token: string | null, body: Partial<SelfProfile>) {
-    return this.patch<{ profile: SelfProfile }>("/v1/me/profile", body, token);
+    return apiRequest<{ profile: SelfProfile }>("profile-service", "/v1/me/profile", {
+      method: "PATCH",
+      body,
+      token,
+    });
   }
 
   getGeneral(token: string | null) {
-    return this.get<{ preferences: PlatformPreferences }>("/v1/admin/settings", token);
+    return apiRequest<{ preferences: PlatformPreferences }>(
+      "profile-service",
+      "/v1/admin/settings",
+      { token },
+    );
   }
 
   updateGeneral(token: string | null, preferences: Partial<PlatformPreferences>) {
-    return this.patch<{ preferences: PlatformPreferences }>(
+    return apiRequest<{ preferences: PlatformPreferences }>(
+      "profile-service",
       "/v1/admin/settings",
-      preferences,
-      token,
+      { method: "PATCH", body: preferences, token },
     );
   }
 
   getPayment(token: string | null) {
-    return this.get<{ config: PaymentSettingsConfig }>("/v1/admin/settings/payment", token);
+    return apiRequest<{ config: PaymentSettingsConfig }>(
+      "payment-gateway",
+      "/v1/admin/settings/payment",
+      { token },
+    );
   }
 
   updatePayment(token: string | null, config: Partial<PaymentSettingsConfig>) {
-    return this.patch<{ config: PaymentSettingsConfig }>(
+    return apiRequest<{ config: PaymentSettingsConfig }>(
+      "payment-gateway",
       "/v1/admin/settings/payment",
-      config,
-      token,
+      { method: "PATCH", body: config, token },
     );
   }
 
   listEmailTemplates(token: string | null) {
-    return this.get<{ templates: EmailTemplate[] }>("/v1/admin/email-templates", token);
+    return apiRequest<{ templates: EmailTemplate[] }>(
+      "notification-service",
+      "/v1/admin/email-templates",
+      { token },
+    );
   }
 
   updateEmailTemplate(
@@ -94,25 +108,26 @@ export class SettingsService extends BaseService {
     templateKey: string,
     body: Pick<EmailTemplate, "subject" | "body_html" | "body_text">,
   ) {
-    return this.put<{ template: EmailTemplate }>(
+    return apiRequest<{ template: EmailTemplate }>(
+      "notification-service",
       `/v1/admin/email-templates/${templateKey}`,
-      body,
-      token,
+      { method: "PUT", body, token },
     );
   }
 
   getNotifications(token: string | null) {
-    return this.get<{ config: { events: NotificationEventRule[] } }>(
+    return apiRequest<{ config: { events: NotificationEventRule[] } }>(
+      "notification-service",
       "/v1/admin/settings/notifications",
-      token,
+      { token },
     );
   }
 
   updateNotifications(token: string | null, events: NotificationEventRule[]) {
-    return this.patch<{ config: { events: NotificationEventRule[] } }>(
+    return apiRequest<{ config: { events: NotificationEventRule[] } }>(
+      "notification-service",
       "/v1/admin/settings/notifications",
-      { events },
-      token,
+      { method: "PATCH", body: { events }, token },
     );
   }
 }

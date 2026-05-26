@@ -45,6 +45,13 @@ export function requirePermission(auth: AuthContext, permission: string): Respon
   return fail("FORBIDDEN", `Missing permission: ${permission}`, 403);
 }
 
+/** Grant access if the user holds at least one listed permission. */
+export function requireAnyPermission(auth: AuthContext, permissions: string[]): Response | null {
+  if (auth.roles.includes("super_admin")) return null;
+  if (permissions.some((p) => auth.permissions.includes(p))) return null;
+  return fail("FORBIDDEN", "Missing required permission", 403);
+}
+
 export function requireRole(auth: AuthContext, ...roles: string[]): Response | null {
   if (auth.roles.some((r) => roles.includes(r))) return null;
   return fail("FORBIDDEN", "Insufficient role", 403);

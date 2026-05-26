@@ -1,4 +1,4 @@
-import { BaseService } from "@/lib/base-service";
+import { apiRequest } from "@/lib/api-client";
 import type { PlatformPreferences } from "@/types/interfaces/schemas/platform.schema";
 
 export type AdminDashboardData = {
@@ -27,29 +27,60 @@ export type AdminDashboardData = {
   live: { active_trips: number };
 };
 
-export class AdminService extends BaseService {
-  constructor() {
-    super("auth-hooks");
+export type AdminAnalyticsData = {
+  period: "7d" | "30d" | "90d" | "1y";
+  audience: "all" | "clients" | "drivers";
+  kpis: {
+    activeUsers: number;
+    completedTrips: number;
+    avgRating: number;
+    cancelRate: number;
+    avgWaitMin: number;
+    driverOnlineHours: number;
+  };
+  volume: { label: string; trips: number }[];
+  ratingDist: { stars: number; count: number }[];
+  destinations: { name: string; count: number }[];
+  experience: { metric: string; score: number }[];
+};
+
+/** Admin UI calls are routed to the owning edge function per domain. */
+export class AdminService {
+  getDashboard(token: string | null) {
+    return apiRequest<AdminDashboardData>("audit-service", "/v1/admin/dashboard", { token });
   }
 
-  getDashboard(token: string | null) {
-    return this.get<AdminDashboardData>("/v1/admin/dashboard", token);
+  getAnalytics(
+    token: string | null,
+    period: "7d" | "30d" | "90d" | "1y",
+    audience: "all" | "clients" | "drivers",
+  ) {
+    const qs = new URLSearchParams({ period, audience });
+    return apiRequest<AdminAnalyticsData>(
+      "audit-service",
+      `/v1/admin/analytics?${qs}`,
+      { token },
+    );
   }
 
   getSettings(token: string | null) {
-    return this.get<{ preferences: PlatformPreferences }>("/v1/admin/settings", token);
+    return apiRequest<{ preferences: PlatformPreferences }>(
+      "profile-service",
+      "/v1/admin/settings",
+      { token },
+    );
   }
 
   updateSettings(token: string | null, preferences: Partial<PlatformPreferences>) {
-    return this.patch<{ preferences: PlatformPreferences }>(
+    return apiRequest<{ preferences: PlatformPreferences }>(
+      "profile-service",
       "/v1/admin/settings",
-      preferences,
-      token,
+      { method: "PATCH", body: preferences, token },
     );
   }
 
   listTrips(token: string | null, limit = 100) {
-    return this.get<{
+    return apiRequest<{
       trips: {
         id: string;
         status: string;
@@ -60,7 +91,7 @@ export class AdminService extends BaseService {
         driver_id: string | null;
         fare_estimate: number | null;
       }[];
-    }>(`/v1/admin/trips?limit=${limit}`, token);
+    }>("trip-lifecycle", `/v1/admin/trips?limit=${limit}`, { token });
   }
 
   listPayments(token: string | null, opts?: { status?: string; limit?: number }) {
@@ -68,7 +99,11 @@ export class AdminService extends BaseService {
     if (opts?.status) params.set("status", opts.status);
     if (opts?.limit) params.set("limit", String(opts.limit));
     const q = params.toString() ? `?${params}` : "";
-    return this.get<{ payments: PaymentAdminRow[] }>(`/v1/admin/payments${q}`, token);
+    return apiRequest<{ payments: PaymentAdminRow[] }>(
+      "payment-gateway",
+      `/v1/admin/payments${q}`,
+      { token },
+    );
   }
 }
 
@@ -87,17 +122,14 @@ export type PaymentAdminRow = {
   rider_email: string;
 };
 
-export class PlatformSettingsService extends BaseService {
-  constructor() {
-    super("auth-hooks");
-  }
-
+export class PlatformSettingsService {
   getPublic() {
-    return this.get<{
+    return apiRequest<{
       appName: string;
       defaultLanguage: string;
       supportedLanguages: string[];
-    }>("/v1/settings/public", null);
+      defaultMapCenter?: { lat: number; lng: number };
+    }>("profile-service", "/v1/settings/public", {});
   }
 }
 

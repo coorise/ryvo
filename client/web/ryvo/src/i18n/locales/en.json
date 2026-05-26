@@ -50,7 +50,9 @@
       "advanced": "Advanced"
     },
     "operations": "Operations",
-    "financeSecurity": "Finance & security"
+    "financeSecurity": "Finance & security",
+    "menu": "Navigation menu",
+    "openMenu": "Open menu"
   },
   "observability": {
     "title": "Observability",
@@ -526,7 +528,8 @@
   },
   "analytics": {
     "title": "Analytics",
-    "subtitle": "Interactive KPI workspace — mix filters and chart types (Power BI style, demo datasets).",
+    "subtitle": "KPIs and trends from live trips, ratings, and feedback data.",
+    "loadError": "Could not load analytics from the server.",
     "exportPdf": "Export PDF",
     "period": { "7d": "7 days", "30d": "30 days", "90d": "90 days", "1y": "1 year" },
     "audience": { "all": "All users", "clients": "Clients", "drivers": "Drivers" },
@@ -759,6 +762,7 @@
     "sortEmailDesc": "Email Z–A",
     "sortUpdatedDesc": "Recently updated",
     "sortUpdatedAsc": "Oldest updated",
+    "updatedBy": "Updated by",
     "sortCreatedDesc": "Newest first",
     "sortCreatedAsc": "Oldest first",
     "sortPermissionsDesc": "Most permissions",
@@ -830,10 +834,22 @@
   },
   "rides": {
     "subtitle": "Trip requests and ride lifecycle.",
+    "export": "Export",
+    "search": "Ride id, client, driver, address…",
+    "total": "rides",
+    "inProgress": "in progress",
+    "cancelRate": "cancel rate",
+    "dropoff": "Dropoff",
     "status": "Status",
     "pickup": "Pickup",
     "fare": "Fare",
-    "created": "Created"
+    "created": "Created",
+    "kpi": {
+      "total": "Rides today",
+      "inProgress": "In progress",
+      "revenue": "Today's revenue",
+      "cancelRate": "Cancellation rate"
+    }
   },
   "audit": {
     "subtitle": "Immutable audit trail for admin actions."
@@ -896,45 +912,160 @@
   },
   "communication": {
     "notifications": {
-      "subtitle": "Notifications received by your staff account (platform-wide inbox coming soon).",
-      "hint": "Click a row to mark as read. Future: filter by client, driver, or campaign.",
+      "subtitle": "Your inbox — support alerts and platform messages for this account.",
+      "searchPlaceholder": "Search type, channel, or message…",
+      "empty": "No notifications yet.",
+      "deleted": "Notification deleted",
+      "detailBody": "Message",
       "read": "Read",
       "unread": "Unread",
+      "stats": {
+        "total": "Total",
+        "unread": "Unread",
+        "read": "Read",
+        "inApp": "In-app"
+      },
       "col": {
         "when": "When",
         "channel": "Channel",
         "type": "Type",
         "status": "Status",
-        "message": "Message"
+        "message": "Preview"
       }
     },
     "messages": {
       "pageSubtitle": "Send instant or scheduled messages to clients or drivers — push and/or email.",
-      "subtitle": "Campaign composer (API wiring in progress).",
+      "listSubtitle": "Message history — drafts, scheduled, and sent campaigns.",
+      "composeSubtitle": "Use template tokens in the body; save as draft or send when ready.",
+      "subtitle": "Campaign composer — saved to history for reuse.",
+      "create": "New message",
       "audience": "Audience",
+      "audienceAll": "All audiences",
       "audience_clients": "Clients",
       "audience_drivers": "Drivers",
       "audience_all": "All",
       "body": "Message",
       "bodyPlaceholder": "Write the notification body…",
+      "templates": "Templates",
+      "preview": "Preview",
+      "previewEmpty": "Write a message to preview it…",
       "sendPush": "App notification",
       "sendEmail": "Email",
       "delay": "Delay (minutes)",
       "delayHint": "0 = send immediately when the campaign API is live.",
       "sendNow": "Send now",
       "schedule": "Schedule",
+      "saveDraft": "Save draft",
+      "draftSaved": "Draft saved",
       "messageRequired": "Enter a message.",
-      "scheduledPlaceholder": "Campaign queued (demo — connect send API next)."
+      "saved": "Message saved",
+      "sent": "Message sent",
+      "scheduled": "Message scheduled",
+      "updated": "Message updated",
+      "resent": "Message resent",
+      "deleted": "Message deleted",
+      "stats": {
+        "total": "Total messages",
+        "drafts": "Drafts",
+        "sent": "Sent",
+        "queued": "Scheduled"
+      },
+      "status": {
+        "draft": "Draft",
+        "queued": "Scheduled",
+        "sent": "Sent",
+        "cancelled": "Cancelled"
+      },
+      "col": {
+        "message": "Message",
+        "channels": "Channels",
+        "created": "Created"
+      },
+      "previewTitle": "Message preview",
+      "historyTitle": "History",
+      "historySubtitle": "Previously sent messages and drafts — edit, resend, or delete.",
+      "historySearch": "Search messages…",
+      "historyEmpty": "No messages yet.",
+      "editTitle": "Edit message",
+      "resend": "Resend",
+      "lastSent": "Last sent"
     },
     "chatSupport": {
-      "subtitle": "Reply to support tickets from clients and drivers."
+      "subtitle": "Reply to support tickets from clients and drivers.",
+      "tabs": {
+        "clients": "Clients",
+        "drivers": "Drivers"
+      },
+      "searchPlaceholder": "Search by subject, category, ticket id, or user…",
+      "backToList": "Back to tickets",
+      "overview": "Overview",
+      "overviewSummary": "{{total}} tickets · L3: {{l3}}",
+      "createTicket": "New ticket",
+      "createTicketTitle": "Start a support conversation",
+      "createTicketSubtitleClients": "Select a client, set the topic, and send the first message.",
+      "createTicketSubtitleDrivers": "Select a driver, set the topic, and send the first message.",
+      "selectUser": "User",
+      "searchUserPlaceholder": "Search by name, email, or id…",
+      "noUsersMatch": "No users match your search.",
+      "selectedUser": "Selected",
+      "subject": "Subject",
+      "subjectPlaceholder": "What is this about?",
+      "messagePlaceholder": "Your message to the user…",
+      "sendAndOpen": "Send & open chat",
+      "ticketCreated": "Ticket created",
+      "kpi": {
+        "total": "Total tickets",
+        "l1": "L1 · AI active",
+        "l2": "L2 · Human",
+        "l3": "L3 · Admin",
+        "response": "Response time",
+        "responseValue": "~8 min",
+        "resolution": "Resolution 24h",
+        "resolutionValue": "94%"
+      },
+      "soundsOn": "Sounds on",
+      "soundsOff": "Sounds muted",
+      "liveHint": "New tickets in real time",
+      "filters": {
+        "allLevels": "All levels",
+        "status": {
+          "all": "All",
+          "open": "Open",
+          "in_progress": "In progress",
+          "resolved": "Resolved"
+        }
+      },
+      "emptyFilter": "No tickets for this filter.",
+      "assignee": "Assigned",
+      "assigneePending": "Pending",
+      "assigneeYou": "You",
+      "assigneeAgent": "Agent",
+      "openProfile": "Open user profile",
+      "takeOver": "Take over",
+      "escalate": "Escalate to L{{level}}",
+      "resolve": "Resolve",
+      "toastResolved": "Ticket marked resolved",
+      "escalated": "Ticket escalated",
+      "tookOver": "You are now assigned",
+      "noMessages": "No messages yet.",
+      "replyPlaceholder": "Reply as {{role}}…",
+      "roleL2": "Support agent (L2)",
+      "roleL3": "Supervisor (L3)",
+      "systemEscalated": "Escalated to level {{level}}",
+      "priority": {
+        "critical": "Critical"
+      },
+      "levelShort": {
+        "ai": "AI",
+        "human": "Human",
+        "admin": "Admin"
+      }
     }
   },
   "hr": {
     "feedbacks": {
       "pageSubtitle": "Service quality, satisfaction, and disputes over time.",
       "subtitle": "Track UX, driver service, and staff interactions; manage escalations and litiges.",
-      "comingSoon": "Feedback analytics and case management will appear here.",
       "tabs": {
         "product": "Product & services",
         "drivers": "Drivers & services",
@@ -942,8 +1073,73 @@
       },
       "productDesc": "App quality, booking flow, pricing — general product dissatisfaction.",
       "driversDesc": "Driver behaviour, bans, trip issues — complaints about drivers.",
-      "staffDesc": "Agent quality and high criticism — disputes with support staff."
+      "staffDesc": "Agent quality and high criticism — disputes with support staff.",
+      "loadError": "Could not load feedback analytics.",
+      "loadErrorHint": "If this is a fresh environment, restart ryvo-functions so migrations apply seed 037.",
+      "retry": "Try again",
+      "search": "Search comments, tags, subjects…",
+      "filterLitige": "Litiges only",
+      "litige": "Litige",
+      "clearSelection": "Clear chart selection",
+      "period": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month",
+        "year": "Year"
+      },
+      "stats": {
+        "avgQuality": "Avg. quality",
+        "total": "Feedbacks",
+        "lowRatings": "Low ratings (≤2★)",
+        "litiges": "Open litiges"
+      },
+      "chart": {
+        "title": "Service quality over time",
+        "hint": "Click a point to see what drove satisfaction up or down in that period.",
+        "quality": "Quality",
+        "feedbacks": "feedbacks"
+      },
+      "insights": {
+        "product": "Top themes in this period",
+        "drivers": "Drivers affecting quality",
+        "staff": "Staff affecting CSAT",
+        "empty": "No feedback in this period.",
+        "mentions": "mentions"
+      },
+      "columns": {
+        "date": "Date",
+        "rating": "Rating",
+        "comment": "Comment & tags",
+        "topic": "Theme",
+        "subject": "Subject",
+        "source": "Source",
+        "author": "Author"
+      },
+      "source": {
+        "post_ride": "After ride",
+        "post_support": "After support",
+        "in_app": "In-app"
+      },
+      "role": {
+        "client": "Client",
+        "driver": "Driver",
+        "staff": "Staff"
+      }
     }
+  },
+  "map": {
+    "pageSubtitle": "Real-time fleet map with online drivers.",
+    "subtitle": "Track online drivers and active trips in real time.",
+    "online": "Online",
+    "onTrip": "On trip",
+    "idle": "Available",
+    "drivers": "Drivers",
+    "filterDrivers": "Filter drivers",
+    "searchDriver": "Search by name or driver id…",
+    "searchPlace": "Search address or place on the map…",
+    "go": "Go",
+    "noDriversOnline": "No drivers online right now.",
+    "noPlaceSuggestions": "No matching places. Press Go to search."
   },
   "settingsTasks": {
     "pageSubtitle": "Background jobs and scheduled maintenance (cron).",

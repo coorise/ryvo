@@ -24,10 +24,7 @@ export function PermissionMatrix({ matrix, onSaved, initialRoleId }: PermissionM
   const { hasPermission, permissions: actorPerms, roles: actorRoles } = useRbac();
 
   const editableRoles = useMemo(
-    () =>
-      matrix.roles.filter(
-        (r) => !r.is_system || (r.name !== "super_admin" && r.name !== "client" && r.name !== "driver"),
-      ),
+    () => matrix.roles.filter((r) => r.name !== "super_admin"),
     [matrix.roles],
   );
 

@@ -1,4 +1,5 @@
 import { BaseService } from "@/lib/base-service";
+import { apiRequest } from "@/lib/api-client";
 import {
   normalizeCardDisplay,
   normalizeFeatures,
@@ -85,7 +86,7 @@ function bodyToApi(body: TariffPackageInput) {
 
 export class FinanceService extends BaseService {
   constructor() {
-    super("auth-hooks");
+    super("payout-service");
   }
 
   getReferralSettings(token: string | null) {
@@ -107,7 +108,11 @@ export class FinanceService extends BaseService {
   }
 
   getCoupons(token: string | null) {
-    return this.get<CouponsBundle>("/v1/admin/finance/coupons", token);
+    return apiRequest<CouponsBundle>(
+      "coupon-service",
+      "/v1/admin/finance/coupons",
+      { token },
+    );
   }
 
   createCoupon(
@@ -120,7 +125,11 @@ export class FinanceService extends BaseService {
       active?: boolean;
     },
   ) {
-    return this.post<{ coupon: CouponRow }>("/v1/admin/finance/coupons", body, token);
+    return apiRequest<{ coupon: CouponRow }>(
+      "coupon-service",
+      "/v1/admin/finance/coupons",
+      { method: "POST", body, token },
+    );
   }
 
   updateCoupon(
@@ -134,26 +143,34 @@ export class FinanceService extends BaseService {
       active: boolean;
     }>,
   ) {
-    return this.patch<{ coupon: CouponRow }>(`/v1/admin/finance/coupons/${id}`, body, token);
+    return apiRequest<{ coupon: CouponRow }>(
+      "coupon-service",
+      `/v1/admin/finance/coupons/${id}`,
+      { method: "PATCH", body, token },
+    );
   }
 
   deleteCoupon(token: string | null, id: string) {
-    return this.delete<{ deleted: boolean }>(`/v1/admin/finance/coupons/${id}`, token);
+    return apiRequest<{ deleted: boolean }>(
+      "coupon-service",
+      `/v1/admin/finance/coupons/${id}`,
+      { method: "DELETE", token },
+    );
   }
 
   validateCoupon(token: string | null, code: string, fare: number) {
-    return this.post<{ code: string; bonus_cad: number; discount: number }>(
+    return apiRequest<{ code: string; bonus_cad: number; discount: number }>(
+      "coupon-service",
       "/v1/finance/coupons/validate",
-      { code, fare },
-      token,
+      { method: "POST", body: { code, fare }, token },
     );
   }
 
   redeemCoupon(token: string | null, code: string, tripId?: string | null) {
-    return this.post<{ code: string; bonus_cad: number }>(
+    return apiRequest<{ code: string; bonus_cad: number }>(
+      "coupon-service",
       "/v1/finance/coupons/redeem",
-      { code, trip_id: tripId ?? null },
-      token,
+      { method: "POST", body: { code, trip_id: tripId ?? null }, token },
     );
   }
 

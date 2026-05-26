@@ -34,7 +34,7 @@ export type DriverDetail = {
 
 export class DriversService extends BaseService {
   constructor() {
-    super("auth-hooks");
+    super("kyc-service");
   }
 
   listDrivers(token: string | null) {

@@ -7,4 +7,5 @@ export * from "./rbac.service";
 export * from "./settings.service";
 export * from "./finance.service";
 export * from "./support.service";
+export * from "./map.service";
 export * from "./supabase";

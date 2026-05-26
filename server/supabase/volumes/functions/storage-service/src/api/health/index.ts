@@ -1,1 +1,4 @@
-export * from "./controller"; export * from "./service"; export * from "./validator"; export * from "./route";
+export * from "./controller.ts";
+export * from "./service.ts";
+export * from "./validator.ts";
+export { routes } from "./route.ts";

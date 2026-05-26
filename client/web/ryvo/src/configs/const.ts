@@ -51,6 +51,8 @@ export const ROUTES = {
     communication: {
       notifications: "/admin/communication/notifications",
       messages: "/admin/communication/messages",
+      messagesNew: "/admin/communication/messages/new",
+      messageEdit: (id: string) => `/admin/communication/messages/${id}/edit`,
       chatSupport: "/admin/communication/chat-support",
     },
     hr: {
@@ -220,6 +222,14 @@ export const QUERY_KEYS = {
     rbacMatrix: ["rbac", "matrix"] as const,
     rbacMe: ["rbac", "me"] as const,
     dashboard: ["admin", "dashboard"] as const,
+    messageCampaigns: ["admin", "communication", "messages"] as const,
+    messageCampaign: (id: string) => ["admin", "communication", "messages", id] as const,
+    notificationsInbox: ["admin", "notifications", "inbox"] as const,
+    feedbacksAnalytics: ["admin", "feedbacks", "analytics"] as const,
+    analytics: (period: string, audience: string) =>
+      ["admin", "analytics", period, audience] as const,
+    liveMapDrivers: ["admin", "map", "onlineDrivers"] as const,
+    platformPublic: ["platform", "public"] as const,
   },
 } as const;
 
@@ -273,6 +283,39 @@ export const PERMISSIONS = {
   },
   analytics: {
     read: "analytics:read",
+  },
+  feedbacks: {
+    read: "feedbacks:read",
+    update: "feedbacks:update",
+  },
+  communication: {
+    messagesRead: "communication:messages:read",
+    messagesCreate: "communication:messages:create",
+    messagesUpdate: "communication:messages:update",
+    messagesDelete: "communication:messages:delete",
+    messagesSend: "communication:messages:send",
+    notificationsRead: "communication:notifications:read",
+    notificationsDelete: "communication:notifications:delete",
+    chatRead: "communication:chat:read",
+    chatReply: "communication:chat:reply",
+    chatCreate: "communication:chat:create",
+    chatUpdate: "communication:chat:update",
+  },
+  map: {
+    read: "map:read",
+  },
+  tasks: {
+    read: "tasks:read",
+    manage: "tasks:manage",
+  },
+  support: {
+    read: "support:read",
+    reply: "support:reply",
+    update: "support:update",
+  },
+  rides: {
+    read: "rides:read",
+    update: "rides:update",
   },
   finance: {
     referralsRead: "finances:referrals:read",

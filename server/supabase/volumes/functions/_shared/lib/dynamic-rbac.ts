@@ -35,11 +35,15 @@ export function canCreateRoles(actor: AuthLike): boolean {
   return hasPerm(actor, "roles:create");
 }
 
-export function canManageRoleRecord(actor: AuthLike, role: { is_system: boolean; created_by: string | null }): boolean {
-  if (role.is_system && !actor.roles.includes("super_admin")) return false;
-  if (actor.roles.includes("super_admin") || actor.roles.includes("admin")) return hasPerm(actor, "roles:update");
-  if (role.created_by === actor.userId) return hasPerm(actor, "roles:update");
-  return hasPerm(actor, "roles:update") && role.created_by === actor.userId;
+export function canManageRoleRecord(
+  actor: AuthLike,
+  role: { is_system: boolean; name: string; created_by: string | null },
+): boolean {
+  if (!hasPerm(actor, "roles:update")) return false;
+  if (role.name === "super_admin") return actor.roles.includes("super_admin");
+  if (actor.roles.includes("super_admin")) return true;
+  if (!role.is_system) return true;
+  return hasPerm(actor, "roles:update");
 }
 
 export function isProtectedSystemRole(name: string): boolean {
@@ -58,6 +62,13 @@ export function canAccessAdmin(auth: AuthLike): boolean {
     "audit:",
     "payments:",
     "settings:",
+    "finances:",
+    "analytics:",
+    "observability:",
+    "feedbacks:",
+    "communication:",
+    "map:",
+    "tasks:",
   ];
   return adminPrefixes.some((p) => hasPermPrefix(auth, p));
 }

@@ -1,4 +1,5 @@
 import { BaseService } from "@/lib/base-service";
+import { apiRequest } from "@/lib/api-client";
 
 export type AssignableRole = {
   id: string;
@@ -23,6 +24,8 @@ export type RoleRow = {
   created_by: string | null;
   created_at?: string;
   updated_at?: string;
+  updated_by?: string | null;
+  updated_by_email?: string | null;
   permissions: string[];
 };
 
@@ -111,18 +114,30 @@ export class RbacService extends BaseService {
   }
 
   listUsers(token: string | null, kind: "clients" | "drivers" | "staff" | "all" = "clients") {
-    return this.get<{ users: AdminUserRow[] }>(`/v1/admin/users?kind=${kind}`, token);
+    return apiRequest<{ users: AdminUserRow[] }>(
+      "profile-service",
+      `/v1/admin/users?kind=${kind}`,
+      { token },
+    );
   }
 
   getUserDetail(token: string | null, userId: string) {
-    return this.get<{ user: AdminUserDetail }>(`/v1/admin/users/${userId}`, token);
+    return apiRequest<{ user: AdminUserDetail }>(
+      "profile-service",
+      `/v1/admin/users/${userId}`,
+      { token },
+    );
   }
 
   createUser(
     token: string | null,
     input: { email: string; password: string; full_name?: string },
   ) {
-    return this.post<{ user: AdminUserRow }>("/v1/admin/users", input, token);
+    return apiRequest<{ user: AdminUserRow }>("profile-service", "/v1/admin/users", {
+      method: "POST",
+      body: input,
+      token,
+    });
   }
 
   updateUser(
@@ -130,7 +145,11 @@ export class RbacService extends BaseService {
     userId: string,
     input: { full_name?: string; email?: string },
   ) {
-    return this.patch<{ user: AdminUserRow }>(`/v1/admin/users/${userId}`, input, token);
+    return apiRequest<{ user: AdminUserRow }>(
+      "profile-service",
+      `/v1/admin/users/${userId}`,
+      { method: "PATCH", body: input, token },
+    );
   }
 
   assignRole(token: string | null, userId: string, roleId: string) {
@@ -150,18 +169,26 @@ export class RbacService extends BaseService {
   }
 
   banUser(token: string | null, userId: string, reason?: string) {
-    return this.post("/v1/admin/users/ban", { user_id: userId, reason }, token);
+    return apiRequest("profile-service", "/v1/admin/users/ban", {
+      method: "POST",
+      body: { user_id: userId, reason },
+      token,
+    });
   }
 
   unbanUser(token: string | null, userId: string) {
-    return this.post("/v1/admin/users/unban", { user_id: userId }, token);
+    return apiRequest("profile-service", "/v1/admin/users/unban", {
+      method: "POST",
+      body: { user_id: userId },
+      token,
+    });
   }
 
   deleteUser(token: string | null, userId: string, mode: "soft" | "permanent") {
-    return this.delete<{ user_id: string; mode: string }>(
+    return apiRequest<{ user_id: string; mode: string }>(
+      "profile-service",
       `/v1/admin/users/${userId}`,
-      token,
-      { mode },
+      { method: "DELETE", body: { mode }, token },
     );
   }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { FileDown } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,33 +24,51 @@ import {
 
 import { ChartPanel } from "@/components/admin/charts/chart-panel";
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
-import {
-  buildKpis,
-  CHART_COLORS,
-  experienceScores,
-  ratingDistribution,
-  topDestinations,
-  tripVolumeSeries,
-  type AnalyticsAudience,
-  type AnalyticsPeriod,
-  type ChartKind,
-} from "@/lib/analytics-demo";
+import { CHART_COLORS, type ChartKind } from "@/lib/analytics-demo";
 import { exportElementToPdf } from "@/lib/export-pdf";
 import { cn } from "@/lib/utils";
+import { QUERY_KEYS } from "@/configs/const";
+import { useAuth } from "@/hooks/use-auth";
+import { adminService } from "@/services/admin.service";
+
+type AnalyticsPeriod = "7d" | "30d" | "90d" | "1y";
+type AnalyticsAudience = "all" | "clients" | "drivers";
 
 export function AnalyticsDashboard() {
   const { t } = useTranslation();
+  const { accessToken } = useAuth();
   const [period, setPeriod] = useState<AnalyticsPeriod>("30d");
   const [audience, setAudience] = useState<AnalyticsAudience>("all");
   const [volumeChart, setVolumeChart] = useState<ChartKind>("area");
   const [ratingChart, setRatingChart] = useState<ChartKind>("bar");
   const exportRef = useRef<HTMLDivElement>(null);
 
-  const kpis = useMemo(() => buildKpis(period, audience), [period, audience]);
-  const volume = useMemo(() => tripVolumeSeries(period), [period]);
-  const ratings = ratingDistribution();
-  const destinations = topDestinations();
-  const experience = experienceScores();
+  const { data, isLoading, isError } = useQuery({
+    queryKey: QUERY_KEYS.admin.analytics(period, audience),
+    queryFn: () => adminService.getAnalytics(accessToken, period, audience),
+    enabled: Boolean(accessToken),
+  });
+
+  const kpis = data?.kpis ?? {
+    activeUsers: 0,
+    completedTrips: 0,
+    avgRating: 0,
+    cancelRate: 0,
+    avgWaitMin: 0,
+    driverOnlineHours: 0,
+  };
+  const volume = data?.volume ?? [];
+  const ratings = data?.ratingDist ?? [];
+  const experience = data?.experience ?? [];
+  const destinations = useMemo(() => {
+    const rows = data?.destinations ?? [];
+    const total = rows.reduce((s, d) => s + d.count, 0) || 1;
+    return rows.map((d) => ({
+      city: d.name,
+      trips: d.count,
+      share: Math.round((d.count / total) * 100),
+    }));
+  }, [data?.destinations]);
 
   async function exportPdf() {
     if (!exportRef.current) return;
@@ -58,6 +77,13 @@ export function AnalyticsDashboard() {
       `ryvo-analytics-${period}-${Date.now()}`,
       t("analytics.title"),
     );
+  }
+
+  if (isLoading) {
+    return <p className="text-muted-foreground text-sm">{t("common.loading")}</p>;
+  }
+  if (isError) {
+    return <p className="text-destructive text-sm">{t("analytics.loadError")}</p>;
   }
 
   return (
@@ -125,7 +151,6 @@ export function AnalyticsDashboard() {
                 <Tooltip />
                 <Legend />
                 <Line dataKey="trips" stroke={CHART_COLORS[0]} name={t("analytics.series.trips")} />
-                <Line dataKey="revenue" stroke={CHART_COLORS[1]} name={t("analytics.series.revenue")} />
               </LineChart>
             ) : volumeChart === "bar" ? (
               <BarChart data={volume}>
@@ -135,7 +160,6 @@ export function AnalyticsDashboard() {
                 <Tooltip />
                 <Legend />
                 <Bar dataKey="trips" fill={CHART_COLORS[0]} />
-                <Bar dataKey="revenue" fill={CHART_COLORS[1]} />
               </BarChart>
             ) : (
               <AreaChart data={volume}>
@@ -145,7 +169,6 @@ export function AnalyticsDashboard() {
                 <Tooltip />
                 <Legend />
                 <Area dataKey="trips" fill={CHART_COLORS[0]} stroke={CHART_COLORS[0]} />
-                <Area dataKey="revenue" fill={CHART_COLORS[1]} stroke={CHART_COLORS[1]} />
               </AreaChart>
             )}
           </ResponsiveContainer>

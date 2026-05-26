@@ -20,6 +20,7 @@ import {
   ListSelectCheckbox,
   SortableTableHeader,
   StatusBadge,
+  UpdatedByCell,
 } from "@/components/admin/admin-list-ui";
 import { BulkSelectionBar } from "@/components/admin/bulk-selection-bar";
 import { DeleteEntityDialog } from "@/components/admin/delete-entity-dialog";
@@ -224,6 +225,7 @@ export function StaffRolesTab() {
                   activeSort={list.sort}
                   onSort={list.toggleColumnSort}
                 />
+                <th className="px-5 py-3.5">{t("list.updatedBy")}</th>
                 <th className="px-5 py-3.5 text-right">{t("users.actions")}</th>
               </tr>
             </AdminTableHead>
@@ -250,6 +252,9 @@ export function StaffRolesTab() {
                   <td className="text-muted-foreground px-5 py-3">{r.description ?? UI.emptyPlaceholder}</td>
                   <td className="px-5 py-3">{r.permissions?.length ?? 0}</td>
                   <td className="text-muted-foreground px-5 py-3">{formatTimestamp(r.updated_at)}</td>
+                  <td className="px-5 py-3">
+                    <UpdatedByCell email={r.updated_by_email} />
+                  </td>
                   <td className="px-5 py-3">
                     <InlineRowActions
                       onView={() => setViewRole(r)}

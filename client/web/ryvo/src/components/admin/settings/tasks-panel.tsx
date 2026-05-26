@@ -18,6 +18,7 @@ import {
   InlineRowActions,
   SortableTableHeader,
   StatusBadge,
+  UpdatedByCell,
 } from "@/components/admin/admin-list-ui";
 import {
   AlertDialog,
@@ -54,7 +55,8 @@ export function TasksPanel() {
   const { accessToken, isReady } = useAuth();
   const { hasPermission } = useRbac();
   const qc = useQueryClient();
-  const canEdit = hasPermission(PERMISSIONS.settings.update);
+  const canEdit =
+    hasPermission(PERMISSIONS.tasks.manage) || hasPermission(PERMISSIONS.settings.update);
   const list = useListControls(SORT_KEYS.updatedAt);
   const [statusFilter, setStatusFilter] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
@@ -167,7 +169,7 @@ export function TasksPanel() {
   });
 
   const remove = useMutation({
-    mutationFn: (id: string) => tasksService.delete(accessToken, id),
+    mutationFn: (id: string) => tasksService.removeTask(accessToken, id),
     onSuccess: () => {
       toast.success(t("settingsTasks.deleted"));
       setDeleteTarget(null);
@@ -288,6 +290,7 @@ export function TasksPanel() {
                 />
                 <th className="px-5 py-3.5">{t("settingsTasks.col.lastRun")}</th>
                 <th className="px-5 py-3.5">{t("settingsTasks.col.status")}</th>
+                <th className="px-5 py-3.5">{t("list.updatedBy")}</th>
                 <th className="px-5 py-3.5 text-right">{t("users.actions")}</th>
               </tr>
             </AdminTableHead>
@@ -319,6 +322,9 @@ export function TasksPanel() {
                         {t("settingsTasks.lastError")}
                       </span>
                     )}
+                  </td>
+                  <td className="px-5 py-3">
+                    <UpdatedByCell email={task.updated_by_email} />
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>

@@ -1,29 +1,33 @@
 "use client";
 
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
+import { FeedbackTabAnalytics } from "@/components/admin/hr/feedback-tab-analytics";
 import { AdminListStack } from "@/components/admin/admin-list-ui";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ADMIN_TABS } from "@/configs/const";
+import type { FeedbackCategory } from "@/services/feedbacks.service";
 
 type FeedbacksPanelProps = {
   tab: string;
   onTabChange: (v: string) => void;
 };
 
-function FeedbackTabPlaceholder({ titleKey, descKey }: { titleKey: string; descKey: string }) {
-  const { t } = useTranslation();
-  return (
-    <div className="border-border bg-card rounded-3xl border p-8">
-      <h3 className="text-lg font-semibold">{t(titleKey)}</h3>
-      <p className="text-muted-foreground mt-2 max-w-2xl text-sm">{t(descKey)}</p>
-      <p className="text-muted-foreground mt-6 text-sm">{t("hr.feedbacks.comingSoon")}</p>
-    </div>
-  );
+function tabToCategory(tab: string): FeedbackCategory {
+  if (tab === ADMIN_TABS.feedbacks.drivers) return "driver";
+  if (tab === ADMIN_TABS.feedbacks.staff) return "staff";
+  return "product";
 }
 
 export function FeedbacksPanel({ tab, onTabChange }: FeedbacksPanelProps) {
   const { t } = useTranslation();
+
+  const descKey = useMemo(() => {
+    if (tab === ADMIN_TABS.feedbacks.drivers) return "hr.feedbacks.driversDesc";
+    if (tab === ADMIN_TABS.feedbacks.staff) return "hr.feedbacks.staffDesc";
+    return "hr.feedbacks.productDesc";
+  }, [tab]);
 
   return (
     <AdminListStack>
@@ -40,24 +44,13 @@ export function FeedbacksPanel({ tab, onTabChange }: FeedbacksPanelProps) {
             {t("hr.feedbacks.tabs.staff")}
           </TabsTrigger>
         </TabsList>
-        <TabsContent value={ADMIN_TABS.feedbacks.product} className="mt-6">
-          <FeedbackTabPlaceholder
-            titleKey="hr.feedbacks.tabs.product"
-            descKey="hr.feedbacks.productDesc"
+        <div className="mt-6">
+          <FeedbackTabAnalytics
+            key={tab}
+            category={tabToCategory(tab)}
+            descKey={descKey}
           />
-        </TabsContent>
-        <TabsContent value={ADMIN_TABS.feedbacks.drivers} className="mt-6">
-          <FeedbackTabPlaceholder
-            titleKey="hr.feedbacks.tabs.drivers"
-            descKey="hr.feedbacks.driversDesc"
-          />
-        </TabsContent>
-        <TabsContent value={ADMIN_TABS.feedbacks.staff} className="mt-6">
-          <FeedbackTabPlaceholder
-            titleKey="hr.feedbacks.tabs.staff"
-            descKey="hr.feedbacks.staffDesc"
-          />
-        </TabsContent>
+        </div>
       </Tabs>
     </AdminListStack>
   );

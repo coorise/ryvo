@@ -1,2 +1,2 @@
 /** @deprecated Use eslint.config.js */
-module.exports = { root: true, ignorePatterns: ["node_modules/**", ".next/**", "out/**"] };
+export default { root: true, ignorePatterns: ["node_modules/**", ".next/**", "out/**"] };

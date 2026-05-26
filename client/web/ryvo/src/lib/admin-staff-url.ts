@@ -3,8 +3,8 @@ import type { RoleRow } from "@/services/rbac.service";
 
 const STAFF_TAB_VALUES = Object.values(ADMIN_TABS.staff);
 
-/** Roles whose permission set can be edited in the matrix (not view-only). */
-const NON_EDITABLE_SYSTEM_ROLES = new Set(["super_admin", "client", "driver"]);
+/** Only super_admin role permissions are locked in the matrix. */
+const NON_EDITABLE_SYSTEM_ROLES = new Set(["super_admin"]);
 
 export function parseStaffTab(raw: string | null): string {
   if (raw && STAFF_TAB_VALUES.includes(raw as (typeof STAFF_TAB_VALUES)[number])) {

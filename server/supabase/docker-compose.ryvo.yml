@@ -29,6 +29,9 @@ services:
       KAFKA_BROKER: ryvo_kafka_broker:9092
       BUNQUEUE_HOST: ryvo_bunqueue
       BUNQUEUE_PORT: "6789"
+      BUNQUEUE_HTTP_BASE_URL: ${BUNQUEUE_HTTP_BASE_URL:-http://ryvo_bunqueue:6790}
+      BUNQUEUE_HTTP_TOKEN: ${BUNQUEUE_HTTP_TOKEN:-}
+      USE_BUNQUEUE_CRON: ${USE_BUNQUEUE_CRON:-true}
       SERVICE_HMAC_SECRET: ${SERVICE_HMAC_SECRET:-ryvo-dev-hmac-secret}
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}

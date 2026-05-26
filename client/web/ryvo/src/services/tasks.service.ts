@@ -24,11 +24,13 @@ export type AdminTask = {
   last_result: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
+  updated_by?: string | null;
+  updated_by_email?: string | null;
 };
 
 export class TasksService extends BaseService {
   constructor() {
-    super("auth-hooks");
+    super("cron-jobs");
   }
 
   list(token: string | null) {
@@ -74,7 +76,7 @@ export class TasksService extends BaseService {
     return this.post<{ task: AdminTask }>(`/v1/admin/settings/tasks/${id}/resume`, {}, token);
   }
 
-  delete(token: string | null, id: string) {
+  removeTask(token: string | null, id: string) {
     return this.delete<{ deleted: boolean }>(`/v1/admin/settings/tasks/${id}`, token);
   }
 }

@@ -38,7 +38,7 @@ export async function listRolesWithPermissions() {
   const db = getAdminClient();
   const { data: roles } = await db
     .from("roles")
-    .select("id,name,description,is_system,created_by,created_at,updated_at")
+    .select("id,name,description,is_system,created_by,created_at,updated_at,updated_by")
     .order("name");
   const { data: mappings } = await db.from("role_permissions").select("role_id,permission_id");
   const { data: perms } = await db.from("permissions").select("id,name");
@@ -91,12 +91,17 @@ export async function updateRole(
   const role = await getRoleById(roleId);
   if (!role || !canManageRoleRecord(actor, role)) throw new Error("FORBIDDEN");
 
+  const now = new Date().toISOString();
   if (input.description !== undefined) {
-    await db.from("roles").update({ description: input.description, updated_at: new Date().toISOString() }).eq("id", roleId);
+    await db
+      .from("roles")
+      .update({ description: input.description, updated_at: now, updated_by: actor.userId })
+      .eq("id", roleId);
   }
   if (input.permissions) {
     if (!canGrantPermissions(actor, input.permissions)) throw new Error("Cannot grant permissions you do not hold");
     await setRolePermissionsByNames(roleId, input.permissions);
+    await db.from("roles").update({ updated_at: now, updated_by: actor.userId }).eq("id", roleId);
   }
   await emitAudit(actor.userId, "role.update", "role", roleId, input);
   return getRoleById(roleId);
@@ -129,7 +134,7 @@ async function getRoleById(roleId: string) {
   const db = getAdminClient();
   const { data: role } = await db
     .from("roles")
-    .select("id,name,description,is_system,created_by,created_at,updated_at")
+    .select("id,name,description,is_system,created_by,created_at,updated_at,updated_by")
     .eq("id", roleId)
     .maybeSingle();
   if (!role) return null;

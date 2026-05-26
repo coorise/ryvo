@@ -41,7 +41,11 @@ export function canAccessDashboard(user: SessionUser | null, area: "client" | "d
         hasPermPrefix(user, "payments:") ||
         hasPermPrefix(user, "observability:") ||
         hasPermPrefix(user, "finances:") ||
-        hasPermPrefix(user, "analytics:")
+        hasPermPrefix(user, "analytics:") ||
+        hasPermPrefix(user, "feedbacks:") ||
+        hasPermPrefix(user, "communication:") ||
+        hasPermPrefix(user, "map:") ||
+        hasPermPrefix(user, "tasks:")
       );
     case "driver":
       return hasRole(user, "driver");

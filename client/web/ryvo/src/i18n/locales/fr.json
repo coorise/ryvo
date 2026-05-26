@@ -50,7 +50,9 @@
       "advanced": "Avancé"
     },
     "operations": "Opérations",
-    "financeSecurity": "Finances & sécurité"
+    "financeSecurity": "Finances & sécurité",
+    "menu": "Menu de navigation",
+    "openMenu": "Ouvrir le menu"
   },
   "observability": {
     "title": "Observabilité",
@@ -730,6 +732,7 @@
     "sortEmailDesc": "Courriel Z–A",
     "sortUpdatedDesc": "Mis à jour récemment",
     "sortUpdatedAsc": "Plus ancien",
+    "updatedBy": "Mis à jour par",
     "sortCreatedDesc": "Plus récent",
     "sortCreatedAsc": "Plus ancien",
     "sortPermissionsDesc": "Plus de permissions",
@@ -801,10 +804,22 @@
   },
   "rides": {
     "subtitle": "Demandes de course et cycle de vie.",
+    "export": "Exporter",
+    "search": "ID course, client, chauffeur, adresse…",
+    "total": "courses",
+    "inProgress": "en cours",
+    "cancelRate": "taux d'annulation",
+    "dropoff": "Destination",
     "status": "Statut",
     "pickup": "Prise en charge",
     "fare": "Tarif",
-    "created": "Créé"
+    "created": "Créé",
+    "kpi": {
+      "total": "Courses du jour",
+      "inProgress": "En cours",
+      "revenue": "CA du jour",
+      "cancelRate": "Taux annulation"
+    }
   },
   "audit": {
     "subtitle": "Piste d'audit immuable des actions admin."
@@ -867,45 +882,160 @@
   },
   "communication": {
     "notifications": {
-      "subtitle": "Notifications reçues sur votre compte personnel (boîte globale à venir).",
-      "hint": "Cliquez une ligne pour marquer comme lu.",
+      "subtitle": "Votre boîte — alertes support et messages plateforme pour ce compte.",
+      "searchPlaceholder": "Rechercher type, canal ou message…",
+      "empty": "Aucune notification.",
+      "deleted": "Notification supprimée",
+      "detailBody": "Message",
       "read": "Lu",
       "unread": "Non lu",
+      "stats": {
+        "total": "Total",
+        "unread": "Non lues",
+        "read": "Lues",
+        "inApp": "In-app"
+      },
       "col": {
         "when": "Quand",
         "channel": "Canal",
         "type": "Type",
         "status": "Statut",
-        "message": "Message"
+        "message": "Aperçu"
       }
     },
     "messages": {
       "pageSubtitle": "Messages instantanés ou planifiés pour clients ou chauffeurs — push et/ou courriel.",
-      "subtitle": "Compositeur de campagne (API à brancher).",
+      "listSubtitle": "Historique — brouillons, planifiés et envoyés.",
+      "composeSubtitle": "Utilisez des jetons dans le texte ; brouillon ou envoi.",
+      "subtitle": "Compositeur de campagne — sauvegardé dans l’historique.",
+      "create": "Nouveau message",
       "audience": "Audience",
+      "audienceAll": "Toutes les audiences",
       "audience_clients": "Clients",
       "audience_drivers": "Chauffeurs",
       "audience_all": "Tous",
       "body": "Message",
       "bodyPlaceholder": "Texte de la notification…",
+      "templates": "Modèles",
+      "preview": "Aperçu",
+      "previewEmpty": "Rédigez un message pour voir l’aperçu…",
       "sendPush": "Notification app",
       "sendEmail": "Courriel",
       "delay": "Délai (minutes)",
       "delayHint": "0 = envoi immédiat lorsque l'API sera active.",
       "sendNow": "Envoyer",
       "schedule": "Planifier",
+      "saveDraft": "Brouillon",
+      "draftSaved": "Brouillon enregistré",
       "messageRequired": "Saisissez un message.",
-      "scheduledPlaceholder": "Campagne en file (démo)."
+      "saved": "Message sauvegardé",
+      "sent": "Message envoyé",
+      "scheduled": "Message planifié",
+      "updated": "Message mis à jour",
+      "resent": "Message renvoyé",
+      "deleted": "Message supprimé",
+      "stats": {
+        "total": "Messages totaux",
+        "drafts": "Brouillons",
+        "sent": "Envoyés",
+        "queued": "Planifiés"
+      },
+      "status": {
+        "draft": "Brouillon",
+        "queued": "Planifié",
+        "sent": "Envoyé",
+        "cancelled": "Annulé"
+      },
+      "col": {
+        "message": "Message",
+        "channels": "Canaux",
+        "created": "Créé"
+      },
+      "previewTitle": "Aperçu du message",
+      "historyTitle": "Historique",
+      "historySubtitle": "Messages envoyés et brouillons — modifier, renvoyer, supprimer.",
+      "historySearch": "Rechercher…",
+      "historyEmpty": "Aucun message.",
+      "editTitle": "Modifier le message",
+      "resend": "Renvoyer",
+      "lastSent": "Dernier envoi"
     },
     "chatSupport": {
-      "subtitle": "Répondre aux tickets des clients et chauffeurs."
+      "subtitle": "Répondre aux tickets des clients et chauffeurs.",
+      "tabs": {
+        "clients": "Clients",
+        "drivers": "Chauffeurs"
+      },
+      "searchPlaceholder": "Rechercher par sujet, catégorie, id ticket ou utilisateur…",
+      "backToList": "Retour aux tickets",
+      "overview": "Aperçu",
+      "overviewSummary": "{{total}} tickets · L3 : {{l3}}",
+      "createTicket": "Nouveau ticket",
+      "createTicketTitle": "Démarrer une conversation support",
+      "createTicketSubtitleClients": "Choisissez un client, le sujet et le premier message.",
+      "createTicketSubtitleDrivers": "Choisissez un chauffeur, le sujet et le premier message.",
+      "selectUser": "Utilisateur",
+      "searchUserPlaceholder": "Rechercher par nom, courriel ou id…",
+      "noUsersMatch": "Aucun utilisateur trouvé.",
+      "selectedUser": "Sélectionné",
+      "subject": "Sujet",
+      "subjectPlaceholder": "Objet de la demande…",
+      "messagePlaceholder": "Votre message à l'utilisateur…",
+      "sendAndOpen": "Envoyer et ouvrir",
+      "ticketCreated": "Ticket créé",
+      "kpi": {
+        "total": "Tickets totaux",
+        "l1": "L1 · IA actifs",
+        "l2": "L2 · Humains",
+        "l3": "L3 · Admin",
+        "response": "Temps de réponse",
+        "responseValue": "~8 min",
+        "resolution": "Résolution 24h",
+        "resolutionValue": "94 %"
+      },
+      "soundsOn": "Sons activés",
+      "soundsOff": "Sons coupés",
+      "liveHint": "Nouveaux tickets en temps réel",
+      "filters": {
+        "allLevels": "Tous niveaux",
+        "status": {
+          "all": "Tous",
+          "open": "Ouverts",
+          "in_progress": "En cours",
+          "resolved": "Résolus"
+        }
+      },
+      "emptyFilter": "Aucun ticket pour ce filtre.",
+      "assignee": "Assigné",
+      "assigneePending": "En attente",
+      "assigneeYou": "Vous",
+      "assigneeAgent": "Agent",
+      "openProfile": "Ouvrir le profil utilisateur",
+      "takeOver": "Prendre en charge",
+      "escalate": "Escalader L{{level}}",
+      "resolve": "Résoudre",
+      "toastResolved": "Ticket marqué résolu",
+      "escalated": "Escalade enregistrée",
+      "tookOver": "Vous êtes maintenant assigné",
+      "noMessages": "Pas encore de messages.",
+      "replyPlaceholder": "Répondre en tant que {{role}}…",
+      "roleL2": "Agent SAV (L2)",
+      "roleL3": "Superviseur (L3)",
+      "systemEscalated": "Escalade vers le niveau {{level}}",
+      "priority": {
+        "critical": "Critique"
+      },
+      "levelShort": {
+        "ai": "IA",
+        "human": "Humain",
+        "admin": "Admin"
+      }
     }
   },
   "hr": {
     "feedbacks": {
       "pageSubtitle": "Qualité de service, satisfaction et litiges dans le temps.",
-      "subtitle": "UX, service chauffeur et agents — gérer les escalades.",
-      "comingSoon": "Analytique et gestion des dossiers à venir.",
+      "subtitle": "UX, service chauffeur et agents — gérer les escalades et litiges.",
       "tabs": {
         "product": "Produit & services",
         "drivers": "Chauffeurs & services",
@@ -913,8 +1043,73 @@
       },
       "productDesc": "Qualité app, réservation, tarifs — insatisfaction produit.",
       "driversDesc": "Comportement chauffeur, bannissement, course — plaintes chauffeur.",
-      "staffDesc": "Qualité agent et critiques — litiges avec le support."
+      "staffDesc": "Qualité agent et critiques — litiges avec le support.",
+      "loadError": "Impossible de charger les analytiques.",
+      "loadErrorHint": "Sur un nouvel environnement, redémarrez ryvo-functions pour appliquer la migration 037.",
+      "retry": "Réessayer",
+      "search": "Rechercher commentaires, tags, sujets…",
+      "filterLitige": "Litiges uniquement",
+      "litige": "Litige",
+      "clearSelection": "Effacer la sélection",
+      "period": {
+        "day": "Jour",
+        "week": "Semaine",
+        "month": "Mois",
+        "year": "Année"
+      },
+      "stats": {
+        "avgQuality": "Qualité moy.",
+        "total": "Retours",
+        "lowRatings": "Notes basses (≤2★)",
+        "litiges": "Litiges"
+      },
+      "chart": {
+        "title": "Qualité de service dans le temps",
+        "hint": "Cliquez un point pour voir ce qui a fait monter ou baisser la satisfaction.",
+        "quality": "Qualité",
+        "feedbacks": "retours"
+      },
+      "insights": {
+        "product": "Thèmes principaux sur la période",
+        "drivers": "Chauffeurs impactant la qualité",
+        "staff": "Agents impactant la CSAT",
+        "empty": "Aucun retour sur cette période.",
+        "mentions": "mentions"
+      },
+      "columns": {
+        "date": "Date",
+        "rating": "Note",
+        "comment": "Commentaire & tags",
+        "topic": "Thème",
+        "subject": "Sujet",
+        "source": "Source",
+        "author": "Auteur"
+      },
+      "source": {
+        "post_ride": "Après course",
+        "post_support": "Après support",
+        "in_app": "Dans l'app"
+      },
+      "role": {
+        "client": "Client",
+        "driver": "Chauffeur",
+        "staff": "Personnel"
+      }
     }
+  },
+  "map": {
+    "pageSubtitle": "Carte flotte en temps réel avec chauffeurs en ligne.",
+    "subtitle": "Suivre les chauffeurs en ligne et les courses actives en temps réel.",
+    "online": "En ligne",
+    "onTrip": "En course",
+    "idle": "Disponible",
+    "drivers": "Chauffeurs",
+    "filterDrivers": "Filtrer les chauffeurs",
+    "searchDriver": "Rechercher par nom ou id…",
+    "searchPlace": "Rechercher une adresse sur la carte…",
+    "go": "Aller",
+    "noDriversOnline": "Aucun chauffeur en ligne pour le moment.",
+    "noPlaceSuggestions": "Aucun lieu trouvé. Appuyez sur Aller pour rechercher."
   },
   "settingsTasks": {
     "pageSubtitle": "Tâches de fond et maintenance planifiée (cron).",

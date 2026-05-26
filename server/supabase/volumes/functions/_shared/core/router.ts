@@ -1,6 +1,6 @@
 import type { AuthContext, RequestContext } from "./context.ts";
 import { fail } from "./response.ts";
-import { verifyJwt, requirePermission, requireEmailVerified } from "../middleware/auth.ts";
+import { verifyJwt, requirePermission, requireAnyPermission, requireEmailVerified } from "../middleware/auth.ts";
 import { rateLimit } from "../lib/redis.ts";
 
 export type RouteHandler = (
@@ -15,6 +15,8 @@ export type RouteDef = {
   handler: RouteHandler;
   auth?: boolean;
   permissions?: string[];
+  /** User needs at least one of these (checked before `permissions`). */
+  permissionsAny?: string[];
   requireVerifiedEmail?: boolean;
   rateLimit?: { limit: number; windowSec: number; keyPrefix?: string };
 };
@@ -47,6 +49,10 @@ export function createServiceRouter(serviceName: string, routes: RouteDef[]) {
       const authResult = await verifyJwt(req);
       if (authResult instanceof Response) return authResult;
       ctx.auth = authResult;
+      if (route.permissionsAny?.length) {
+        const denied = requireAnyPermission(authResult, route.permissionsAny);
+        if (denied) return denied;
+      }
       for (const perm of route.permissions ?? []) {
         const denied = requirePermission(authResult, perm);
         if (denied) return denied;

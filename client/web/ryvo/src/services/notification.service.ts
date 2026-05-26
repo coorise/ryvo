@@ -7,6 +7,7 @@ export type InboxNotification = {
   type: string;
   payload: Record<string, unknown>;
   read_at: string | null;
+  sent_at: string | null;
   created_at: string;
 };
 
@@ -20,7 +21,15 @@ export class NotificationService extends BaseService {
   }
 
   markRead(token: string | null, id: string) {
-    return this.patch<{ id: string; read: boolean }>(`/v1/inbox/${id}/read`, {}, token);
+    return this.patch<{ notification: InboxNotification; id: string; read: boolean }>(
+      `/v1/inbox/${id}/read`,
+      {},
+      token,
+    );
+  }
+
+  remove(token: string | null, id: string) {
+    return this.delete<{ deleted: boolean; id: string }>(`/v1/inbox/${id}`, token);
   }
 }
 

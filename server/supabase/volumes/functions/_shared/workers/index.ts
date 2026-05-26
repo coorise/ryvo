@@ -1,6 +1,7 @@
 import { startMatchingConsumer } from "./matching-consumer.ts";
 import { startNotificationConsumer } from "./notification-consumer.ts";
 import { startAuditConsumer } from "./audit-consumer.ts";
+import { startBunqueueCronWorker } from "./bunqueue-cron-worker.ts";
 import { startCronScheduler } from "./cron-scheduler.ts";
 import { startEmailOutboxWorker } from "./email-worker.ts";
 
@@ -15,6 +16,7 @@ async function safeStart(name: string, fn: () => Promise<void>): Promise<void> {
 
 export async function startBackgroundWorkers(): Promise<void> {
   startCronScheduler();
+  startBunqueueCronWorker();
   startEmailOutboxWorker();
   await Promise.all([
     safeStart("matching-consumer", startMatchingConsumer),

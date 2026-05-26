@@ -1,1 +1,1 @@
-export const healthValidator = {};
+export {};

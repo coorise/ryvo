@@ -1,0 +1,22 @@
+// Re-exports used by this service route modules.
+export { z } from "zod";
+export * from "../schemas/validators.ts";
+export { ok } from "../../../_shared/core/response.ts";
+export { fail } from "../../../_shared/core/response.ts";
+export { getAdminClient } from "../../../_shared/lib/supabase.ts";
+export { requireRole } from "../../../_shared/middleware/auth.ts";
+export { emitAudit } from "../../../_shared/lib/events.ts";
+export { listAdminUsers } from "../../../_shared/lib/admin-users.ts";
+export { createClientUser } from "../../../_shared/lib/admin-users.ts";
+export { updateClientUser } from "../../../_shared/lib/admin-users.ts";
+export { getAdminUserDetail } from "../../../_shared/lib/admin-users.ts";
+export { deleteAdminUser } from "../../../_shared/lib/admin-users.ts";
+export { hasPerm } from "../../../_shared/lib/dynamic-rbac.ts";
+export { getPlatformPreferences } from "../../../_shared/lib/platform-settings.ts";
+export { updatePlatformPreferences } from "../../../_shared/lib/platform-settings.ts";
+export { getSelfProfile } from "../../../_shared/lib/user-self-profile.ts";
+export { updateSelfProfile } from "../../../_shared/lib/user-self-profile.ts";
+export { getPaymentSettings } from "../../../_shared/lib/payment-settings.ts";
+export { updatePaymentSettings } from "../../../_shared/lib/payment-settings.ts";
+export { getNotificationSettings } from "../../../_shared/lib/notification-settings.ts";
+export { updateNotificationSettings } from "../../../_shared/lib/notification-settings.ts";

@@ -1,30 +1,36 @@
+import { bunqueueHttpHealth, enqueueCronJob } from "../lib/bunqueue-http.ts";
+import { dispatchSignedCron } from "../lib/cron-internal.ts";
 import { env } from "../lib/env.ts";
 
-function sign(body: string, ts: string): string {
-  return new Bun.CryptoHasher("sha256")
-    .update(`${ts}.${body}`)
-    .update(env.serviceHmacSecret)
-    .digest("hex");
-}
-
-async function callCron(path: string): Promise<void> {
-  const ts = String(Date.now());
-  const body = "{}";
-  await fetch(`http://127.0.0.1:${env.port}/${path}`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-service-timestamp": ts,
-      "x-service-signature": sign(body, ts),
-    },
-    body,
-  }).catch((e) => console.error("[cron]", path, e));
+async function tickCron(path: string): Promise<void> {
+  if (env.useBunqueueCron && env.bunqueueHttpBaseUrl) {
+    const ok = await enqueueCronJob(path);
+    if (ok) return;
+    console.warn("[cron] Bunqueue enqueue failed, falling back to direct dispatch:", path);
+  }
+  await dispatchSignedCron(path).catch((e) => console.error("[cron]", path, e));
 }
 
 export function startCronScheduler(): void {
-  setInterval(() => callCron("cron-jobs/v1/run/stale-drivers"), 60_000);
-  setInterval(() => callCron("cron-jobs/v1/run/expire-offers"), 15_000);
-  setInterval(() => callCron("cron-jobs/v1/run/expire-idempotency"), 3_600_000);
-  setInterval(() => callCron("cron-jobs/v1/run/admin-tasks"), 60_000);
-  console.log("[ryvo-cron] Scheduler started");
+  if (env.useBunqueueCron && env.bunqueueHttpBaseUrl) {
+    void bunqueueHttpHealth().then((ok) => {
+      if (!ok) {
+        console.warn(
+          "[cron] USE_BUNQUEUE_CRON is set but Bunqueue HTTP is not reachable at",
+          env.bunqueueHttpBaseUrl,
+          "— ticks will fall back to direct dispatch until the server is healthy.",
+        );
+      }
+    });
+  }
+
+  setInterval(() => void tickCron("cron-jobs/v1/run/stale-drivers"), 60_000);
+  setInterval(() => void tickCron("cron-jobs/v1/run/expire-offers"), 15_000);
+  setInterval(() => void tickCron("cron-jobs/v1/run/expire-idempotency"), 3_600_000);
+  setInterval(() => void tickCron("cron-jobs/v1/run/admin-tasks"), 60_000);
+  console.log(
+    env.useBunqueueCron
+      ? "[ryvo-cron] Scheduler started (Bunqueue enqueue when available, else direct)"
+      : "[ryvo-cron] Scheduler started (direct dispatch)",
+  );
 }

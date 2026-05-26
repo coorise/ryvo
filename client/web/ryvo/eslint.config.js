@@ -41,6 +41,15 @@ export default [
       ...pluginReactHooks.configs.recommended.rules,
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
+
+      // These rules are too strict for our current patterns and create noisy false-positives.
+      // Keep them off; we rely on code review + profiling for these cases.
+      "react-hooks/purity": "off",
+      "react-hooks/set-state-in-effect": "off",
+
+      // Reduce friction while iterating; warnings still show in CI/IDE.
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-explicit-any": "warn",
     },
   },
 ];

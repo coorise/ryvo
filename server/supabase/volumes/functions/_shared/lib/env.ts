@@ -8,6 +8,11 @@ export const env = {
   kafkaBroker: process.env.KAFKA_BROKER ?? "ryvo_kafka_broker:9092",
   bunqueueHost: process.env.BUNQUEUE_HOST ?? "ryvo_bunqueue",
   bunqueuePort: Number(process.env.BUNQUEUE_PORT ?? 6789),
+  /** Bunqueue HTTP API (default server HTTP port 6790). See https://bunqueue.dev/api/http/ */
+  bunqueueHttpBaseUrl: (process.env.BUNQUEUE_HTTP_BASE_URL ?? "").replace(/\/$/, ""),
+  bunqueueHttpToken: process.env.BUNQUEUE_HTTP_TOKEN ?? "",
+  /** When true, cron ticks enqueue to Bunqueue and `startBunqueueCronWorker` must run to execute them. */
+  useBunqueueCron: (process.env.USE_BUNQUEUE_CRON ?? "").toLowerCase() === "true",
   serviceHmacSecret: process.env.SERVICE_HMAC_SECRET ?? "ryvo-dev-hmac-secret-change-me",
   googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY ?? "",
   stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
