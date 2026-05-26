@@ -5,6 +5,10 @@ import type { RouteHandler } from "../../../../_shared/core/router.ts";
 import * as service from "./service.ts";
 import * as validator from "./validator.ts";
 
+export const get_v1_admin_finance_tariffs: RouteHandler = async () => {
+  return ok({ packages: await listTariffs() });
+};
+
 export const post_v1_admin_finance_tariffs: RouteHandler = async (req, ctx) => {
       const body = tariffPackageSchema.parse(await req.json());
       const row = await createTariff(body);

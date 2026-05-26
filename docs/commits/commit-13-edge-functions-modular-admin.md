@@ -45,8 +45,15 @@ See **`docs/devs/edge-functions-services.md`** for layout, env, and migration sc
 - Gateway: `server/supabase/volumes/functions/ryvo-gateway/index.ts`
 - Per service: `src/handler.ts` → `src/api/routes.ts` merges module `route.ts` files
 - Scripts: `scripts/migrate-distribute.py`, `restore-from-git-handler.py`, `scaffold-full-architecture.py`, route repair helpers
-- **Fix (review):** `auth-hooks/src/api/admin-rbac/route.ts` — restored correct HTTP methods/paths (was corrupted to duplicate `POST /v1/admin/roles/assign`)
-- **Fix (review):** `matching-engine/src/handler.ts` re-exports `processRideRequest` for Kafka worker (gateway crash without it)
+- **Fix (review):** corrupted `route.ts` files from scaffold/repair — wrong method/path/handler pairings broke admin APIs until restored:
+  - `auth-hooks/.../admin-rbac/route.ts` (RBAC)
+  - `profile-service/.../settings-platform/route.ts` (platform settings)
+  - `payout-service/.../admin-finance-{tariffs,paychecks,checkouts,subscriptions}/route.ts` (finance)
+  - `payment-gateway/.../settings-payment/route.ts`
+  - `notification-service/.../settings-notifications`, `admin-email-templates/route.ts`
+- **Added:** `support-service/.../admin-tickets` (`POST /v1/admin/tickets`), `PATCH /v1/tickets/:ticket_id` in core
+- **Fix:** `matching-engine/src/handler.ts` re-exports `processRideRequest` (gateway crash without it)
+- **Verify:** `server/supabase/scripts/admin-api-smoke.sh` — 25 authenticated admin endpoints → 200
 
 ## Google Maps
 

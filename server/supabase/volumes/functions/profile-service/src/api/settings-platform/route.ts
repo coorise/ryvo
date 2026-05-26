@@ -14,16 +14,16 @@ export const routes: RouteDef[] = [
   },
   {
     method: "GET",
-    path: "/v1/settings/public",
-    auth: false,
+    path: "/v1/admin/settings",
+    auth: true,
     permissions: ["settings:read"],
     handler: get_v1_admin_settings,
   },
   {
-    method: "GET",
-    path: "/v1/settings/public",
-    auth: false,
-    permissions: ["settings:read"],
+    method: "PATCH",
+    path: "/v1/admin/settings",
+    auth: true,
+    permissions: ["settings:update"],
     handler: patch_v1_admin_settings,
   },
 ];

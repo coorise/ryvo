@@ -61,6 +61,34 @@ export const routes: RouteDef[] = [{
     },
   },
 {
+    method: "PATCH",
+    path: "/v1/tickets/:ticket_id",
+    auth: true,
+    permissions: ["support:reply"],
+    handler: async (req, _ctx, params) => {
+      const body = await req.json() as {
+        status?: string;
+        support_level?: number;
+        priority?: string;
+        assignee_id?: string | null;
+      };
+      const db = getAdminClient();
+      const patch: Record<string, unknown> = {};
+      if (body.status != null) patch.status = body.status;
+      if (body.support_level != null) patch.support_level = body.support_level;
+      if (body.priority != null) patch.priority = body.priority;
+      if (body.assignee_id !== undefined) patch.assignee_id = body.assignee_id;
+      const { data, error } = await db
+        .from("support_tickets")
+        .update(patch)
+        .eq("id", params.ticket_id)
+        .select()
+        .single();
+      if (error || !data) return fail("TICKET_UPDATE_FAILED", error?.message ?? "Update failed", 500);
+      return ok({ ticket: data });
+    },
+  },
+{
     method: "GET",
     path: "/v1/tickets/:ticket_id/messages",
     auth: true,

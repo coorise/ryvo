@@ -11,6 +11,10 @@ export const get_v1_admin_finance_tariff_subscriptions: RouteHandler = async (re
       return ok({ subscriptions: await listTariffSubscriptions(status) });
     };
 
+export const get_v1_admin_finance_driver_earnings: RouteHandler = async () => {
+  return ok({ earnings: await listDriverEarnings() });
+};
+
 export const post_v1_admin_finance_tariff_subscriptions: RouteHandler = async (req, ctx) => {
       const body = z
         .object({
