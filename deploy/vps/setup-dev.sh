@@ -34,7 +34,11 @@ mkdir -p \
   server/redis/data_dev \
   server/bunqueue/data_dev \
   server/supabase/volumes/db/data_dev \
-  server/supabase/volumes/storage_dev
+  server/supabase/volumes/storage_dev \
+  server/supabase/home/minio/data_dev
+
+# Chainguard MinIO runs non-root; bind mount must be writable (dev VPS)
+chmod -R 777 server/supabase/home/minio/data_dev 2>/dev/null || true
 
 DEPLOY_ENV="${ROOT}/deploy/vps/.env.dev"
 if [[ ! -f "$DEPLOY_ENV" ]]; then
