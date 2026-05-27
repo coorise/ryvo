@@ -13,6 +13,16 @@ cPanel forwards public HTTPS domains to those host ports (not port 80).
 
 ## One-time setup on VPS
 
+**Automated (dev branch):**
+
+```bash
+cd ~/Projects/Web/ryvo
+git checkout dev
+bash deploy/vps/setup-dev.sh
+```
+
+**Manual** (if you prefer):
+
 ```bash
 cd ~/Projects/Web/ryvo
 git checkout dev   # or main for prod

@@ -1,13 +1,14 @@
-# Ryvo customer web (driver + client) — Bun + Next.js standalone
+# Ryvo customer web (driver + client) — Next.js standalone
+# Bun for deps (ignore-scripts for CPUs without AVX); Node for build/run on VPS.
 # https://bun.com/docs/guides/ecosystem/docker
-FROM oven/bun:1.3 AS base
+FROM oven/bun:1.3 AS deps
 WORKDIR /app
-
-FROM base AS deps
 COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
+# msw/shadcn postinstall can SIGILL on older CPUs without AVX
+RUN bun install --frozen-lockfile --ignore-scripts
 
-FROM base AS builder
+FROM node:20-bookworm-slim AS builder
+WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG NEXT_PUBLIC_SUPABASE_URL=http://localhost:8400
@@ -19,16 +20,17 @@ ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_FUNCTIONS_URL=$NEXT_PUBLIC_FUNCTIONS_URL
 ENV NEXT_PUBLIC_APP_ENV=$NEXT_PUBLIC_APP_ENV
-RUN bun run build
+RUN ./node_modules/.bin/next build
 
-FROM base AS runner
+FROM node:20-bookworm-slim AS runner
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 WORKDIR /app
-USER bun
+RUN useradd --system --uid 1001 nextjs
+USER nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 EXPOSE 3000
-CMD ["bun", "server.js"]
+CMD ["node", "server.js"]
