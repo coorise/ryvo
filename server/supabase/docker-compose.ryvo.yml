@@ -83,8 +83,3 @@ services:
         condition: service_started
     networks:
       default: null
-
-networks:
-  ryvo-net:
-    external: true
-    name: ryvo-net
