@@ -40,6 +40,17 @@ services:
   storage:
     volumes:
       - ./server/supabase/volumes/storage_dev:/var/lib/storage:z
+    depends_on:
+      db:
+        condition: service_healthy
+      rest:
+        condition: service_started
+      imgproxy:
+        condition: service_started
+      minio-createbucket:
+        condition: service_completed_successfully
+      minio:
+        condition: service_started
 
   imgproxy:
     volumes:
@@ -48,6 +59,13 @@ services:
   minio:
     volumes:
       - ./server/supabase/home/minio/data_dev:/data
+    healthcheck:
+      disable: true
+
+  minio-createbucket:
+    depends_on:
+      minio:
+        condition: service_started
 
   ryvo-functions:
     container_name: ryvo-functions_dev
