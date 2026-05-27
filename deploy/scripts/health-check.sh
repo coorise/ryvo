@@ -22,9 +22,17 @@ case "$ENV_NAME" in
   *) echo "Usage: $0 [dev|prod|local]"; exit 1 ;;
 esac
 
-# shellcheck source=/dev/null
-[[ -n "$COMPOSE_ENV" && -f "$COMPOSE_ENV" ]] && source "$COMPOSE_ENV"
-[[ -f server/supabase/.env ]] && source server/supabase/.env
+read_env_key() {
+  local file="$1" key="$2"
+  grep "^${key}=" "$file" 2>/dev/null | cut -d= -f2- | tr -d "'\"" | head -1
+}
+
+if [[ -n "$COMPOSE_ENV" && -f "$COMPOSE_ENV" ]]; then
+  # shellcheck source=/dev/null
+  source "$COMPOSE_ENV"
+fi
+ANON="${ANON_KEY:-}"
+[[ -z "$ANON" && -f server/supabase/.env ]] && ANON="$(read_env_key server/supabase/.env ANON_KEY)"
 
 API_BASE="http://127.0.0.1:${API_PORT}"
 ADMIN_URL="http://127.0.0.1:${ADMIN_PORT}"
@@ -48,7 +56,6 @@ check "admin web" "$ADMIN_URL/" "200"
 check "client web" "$CLIENT_URL/" "200"
 check "auth health" "$API_BASE/auth/v1/health" "401"
 
-ANON="${ANON_KEY:-${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}}"
 if [[ -z "$ANON" ]]; then
   echo "  SKIP login (ANON_KEY missing)"
 else
