@@ -16,6 +16,9 @@ include:
   - path: ./docker-compose.base.yaml
 
 services:
+  kong:
+    ports: !reset []
+
   ryvo-web-admin:
     build:
       context: ./client/web/ryvo_admin
