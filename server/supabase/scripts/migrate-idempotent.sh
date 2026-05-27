@@ -79,6 +79,13 @@ SQL
   applied=$((applied + 1))
 done
 
+# Some extension-owned tables (e.g. PostGIS `public.spatial_ref_sys`) are owned by `supabase_admin`,
+# so `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` can fail when running seeds as `postgres`.
+# If the role exists, try enabling RLS under `supabase_admin`. Ignore errors.
+psql -h "$PGHOST" -p "$PGPORT" -U "supabase_admin" -d "$PGDATABASE" -v ON_ERROR_STOP=0 <<'SQL' >/dev/null 2>&1 || true
+ALTER TABLE IF EXISTS public.spatial_ref_sys ENABLE ROW LEVEL SECURITY;
+SQL
+
 psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -c "NOTIFY pgrst, 'reload schema';" 2>/dev/null || true
 
 echo "[ryvo-migrate] Done. applied=$applied skipped=$skipped"

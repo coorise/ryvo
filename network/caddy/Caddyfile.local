@@ -1,0 +1,14 @@
+# Local — Caddy listens on 3200 / 3300 / 8400 (not port 80).
+# cPanel / host reverse-proxy can forward public domains to these ports on VPS.
+
+:3200 {
+	reverse_proxy ryvo-web-admin:3000
+}
+
+:3300 {
+	reverse_proxy ryvo-web-client:3000
+}
+
+:8400 {
+	reverse_proxy kong:8000
+}

@@ -1,0 +1,14 @@
+# Dev VPS — host ports 3400 (admin) / 3500 (client) / 8500 (API)
+# Domains (via cPanel): ryvo-line-admin.dev / ryvo-line.dev / ryvo-line-server.dev .agglomy.com
+
+:3400 {
+	reverse_proxy ryvo-web-admin_dev:3000
+}
+
+:3500 {
+	reverse_proxy ryvo-web-client_dev:3000
+}
+
+:8500 {
+	reverse_proxy kong:8000
+}

@@ -1,0 +1,123 @@
+# Ryvo-Line — PRODUCTION stack (VPS branch: main)
+# Usage: docker compose -f docker-compose.prod.yaml --env-file deploy/vps/.env.prod up -d --build
+#
+# Host ports (cPanel forwards to these):
+#   Admin: 3200  → https://ryvo-line-admin.agglomy.com
+#   Client: 3300 → https://ryvo-line.agglomy.com
+#   API:    8400 → https://ryvo-line-server.agglomy.com
+
+name: ryvo
+
+include:
+  - path: ./docker-compose.base.yaml
+
+networks:
+  ryvo-net:
+    name: ryvo-net
+
+services:
+  kong:
+    container_name: supabase-kong
+    ports:
+      - "${KONG_HTTP_PORT:-8400}:8000/tcp"
+      - "${KONG_HTTPS_PORT:-8443}:8443/tcp"
+
+  db:
+    container_name: supabase-db
+    volumes:
+      - ./server/supabase/volumes/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:Z
+      - ./server/supabase/volumes/db/webhooks.sql:/docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql:Z
+      - ./server/supabase/volumes/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:Z
+      - ./server/supabase/volumes/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:Z
+      - ./server/supabase/volumes/db/data:/var/lib/postgresql/data:Z
+      - ./server/supabase/volumes/db/_supabase.sql:/docker-entrypoint-initdb.d/migrations/97-_supabase.sql:Z
+      - ./server/supabase/volumes/db/logs.sql:/docker-entrypoint-initdb.d/migrations/99-logs.sql:Z
+      - ./server/supabase/volumes/db/pooler.sql:/docker-entrypoint-initdb.d/migrations/99-pooler.sql:Z
+      - db-config:/etc/postgresql-custom
+
+  ryvo-functions:
+    container_name: ryvo-functions
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://ryvo_redis:6379
+      KAFKA_BROKER: ryvo_kafka_broker:9092
+      BUNQUEUE_HOST: ryvo_bunqueue
+      SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL:-https://ryvo-line-server.agglomy.com}
+
+  ryvo_kafka_broker:
+    container_name: ryvo_kafka_broker
+    volumes:
+      - ./server/kafka/data:/var/lib/kafka/data
+
+  ryvo_redis:
+    container_name: ryvo_redis
+    volumes:
+      - ./server/redis/data:/data
+
+  ryvo_bunqueue:
+    container_name: ryvo_bunqueue
+    volumes:
+      - ./server/bunqueue/data:/app/data
+
+  ryvo-web-admin:
+    build:
+      context: ./client/web/ryvo_admin
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-https://ryvo-line-server.agglomy.com}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_FUNCTIONS_URL: ${NEXT_PUBLIC_FUNCTIONS_URL:-https://ryvo-line-server.agglomy.com/functions/v1}
+        NEXT_PUBLIC_APP_ENV: production
+    container_name: ryvo-web-admin
+    restart: unless-stopped
+    networks:
+      - ryvo-net
+    depends_on:
+      kong:
+        condition: service_healthy
+    environment:
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+
+  ryvo-web-client:
+    build:
+      context: ./client/web/ryvo
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-https://ryvo-line-server.agglomy.com}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_FUNCTIONS_URL: ${NEXT_PUBLIC_FUNCTIONS_URL:-https://ryvo-line-server.agglomy.com/functions/v1}
+        NEXT_PUBLIC_APP_ENV: production
+    container_name: ryvo-web-client
+    restart: unless-stopped
+    networks:
+      - ryvo-net
+    depends_on:
+      kong:
+        condition: service_healthy
+    environment:
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+
+  caddy:
+    image: caddy:2.10-alpine
+    container_name: ryvo-caddy
+    restart: unless-stopped
+    ports:
+      - "${RYVO_ADMIN_PORT:-3200}:3200"
+      - "${RYVO_CLIENT_PORT:-3300}:3300"
+      - "${RYVO_API_PORT:-8400}:8400"
+    volumes:
+      - ./network/caddy/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - ryvo-net
+    depends_on:
+      - ryvo-web-admin
+      - ryvo-web-client
+      - kong
+
+volumes:
+  caddy_data:
+  caddy_config:
