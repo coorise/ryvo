@@ -11,7 +11,7 @@
 name: ryvo-dev
 
 include:
-  - path: ./docker-compose.base.yaml
+  - path: ./docker-compose.base.dev.yaml
 
 networks:
   ryvo-net:
@@ -40,26 +40,10 @@ services:
   storage:
     volumes:
       - ./server/supabase/volumes/storage_dev:/var/lib/storage:z
-    environment:
-      STORAGE_BACKEND: file
-      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
-    depends_on:
-      db:
-        condition: service_healthy
-      rest:
-        condition: service_started
-      imgproxy:
-        condition: service_started
 
   imgproxy:
     volumes:
       - ./server/supabase/volumes/storage_dev:/var/lib/storage:z
-
-  # MinIO client image needs x86-64-v2; use file storage on dev VPS instead of S3.
-  minio:
-    profiles: ["s3-disabled"]
-  minio-createbucket:
-    profiles: ["s3-disabled"]
 
   ryvo-functions:
     container_name: ryvo-functions_dev

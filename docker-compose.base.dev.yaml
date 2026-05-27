@@ -1,0 +1,23 @@
+# Dev VPS base — Supabase without S3/MinIO (file storage; older CPUs lack x86-64-v2 for minio-client).
+networks:
+  ryvo-net:
+    name: ${RYVO_NETWORK_NAME:-ryvo-net-dev}
+    driver: bridge
+
+include:
+  - path: ./server/supabase/docker-compose.yml
+    project_directory: ./server/supabase
+    env_file: ${SUPABASE_ENV_FILE:-./server/supabase/.env}
+  - path: ./server/supabase/docker-compose.ryvo.yml
+    project_directory: ./server/supabase
+    env_file: ${SUPABASE_ENV_FILE:-./server/supabase/.env}
+
+  - path: ./server/kafka/docker-compose.yml
+    project_directory: ./server/kafka
+    env_file: ${KAFKA_ENV_FILE:-./server/kafka/.env}
+  - path: ./server/redis/docker-compose.yaml
+    project_directory: ./server/redis
+    env_file: ${REDIS_ENV_FILE:-./server/redis/.env}
+  - path: ./server/bunqueue/docker-compose.yaml
+    project_directory: ./server/bunqueue
+    env_file: ${BUNQUEUE_ENV_FILE:-./server/bunqueue/.env}
