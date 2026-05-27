@@ -11,6 +11,7 @@ FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN mkdir -p public
 ARG NEXT_PUBLIC_SUPABASE_URL=http://localhost:8400
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ARG NEXT_PUBLIC_FUNCTIONS_URL=http://localhost:8400/functions/v1
