@@ -40,7 +40,15 @@ Root `docker-compose.yaml` loads each via `include` → `env_file` + `project_di
 ## Quick start (local)
 
 ```bash
-# 1. Ensure .env files exist, then start full stack
+# 1. One command — full stack (Caddy + Supabase + web)
+./scripts/ryvo-up.sh
+# or: bash scripts/ensure-env.sh && docker compose up -d --build
+```
+
+**VPS dev:** see [deploy/README.md](deploy/README.md) — `bash deploy/scripts/setup-dev.sh`
+
+```bash
+# Legacy / manual local
 bash scripts/dev-up.sh
 # or: docker compose up -d   (after ensure-env.sh)
 
