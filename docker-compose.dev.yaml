@@ -130,7 +130,7 @@ services:
       - caddy_data_dev:/data
       - caddy_config_dev:/config
     networks:
-      - ryvo-net
+      ryvo-net: {}
     depends_on:
       - ryvo-web-admin_dev
       - ryvo-web-client_dev

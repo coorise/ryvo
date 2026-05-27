@@ -70,7 +70,7 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     networks:
-      - ryvo-net
+      ryvo-net: {}
     depends_on:
       - ryvo-web-admin
       - ryvo-web-client
