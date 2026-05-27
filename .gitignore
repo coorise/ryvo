@@ -1,0 +1,20 @@
+docs/project
+**/**/.env
+**/**/.env.local
+**/**/.env.production
+
+# Docker persisted data
+server/supabase/volumes/db/data/
+server/supabase/home/
+server/kafka/data/
+server/redis/data/
+server/bunqueue/data/
+
+# Dependencies & build
+**/node_modules/
+**/.next/
+**/.turbo/
+**/**/out
+**/**/dist
+client/mobile/flutter/ryvo/.dart_tool/
+client/mobile/flutter/ryvo/build/

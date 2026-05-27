@@ -1,0 +1,90 @@
+# Ryvo overlay: Bun API gateway + automatic idempotent DB migrate/bootstrap
+services:
+  functions:
+    profiles:
+      - legacy-edge
+
+  ryvo-functions:
+    image: oven/bun:1.3
+    container_name: ryvo-functions
+    working_dir: /home/deno/functions
+    volumes:
+      - ./volumes/functions:/home/deno/functions:Z
+      - ./scripts/seeds:/opt/ryvo/seeds:ro
+      - ./scripts/migrate-idempotent.sh:/opt/ryvo/migrate-idempotent.sh:ro
+      - ./scripts/bootstrap-users.sh:/opt/ryvo/bootstrap-users.sh:ro
+      - ./volumes/functions/ryvo-gateway/entrypoint.sh:/opt/ryvo/entrypoint.sh:ro
+    command: ["/bin/sh", "/opt/ryvo/entrypoint.sh"]
+    environment:
+      PORT: "9000"
+      NODE_ENV: development
+      JWT_SECRET: ${JWT_SECRET}
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL}
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      REDIS_URL: redis://ryvo_redis:6379
+      KAFKA_BROKER: ryvo_kafka_broker:9092
+      BUNQUEUE_HOST: ryvo_bunqueue
+      BUNQUEUE_PORT: "6789"
+      BUNQUEUE_HTTP_BASE_URL: ${BUNQUEUE_HTTP_BASE_URL:-http://ryvo_bunqueue:6790}
+      BUNQUEUE_HTTP_TOKEN: ${BUNQUEUE_HTTP_TOKEN:-}
+      USE_BUNQUEUE_CRON: ${USE_BUNQUEUE_CRON:-true}
+      SERVICE_HMAC_SECRET: ${SERVICE_HMAC_SECRET:-ryvo-dev-hmac-secret}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      SMTP_HOST: ${SMTP_HOST:-smtp.freesmtpservers.com}
+      SMTP_PORT: ${SMTP_PORT:-25}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-no-reply@ryvo-line.com}
+      SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-Ryvo}
+      MAILER_OTP_EXP: ${MAILER_OTP_EXP:-1800}
+    networks:
+      default:
+        aliases:
+          - functions
+      ryvo-net: null
+    depends_on:
+      db:
+        condition: service_healthy
+      auth:
+        condition: service_healthy
+      kong:
+        condition: service_healthy
+    restart: unless-stopped
+
+  auth:
+    environment:
+      GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_ENABLED: "true"
+      GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_URI: "pg-functions://postgres/public/custom_access_token_hook"
+
+  # Optional: docker compose --profile smoke run --rm ryvo-smoke
+  ryvo-smoke:
+    image: oven/bun:1.3
+    profiles:
+      - smoke
+    volumes:
+      - ./scripts/run-e2e-smoke.sh:/opt/ryvo/run-e2e-smoke.sh:ro
+    command:
+      - /bin/bash
+      - -c
+      - |
+        apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl jq ca-certificates
+        bash /opt/ryvo/run-e2e-smoke.sh
+    environment:
+      RYVO_API: http://kong:8000/functions/v1
+      ANON_KEY: ${ANON_KEY}
+    depends_on:
+      ryvo-functions:
+        condition: service_started
+    networks:
+      default: null
+
+networks:
+  ryvo-net:
+    external: true
+    name: ryvo-net
