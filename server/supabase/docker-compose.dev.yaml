@@ -2,12 +2,6 @@
 services:
   kong:
     container_name: supabase-kong_dev
-    ports: !reset []
-    networks:
-      default:
-        aliases:
-          - api-gw
-      ryvo-net: {}
 
   db:
     container_name: supabase-db_dev

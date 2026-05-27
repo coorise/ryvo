@@ -49,8 +49,10 @@ if [[ -z "$ANON_KEY" ]]; then
   exit 1
 fi
 
-patch_env "$SUPABASE_ENV" KONG_HTTP_PORT 8500
-patch_env "$SUPABASE_ENV" KONG_HTTPS_PORT 8543
+# Kong is reached via Caddy only — do not publish Kong on the host (avoids clash with RYVO_API_PORT).
+if grep -q '^KONG_HTTP_PORT=' "$SUPABASE_ENV" 2>/dev/null; then
+  sed -i '/^KONG_HTTP_PORT=/d;/^KONG_HTTPS_PORT=/d' "$SUPABASE_ENV"
+fi
 patch_env "$SUPABASE_ENV" SUPABASE_PUBLIC_URL https://ryvo-line-server.dev.agglomy.com
 patch_env "$SUPABASE_ENV" API_EXTERNAL_URL https://ryvo-line-server.dev.agglomy.com
 patch_env "$SUPABASE_ENV" SITE_URL https://ryvo-line.dev.agglomy.com
