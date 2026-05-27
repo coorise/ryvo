@@ -18,6 +18,11 @@ include:
 services:
   kong:
     ports: !reset []
+    networks:
+      default:
+        aliases:
+          - api-gw
+      ryvo-net: {}
 
   ryvo-web-admin:
     build:

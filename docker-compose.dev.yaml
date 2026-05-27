@@ -22,6 +22,11 @@ services:
     container_name: supabase-kong_dev
     # API is published only via Caddy (same host port); avoids 8500 bind conflict.
     ports: !reset []
+    networks:
+      default:
+        aliases:
+          - api-gw
+      ryvo-net: {}
 
   db:
     container_name: supabase-db_dev

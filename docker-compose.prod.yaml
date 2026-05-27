@@ -19,6 +19,11 @@ services:
   kong:
     container_name: supabase-kong
     ports: !reset []
+    networks:
+      default:
+        aliases:
+          - api-gw
+      ryvo-net: {}
 
   db:
     container_name: supabase-db
