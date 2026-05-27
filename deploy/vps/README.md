@@ -35,8 +35,6 @@ cp deploy/vps/supabase.env.dev.example server/supabase/.env   # merge into .env
 # Create isolated data dirs (gitignored)
 mkdir -p server/kafka/data_dev server/redis/data_dev server/bunqueue/data_dev
 mkdir -p server/supabase/volumes/db/data_dev server/supabase/volumes/storage_dev
-mkdir -p server/supabase/home/minio/data_dev
-chmod -R 777 server/supabase/home/minio/data_dev
 ```
 
 For **production** (`main`), use `.env.prod.example` and `supabase.env.prod.example` instead, and use `data/` (not `data_dev`).

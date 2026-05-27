@@ -40,6 +40,9 @@ services:
   storage:
     volumes:
       - ./server/supabase/volumes/storage_dev:/var/lib/storage:z
+    environment:
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
     depends_on:
       db:
         condition: service_healthy
@@ -47,25 +50,16 @@ services:
         condition: service_started
       imgproxy:
         condition: service_started
-      minio-createbucket:
-        condition: service_completed_successfully
-      minio:
-        condition: service_started
 
   imgproxy:
     volumes:
       - ./server/supabase/volumes/storage_dev:/var/lib/storage:z
 
+  # MinIO client image needs x86-64-v2; use file storage on dev VPS instead of S3.
   minio:
-    volumes:
-      - ./server/supabase/home/minio/data_dev:/data
-    healthcheck:
-      disable: true
-
+    profiles: ["s3-disabled"]
   minio-createbucket:
-    depends_on:
-      minio:
-        condition: service_started
+    profiles: ["s3-disabled"]
 
   ryvo-functions:
     container_name: ryvo-functions_dev
