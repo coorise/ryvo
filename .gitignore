@@ -10,6 +10,8 @@ server/supabase/volumes/storage_dev/
 server/kafka/data_dev/
 server/redis/data_dev/
 server/bunqueue/data_dev/
+deploy/compose/.env.dev
+deploy/compose/.env.prod
 deploy/vps/.env.dev
 deploy/vps/.env.prod
 server/supabase/home/

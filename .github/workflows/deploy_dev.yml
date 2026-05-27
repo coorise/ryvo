@@ -26,8 +26,8 @@ jobs:
             git fetch origin dev
             git checkout dev
             git pull origin dev
-            test -f deploy/vps/.env.dev || { echo "Missing deploy/vps/.env.dev on VPS"; exit 1; }
-            docker compose -f docker-compose.dev.yaml --env-file deploy/vps/.env.dev build --pull
-            docker compose -f docker-compose.dev.yaml --env-file deploy/vps/.env.dev up -d
-            docker compose -f docker-compose.dev.yaml exec -T caddy_dev caddy reload --config /etc/caddy/Caddyfile || true
-            docker compose -f docker-compose.dev.yaml ps
+            bash deploy/scripts/apply-env.sh dev
+            docker compose -f docker-compose.dev.yaml --env-file deploy/compose/.env.dev build --pull
+            docker compose -f docker-compose.dev.yaml --env-file deploy/compose/.env.dev up -d
+            docker compose -f docker-compose.dev.yaml --env-file deploy/compose/.env.dev exec -T caddy_dev caddy reload --config /etc/caddy/Caddyfile || true
+            bash deploy/scripts/health-check.sh dev

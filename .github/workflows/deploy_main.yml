@@ -26,8 +26,8 @@ jobs:
             git fetch origin main
             git checkout main
             git pull origin main
-            test -f deploy/vps/.env.prod || { echo "Missing deploy/vps/.env.prod on VPS"; exit 1; }
-            docker compose -f docker-compose.prod.yaml --env-file deploy/vps/.env.prod build --pull
-            docker compose -f docker-compose.prod.yaml --env-file deploy/vps/.env.prod up -d
-            docker compose -f docker-compose.prod.yaml exec -T caddy caddy reload --config /etc/caddy/Caddyfile || true
-            docker compose -f docker-compose.prod.yaml ps
+            bash deploy/scripts/apply-env.sh prod
+            docker compose -f docker-compose.prod.yaml --env-file deploy/compose/.env.prod build --pull
+            docker compose -f docker-compose.prod.yaml --env-file deploy/compose/.env.prod up -d
+            docker compose -f docker-compose.prod.yaml --env-file deploy/compose/.env.prod exec -T caddy caddy reload --config /etc/caddy/Caddyfile || true
+            bash deploy/scripts/health-check.sh prod
