@@ -14,7 +14,9 @@ include:
   - path: ./server/supabase/docker-compose.ryvo.yml
     project_directory: ./server/supabase
     env_file: ${SUPABASE_ENV_FILE:-./server/supabase/.env}
-
+  - path: ./server/supabase/docker-compose.edge.yaml
+    project_directory: ./server/supabase
+    env_file: ${SUPABASE_ENV_FILE:-./server/supabase/.env}
   - path: ./server/kafka/docker-compose.yml
     project_directory: ./server/kafka
     env_file: ${KAFKA_ENV_FILE:-./server/kafka/.env}

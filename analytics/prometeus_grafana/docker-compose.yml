@@ -1,0 +1,28 @@
+# Optional observability stack (Phase 6)
+services:
+  ryvo_prometheus:
+    image: prom/prometheus:latest
+    container_name: ryvo_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - ryvo-net
+    profiles:
+      - analytics
+
+  ryvo_grafana:
+    image: grafana/grafana:latest
+    container_name: ryvo_grafana
+    ports:
+      - "3002:3000"
+    networks:
+      - ryvo-net
+    profiles:
+      - analytics
+
+networks:
+  ryvo-net:
+    name: ryvo-net
+    external: true

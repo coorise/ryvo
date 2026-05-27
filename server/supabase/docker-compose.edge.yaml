@@ -1,0 +1,9 @@
+# Kong edge — API published via Caddy only (no host port on Kong)
+services:
+  kong:
+    ports: !reset []
+    networks:
+      default:
+        aliases:
+          - api-gw
+      ryvo-net: {}

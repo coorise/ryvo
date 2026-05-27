@@ -1,7 +1,7 @@
 # Ryvo-Line — dev VPS (branch: dev)
-# Usage: docker compose -f docker-compose.dev.yaml --env-file deploy/vps/.env.dev up -d --build
+# One command: docker compose -f docker-compose.dev.yaml --env-file deploy/vps/.env.dev up -d --build
 #
-# Ports: admin 3400 | client 3500 | API 8500 (cPanel → network/caddy)
+# Include order: dev overlay first, then base (Compose merge keeps overlay values).
 
 name: ryvo-dev
 
@@ -10,19 +10,37 @@ networks:
     name: ryvo-net-dev
 
 include:
-  - path: ./docker-compose.base.dev.yaml
   - path: ./server/supabase/docker-compose.dev.yaml
     project_directory: ./server/supabase
     env_file: ${SUPABASE_ENV_FILE:-./server/supabase/.env}
+  - path: ./server/supabase/docker-compose.ryvo.yml
+    project_directory: ./server/supabase
+    env_file: ${SUPABASE_ENV_FILE:-./server/supabase/.env}
+  - path: ./server/supabase/docker-compose.yml
+    project_directory: ./server/supabase
+    env_file: ${SUPABASE_ENV_FILE:-./server/supabase/.env}
+
   - path: ./server/kafka/docker-compose.dev.yaml
     project_directory: ./server/kafka
     env_file: ${KAFKA_ENV_FILE:-./server/kafka/.env}
+  - path: ./server/kafka/docker-compose.yml
+    project_directory: ./server/kafka
+    env_file: ${KAFKA_ENV_FILE:-./server/kafka/.env}
+
   - path: ./server/redis/docker-compose.dev.yaml
     project_directory: ./server/redis
     env_file: ${REDIS_ENV_FILE:-./server/redis/.env}
+  - path: ./server/redis/docker-compose.yaml
+    project_directory: ./server/redis
+    env_file: ${REDIS_ENV_FILE:-./server/redis/.env}
+
   - path: ./server/bunqueue/docker-compose.dev.yaml
     project_directory: ./server/bunqueue
     env_file: ${BUNQUEUE_ENV_FILE:-./server/bunqueue/.env}
+  - path: ./server/bunqueue/docker-compose.yaml
+    project_directory: ./server/bunqueue
+    env_file: ${BUNQUEUE_ENV_FILE:-./server/bunqueue/.env}
+
   - path: ./network/caddy/docker-compose.dev.yaml
     project_directory: ./network/caddy
   - path: ./client/web/ryvo_admin/docker-compose.dev.yaml

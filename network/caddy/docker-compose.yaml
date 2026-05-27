@@ -1,13 +1,5 @@
 # Caddy edge (local) — ports 3200 admin / 3300 client / 8400 API
 services:
-  kong:
-    ports: !reset []
-    networks:
-      default:
-        aliases:
-          - api-gw
-      ryvo-net: {}
-
   caddy:
     image: caddy:2.10-alpine
     container_name: ryvo-caddy

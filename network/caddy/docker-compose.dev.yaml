@@ -1,14 +1,5 @@
 # Caddy edge (dev VPS) — ports 3400 admin / 3500 client / 8500 API
 services:
-  kong:
-    container_name: supabase-kong_dev
-    ports: !reset []
-    networks:
-      default:
-        aliases:
-          - api-gw
-      ryvo-net: {}
-
   caddy_dev:
     image: caddy:2.10-alpine
     container_name: ryvo-caddy_dev
