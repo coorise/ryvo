@@ -1,0 +1,26 @@
+# Supabase stack overrides (production VPS)
+services:
+  db:
+    container_name: supabase-db
+    volumes:
+      - ./volumes/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:Z
+      - ./volumes/db/webhooks.sql:/docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql:Z
+      - ./volumes/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:Z
+      - ./volumes/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:Z
+      - ./volumes/db/data:/var/lib/postgresql/data:Z
+      - ./volumes/db/_supabase.sql:/docker-entrypoint-initdb.d/migrations/97-_supabase.sql:Z
+      - ./volumes/db/logs.sql:/docker-entrypoint-initdb.d/migrations/99-logs.sql:Z
+      - ./volumes/db/pooler.sql:/docker-entrypoint-initdb.d/migrations/99-pooler.sql:Z
+      - db-config:/etc/postgresql-custom
+
+  ryvo-functions:
+    container_name: ryvo-functions
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://ryvo_redis:6379
+      KAFKA_BROKER: ryvo_kafka_broker:9092
+      BUNQUEUE_HOST: ryvo_bunqueue
+      SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL:-https://ryvo-line-server.agglomy.com}
+
+volumes:
+  db-config:

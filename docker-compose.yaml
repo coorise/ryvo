@@ -1,86 +1,16 @@
-# Ryvo-Line — local development (single command: docker compose up -d)
+# Ryvo-Line — local development
+# Usage: docker compose up -d --build
 #
-# Ports (host):
-#   Admin web:     http://localhost:3200
-#   Customer web:  http://localhost:3300
-#   Supabase API:  http://localhost:8400
-#
-# First time:
-#   bash scripts/ensure-env.sh
-#   cp client/web/ryvo/.env.example client/web/ryvo/.env.local
-#   cp client/web/ryvo_admin/.env.example client/web/ryvo_admin/.env.local
+# Ports: admin 3200 | client 3300 | API 8400 (via network/caddy)
+# First time: bash scripts/ensure-env.sh
 
 name: ryvo
 
 include:
   - path: ./docker-compose.base.yaml
-
-services:
-  kong:
-    ports: !reset []
-    networks:
-      default:
-        aliases:
-          - api-gw
-      ryvo-net: {}
-
-  ryvo-web-admin:
-    build:
-      context: ./client/web/ryvo_admin
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-http://localhost:8400}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
-        NEXT_PUBLIC_FUNCTIONS_URL: ${NEXT_PUBLIC_FUNCTIONS_URL:-http://localhost:8400/functions/v1}
-        NEXT_PUBLIC_APP_ENV: ${NEXT_PUBLIC_APP_ENV:-development}
-    container_name: ryvo-web-admin
-    restart: unless-stopped
-    networks:
-      - ryvo-net
-    depends_on:
-      - kong
-    environment:
-      PORT: "3000"
-      HOSTNAME: "0.0.0.0"
-
-  ryvo-web-client:
-    build:
-      context: ./client/web/ryvo
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-http://localhost:8400}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
-        NEXT_PUBLIC_FUNCTIONS_URL: ${NEXT_PUBLIC_FUNCTIONS_URL:-http://localhost:8400/functions/v1}
-        NEXT_PUBLIC_APP_ENV: ${NEXT_PUBLIC_APP_ENV:-development}
-    container_name: ryvo-web-client
-    restart: unless-stopped
-    networks:
-      - ryvo-net
-    depends_on:
-      - kong
-    environment:
-      PORT: "3000"
-      HOSTNAME: "0.0.0.0"
-
-  caddy:
-    image: caddy:2.10-alpine
-    container_name: ryvo-caddy
-    restart: unless-stopped
-    ports:
-      - "${RYVO_ADMIN_PORT:-3200}:3200"
-      - "${RYVO_CLIENT_PORT:-3300}:3300"
-      - "${RYVO_API_PORT:-8400}:8400"
-    volumes:
-      - ./network/caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    networks:
-      ryvo-net: {}
-    depends_on:
-      - ryvo-web-admin
-      - ryvo-web-client
-      - kong
-
-volumes:
-  caddy_data:
-  caddy_config:
+  - path: ./network/caddy/docker-compose.yaml
+    project_directory: ./network/caddy
+  - path: ./client/web/ryvo_admin/docker-compose.yaml
+    project_directory: ./client/web/ryvo_admin
+  - path: ./client/web/ryvo/docker-compose.yaml
+    project_directory: ./client/web/ryvo

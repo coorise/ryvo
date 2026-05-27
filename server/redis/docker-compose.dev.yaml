@@ -1,0 +1,8 @@
+# Redis (dev VPS) — _dev container and isolated data
+services:
+  ryvo_redis:
+    container_name: ryvo_redis_dev
+    ports:
+      - "${REDIS_HOST_PORT:-6380}:6379"
+    volumes:
+      - ./data_dev:/data

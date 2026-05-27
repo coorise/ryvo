@@ -1,0 +1,6 @@
+# Redis (production VPS)
+services:
+  ryvo_redis:
+    container_name: ryvo_redis
+    volumes:
+      - ./data:/data

@@ -1,0 +1,9 @@
+# Bunqueue (dev VPS) — _dev container and isolated data
+services:
+  ryvo_bunqueue:
+    container_name: ryvo_bunqueue_dev
+    ports:
+      - "${BUNQUEUE_HTTP_PORT:-6789}:6789"
+      - "${BUNQUEUE_TCP_PORT:-6790}:6790"
+    volumes:
+      - ./data_dev:/app/data

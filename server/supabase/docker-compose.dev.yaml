@@ -1,0 +1,34 @@
+# Supabase stack overrides (dev VPS) — isolated volumes, _dev container names
+services:
+  db:
+    container_name: supabase-db_dev
+    volumes:
+      - ./volumes/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:Z
+      - ./volumes/db/webhooks.sql:/docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql:Z
+      - ./volumes/db/roles.sql:/docker-entrypoint-initdb.d/init-scripts/99-roles.sql:Z
+      - ./volumes/db/jwt.sql:/docker-entrypoint-initdb.d/init-scripts/99-jwt.sql:Z
+      - ./volumes/db/data_dev:/var/lib/postgresql/data:Z
+      - ./volumes/db/_supabase.sql:/docker-entrypoint-initdb.d/migrations/97-_supabase.sql:Z
+      - ./volumes/db/logs.sql:/docker-entrypoint-initdb.d/migrations/99-logs.sql:Z
+      - ./volumes/db/pooler.sql:/docker-entrypoint-initdb.d/migrations/99-pooler.sql:Z
+      - db-config-dev:/etc/postgresql-custom
+
+  storage:
+    volumes:
+      - ./volumes/storage_dev:/var/lib/storage:z
+
+  imgproxy:
+    volumes:
+      - ./volumes/storage_dev:/var/lib/storage:z
+
+  ryvo-functions:
+    container_name: ryvo-functions_dev
+    environment:
+      NODE_ENV: development
+      REDIS_URL: redis://ryvo_redis_dev:6379
+      KAFKA_BROKER: ryvo_kafka_broker_dev:9092
+      BUNQUEUE_HOST: ryvo_bunqueue_dev
+      SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL:-https://ryvo-line-server.dev.agglomy.com}
+
+volumes:
+  db-config-dev:

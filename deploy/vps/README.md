@@ -11,6 +11,15 @@ Repo path on VPS: `~/Projects/Web/ryvo`
 
 cPanel forwards public HTTPS domains to those host ports (not port 80).
 
+## Compose layout
+
+Root `docker-compose.{yaml,dev,prod}.yaml` only **import** component files:
+
+- `network/caddy/docker-compose.*` — Caddy + edge ports
+- `client/web/ryvo_admin/docker-compose.*` — admin app
+- `client/web/ryvo/docker-compose.*` — customer app
+- `server/*/docker-compose.{dev,prod}.yaml` — per-service overrides
+
 ## One-time setup on VPS
 
 **Automated (dev branch):**

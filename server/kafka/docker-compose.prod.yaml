@@ -1,0 +1,6 @@
+# Kafka (production VPS)
+services:
+  ryvo_kafka_broker:
+    container_name: ryvo_kafka_broker
+    volumes:
+      - ./data:/var/lib/kafka/data
