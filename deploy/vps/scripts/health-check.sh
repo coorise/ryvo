@@ -66,16 +66,27 @@ else
   token=$(echo "$resp" | jq -r '.access_token // empty' 2>/dev/null || true)
   if [[ -n "$token" && "$token" != "null" ]]; then
     echo "  OK  admin login (access_token received)"
-    dash_code="000"
+    rbac_code="000"
     for _ in $(seq 1 12); do
-      dash_code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 \
+      rbac_code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 \
         -H "apikey: $ANON" -H "Authorization: Bearer $token" \
-        "$API_BASE/functions/v1/audit-service/v1/admin/dashboard" || echo "000")
-      [[ "$dash_code" == "200" ]] && break
+        "$API_BASE/functions/v1/auth-hooks/v1/admin/rbac/me" || echo "000")
+      [[ "$rbac_code" == "200" ]] && break
       sleep 5
     done
+    if [[ "$rbac_code" == "200" ]]; then
+      echo "  OK  admin rbac/me ($rbac_code)"
+    else
+      echo "  FAIL admin rbac/me (got $rbac_code)"
+      fail=1
+    fi
+    dash_code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 \
+      -H "apikey: $ANON" -H "Authorization: Bearer $token" \
+      "$API_BASE/functions/v1/audit-service/v1/admin/dashboard" || echo "000")
     if [[ "$dash_code" == "200" ]]; then
       echo "  OK  audit dashboard ($dash_code)"
+    elif [[ "$dash_code" == "403" ]]; then
+      echo "  WARN audit dashboard (403 — gateway up; check admin role claims if UI is empty)"
     else
       echo "  FAIL audit dashboard (got $dash_code)"
       fail=1

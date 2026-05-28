@@ -150,7 +150,32 @@ compose exec -T "$CADDY_SERVICE" \
 
 echo "==> health-check after switch (allow warm-up)"
 sleep 15
-bash deploy/vps/scripts/health-check.sh "$ENV_NAME"
+if ! bash deploy/vps/scripts/health-check.sh "$ENV_NAME"; then
+  echo "==> health-check failed — rolling back traffic to $active"
+  if [[ "$ENV_NAME" == "dev" ]]; then
+    cat >"$ROUTER_FILE" <<EOF
+:9000 { reverse_proxy ryvo-functions_${active}_dev:9000 }
+EOF
+    cat >network/caddy/Caddyfile.dev <<EOF
+:3400 { reverse_proxy ryvo-web-admin_${active}_dev:3000 }
+:3500 { reverse_proxy ryvo-web-client_${active}_dev:3000 }
+:8500 { reverse_proxy kong:8000 }
+EOF
+    compose exec -T ryvo-functions-router_dev caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
+  else
+    cat >"$ROUTER_FILE" <<EOF
+:9000 { reverse_proxy ryvo-functions_${active}:9000 }
+EOF
+    cat >network/caddy/Caddyfile.prod <<EOF
+:3200 { reverse_proxy ryvo-web-admin_${active}:3000 }
+:3300 { reverse_proxy ryvo-web-client_${active}:3000 }
+:8400 { reverse_proxy kong:8000 }
+EOF
+    compose exec -T ryvo-functions-router caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
+  fi
+  compose exec -T "$CADDY_SERVICE" caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
+  exit 1
+fi
 
 echo "$next" >"$ACTIVE_FILE"
 echo "==> bluegreen deploy ($ENV_NAME) done (active=$next)"
