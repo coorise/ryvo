@@ -53,7 +53,7 @@ API_PORT="${RYVO_API_PORT:-8500}"
 
 echo "==> waiting for functions gateway (127.0.0.1:${API_PORT})..."
 functions_ok=0
-for _ in $(seq 1 45); do
+for _ in $(seq 1 90); do
   if curl -sf --connect-timeout 2 "http://127.0.0.1:${API_PORT}/functions/v1/hello" >/dev/null 2>&1; then
     echo "  OK  ryvo-functions ready"
     functions_ok=1

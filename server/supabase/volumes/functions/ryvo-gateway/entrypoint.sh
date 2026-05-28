@@ -27,15 +27,18 @@ if [ -f /opt/ryvo/bootstrap-users.sh ]; then
   bash /opt/ryvo/bootstrap-users.sh || echo "[ryvo] bootstrap deferred"
 fi
 
+cd /home/deno/functions
+bun install --cwd /home/deno/functions
+
 if [ -f /opt/ryvo/migrate-idempotent.sh ]; then
   echo "[ryvo] Draining email outbox..."
+  set +e
   bun -e "
     import { processEmailOutbox } from '/home/deno/functions/_shared/lib/email.ts';
     const r = await processEmailOutbox(50);
     console.log('[ryvo] email outbox', r);
-  " 2>/dev/null || true
+  " 2>/dev/null || echo "[ryvo] email outbox drain skipped"
+  set -e
 fi
 
-cd /home/deno/functions
-bun install --cwd /home/deno/functions
 exec bun run /home/deno/functions/ryvo-gateway/index.ts

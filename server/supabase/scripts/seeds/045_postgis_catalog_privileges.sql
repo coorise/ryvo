@@ -1,11 +1,29 @@
 -- PostGIS catalog objects are owned by supabase_admin with default grants to anon/authenticated.
--- Run as postgres via migrate-idempotent.sh (SET ROLE avoids a separate supabase_admin password).
+-- Best-effort as postgres (see migrate-idempotent.sh); skips cleanly when not owner.
 
-SET LOCAL ROLE supabase_admin;
+DO $$
+BEGIN
+  REVOKE ALL ON TABLE public.spatial_ref_sys FROM anon, authenticated, PUBLIC;
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE NOTICE '045 spatial_ref_sys revoke skipped: %', SQLERRM;
+END $$;
 
-REVOKE ALL ON TABLE public.spatial_ref_sys FROM anon, authenticated, PUBLIC;
-REVOKE ALL ON TABLE public.geography_columns FROM anon, authenticated, PUBLIC;
-REVOKE ALL ON TABLE public.geometry_columns FROM anon, authenticated, PUBLIC;
+DO $$
+BEGIN
+  REVOKE ALL ON TABLE public.geography_columns FROM anon, authenticated, PUBLIC;
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE NOTICE '045 geography_columns revoke skipped: %', SQLERRM;
+END $$;
+
+DO $$
+BEGIN
+  REVOKE ALL ON TABLE public.geometry_columns FROM anon, authenticated, PUBLIC;
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE NOTICE '045 geometry_columns revoke skipped: %', SQLERRM;
+END $$;
 
 DO $$
 DECLARE
@@ -18,12 +36,15 @@ BEGIN
     WHERE n.nspname = 'public'
       AND p.proname = 'st_estimatedextent'
   LOOP
-    EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon, authenticated', r.fn);
-    EXECUTE format(
-      'GRANT EXECUTE ON FUNCTION %s TO postgres, service_role, supabase_admin',
-      r.fn
-    );
+    BEGIN
+      EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon, authenticated', r.fn);
+      EXECUTE format(
+        'GRANT EXECUTE ON FUNCTION %s TO postgres, service_role, supabase_admin',
+        r.fn
+      );
+    EXCEPTION
+      WHEN OTHERS THEN
+        RAISE NOTICE '045 st_estimatedextent skipped: %', SQLERRM;
+    END;
   END LOOP;
 END $$;
-
-RESET ROLE;
