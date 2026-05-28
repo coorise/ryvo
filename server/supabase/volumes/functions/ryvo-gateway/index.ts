@@ -1,58 +1,55 @@
 /**
  * Ryvo unified API gateway — Bun HTTP server (replaces Deno edge-runtime dispatcher).
  * Kong: /functions/v1/{service}/... → http://functions:9000/{service}/...
+ *
+ * Services are lazy-loaded so the HTTP listener comes up quickly on constrained VPS hosts.
  */
 import { env } from "../_shared/lib/env.ts";
-import { startBackgroundWorkers } from "../_shared/workers/index.ts";
 
-import { handle as authHooks } from "../auth-hooks/src/handler.ts";
-import { handle as locationIngest } from "../location-ingest/src/handler.ts";
-import { handle as tripLifecycle } from "../trip-lifecycle/src/handler.ts";
-import { handle as matchingEngine } from "../matching-engine/src/handler.ts";
-import { handle as routingEngine } from "../routing-engine/src/handler.ts";
-import { handle as paymentGateway } from "../payment-gateway/src/handler.ts";
-import { handle as payoutService } from "../payout-service/src/handler.ts";
-import { handle as notificationService } from "../notification-service/src/handler.ts";
-import { handle as storageService } from "../storage-service/src/handler.ts";
-import { handle as kycService } from "../kyc-service/src/handler.ts";
-import { handle as couponService } from "../coupon-service/src/handler.ts";
-import { handle as supportService } from "../support-service/src/handler.ts";
-import { handle as auditService } from "../audit-service/src/handler.ts";
-import { handle as geofenceService } from "../geofence-service/src/handler.ts";
-import { handle as shiftService } from "../shift-service/src/handler.ts";
-import { handle as cronJobs } from "../cron-jobs/src/handler.ts";
-import { handle as gdprService } from "../gdpr-service/src/handler.ts";
-import { handle as tripChat } from "../trip-chat/src/handler.ts";
-import { handle as profileService } from "../profile-service/src/handler.ts";
+type Handler = (req: Request) => Promise<Response>;
 
-const services: Record<string, (req: Request) => Promise<Response>> = {
-  "auth-hooks": authHooks,
-  "location-ingest": locationIngest,
-  "trip-lifecycle": tripLifecycle,
-  "matching-engine": matchingEngine,
-  "routing-engine": routingEngine,
-  "payment-gateway": paymentGateway,
-  "payout-service": payoutService,
-  "notification-service": notificationService,
-  "storage-service": storageService,
-  "kyc-service": kycService,
-  "coupon-service": couponService,
-  "support-service": supportService,
-  "audit-service": auditService,
-  "geofence-service": geofenceService,
-  "shift-service": shiftService,
-  "cron-jobs": cronJobs,
-  "gdpr-service": gdprService,
-  "trip-chat": tripChat,
-  "profile-service": profileService,
-  hello: async () => Response.json("Hello from Ryvo Functions!"),
+const serviceLoaders: Record<string, () => Promise<Handler>> = {
+  "auth-hooks": () => import("../auth-hooks/src/handler.ts").then((m) => m.handle),
+  "location-ingest": () => import("../location-ingest/src/handler.ts").then((m) => m.handle),
+  "trip-lifecycle": () => import("../trip-lifecycle/src/handler.ts").then((m) => m.handle),
+  "matching-engine": () => import("../matching-engine/src/handler.ts").then((m) => m.handle),
+  "routing-engine": () => import("../routing-engine/src/handler.ts").then((m) => m.handle),
+  "payment-gateway": () => import("../payment-gateway/src/handler.ts").then((m) => m.handle),
+  "payout-service": () => import("../payout-service/src/handler.ts").then((m) => m.handle),
+  "notification-service": () => import("../notification-service/src/handler.ts").then((m) => m.handle),
+  "storage-service": () => import("../storage-service/src/handler.ts").then((m) => m.handle),
+  "kyc-service": () => import("../kyc-service/src/handler.ts").then((m) => m.handle),
+  "coupon-service": () => import("../coupon-service/src/handler.ts").then((m) => m.handle),
+  "support-service": () => import("../support-service/src/handler.ts").then((m) => m.handle),
+  "audit-service": () => import("../audit-service/src/handler.ts").then((m) => m.handle),
+  "geofence-service": () => import("../geofence-service/src/handler.ts").then((m) => m.handle),
+  "shift-service": () => import("../shift-service/src/handler.ts").then((m) => m.handle),
+  "cron-jobs": () => import("../cron-jobs/src/handler.ts").then((m) => m.handle),
+  "gdpr-service": () => import("../gdpr-service/src/handler.ts").then((m) => m.handle),
+  "trip-chat": () => import("../trip-chat/src/handler.ts").then((m) => m.handle),
+  "profile-service": () => import("../profile-service/src/handler.ts").then((m) => m.handle),
 };
+
+const handlerCache = new Map<string, Handler>();
+
+async function resolveHandler(service: string): Promise<Handler | undefined> {
+  if (service === "hello") {
+    return async () => Response.json("Hello from Ryvo Functions!");
+  }
+  const cached = handlerCache.get(service);
+  if (cached) return cached;
+  const loader = serviceLoaders[service];
+  if (!loader) return undefined;
+  const handler = await loader();
+  handlerCache.set(service, handler);
+  return handler;
+}
 
 async function fetch(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const parts = url.pathname.split("/").filter(Boolean);
   const service = parts[0] ?? "";
-  const handler = services[service];
+  const handler = await resolveHandler(service);
   if (!handler) {
     return Response.json(
       { error: { code: "UNKNOWN_SERVICE", message: `Unknown service: ${service}` } },
@@ -65,4 +62,7 @@ async function fetch(req: Request): Promise<Response> {
 console.log(`[ryvo-gateway] Starting on :${env.port}`);
 Bun.serve({ port: env.port, fetch });
 console.log(`[ryvo-gateway] Listening on :${env.port}`);
-startBackgroundWorkers().catch((e) => console.error("[workers]", e));
+
+import("../_shared/workers/index.ts")
+  .then(({ startBackgroundWorkers }) => startBackgroundWorkers())
+  .catch((e) => console.error("[workers]", e));
