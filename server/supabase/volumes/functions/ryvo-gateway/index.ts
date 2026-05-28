@@ -63,6 +63,12 @@ console.log(`[ryvo-gateway] Starting on :${env.port}`);
 Bun.serve({ port: env.port, fetch });
 console.log(`[ryvo-gateway] Listening on :${env.port}`);
 
-import("../_shared/workers/index.ts")
-  .then(({ startBackgroundWorkers }) => startBackgroundWorkers())
-  .catch((e) => console.error("[workers]", e));
+if (process.env.RYVO_DISABLE_WORKERS !== "1") {
+  setTimeout(() => {
+    import("../_shared/workers/index.ts")
+      .then(({ startBackgroundWorkers }) => startBackgroundWorkers())
+      .catch((e) => console.error("[workers]", e));
+  }, 5_000);
+} else {
+  console.log("[ryvo-gateway] background workers disabled (RYVO_DISABLE_WORKERS=1)");
+}

@@ -4,15 +4,36 @@ services:
     profiles:
       - legacy-edge
 
-  ryvo-functions:
+  ryvo-migrate:
     image: oven/bun:1.3
-    container_name: ryvo-functions
+    container_name: ryvo-migrate
+    profiles:
+      - migrate
     working_dir: /home/deno/functions
     volumes:
       - ./volumes/functions:/home/deno/functions:Z
       - ./scripts/seeds:/opt/ryvo/seeds:ro
       - ./scripts/migrate-idempotent.sh:/opt/ryvo/migrate-idempotent.sh:ro
       - ./scripts/bootstrap-users.sh:/opt/ryvo/bootstrap-users.sh:ro
+      - ./volumes/functions/ryvo-gateway/migrate-only.sh:/opt/ryvo/migrate-only.sh:ro
+    command: ["/bin/sh", "/opt/ryvo/migrate-only.sh"]
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+      auth:
+        condition: service_healthy
+    restart: "no"
+
+  ryvo-functions:
+    image: oven/bun:1.3
+    container_name: ryvo-functions
+    working_dir: /home/deno/functions
+    volumes:
+      - ./volumes/functions:/home/deno/functions:Z
       - ./volumes/functions/ryvo-gateway/entrypoint.sh:/opt/ryvo/entrypoint.sh:ro
     command: ["/bin/sh", "/opt/ryvo/entrypoint.sh"]
     environment:
