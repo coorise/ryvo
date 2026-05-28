@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Merge deploy templates into runtime .env files (server/*, compose, client).
-# Usage: bash deploy/scripts/apply-env.sh dev|prod
+# Merge deploy/vps templates into runtime .env files (server/*, compose, client).
+# Usage: bash deploy/vps/scripts/apply-env.sh dev|prod
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$ROOT"
 
 ENV_NAME="${1:-}"
@@ -11,6 +11,8 @@ if [[ "$ENV_NAME" != "dev" && "$ENV_NAME" != "prod" ]]; then
   echo "Usage: $0 dev|prod"
   exit 1
 fi
+
+VPS="deploy/vps"
 
 patch_env() {
   local file="$1" key="$2" value="$3"
@@ -42,28 +44,32 @@ bash scripts/ensure-env.sh
 
 for mod in supabase kafka redis bunqueue; do
   target="server/${mod}/.env"
-  base_deploy="deploy/server/${mod}/env.example"
-  overlay="deploy/server/${mod}/env.${ENV_NAME}.example"
+  base_deploy="${VPS}/server/${mod}/env.example"
+  overlay="${VPS}/server/${mod}/env.${ENV_NAME}.example"
   if [[ "$mod" != "supabase" && -f "$base_deploy" ]]; then
     cp -n "server/${mod}/.env.example" "$target" 2>/dev/null || cp "server/${mod}/.env.example" "$target"
     apply_template "$base_deploy" "$target"
   fi
-  apply_template "$overlay" "$target"
+  if [[ "$ENV_NAME" == "prod" ]]; then
+    apply_template "$overlay" "$target"
+  elif [[ "$mod" == "supabase" ]]; then
+    apply_template "$base_deploy" "$target"
+  fi
 done
 
 if [[ -f server/supabase/.env ]]; then
   sed -i '/^KONG_HTTP_PORT=/d;/^KONG_HTTPS_PORT=/d' server/supabase/.env
 fi
 
-COMPOSE_EX="deploy/compose/env.${ENV_NAME}.example"
-COMPOSE_OUT="deploy/compose/.env.${ENV_NAME}"
+COMPOSE_EX="${VPS}/.env.${ENV_NAME}.example"
+COMPOSE_OUT="${VPS}/.env.${ENV_NAME}"
 cp "$COMPOSE_EX" "$COMPOSE_OUT"
 ANON_KEY="$(grep '^ANON_KEY=' server/supabase/.env | cut -d= -f2- | tr -d "'\"")"
 patch_env "$COMPOSE_OUT" NEXT_PUBLIC_SUPABASE_ANON_KEY "$ANON_KEY"
 echo "  wrote $COMPOSE_OUT"
 
 for app in ryvo ryvo_admin; do
-  ctpl="deploy/client/web/${app}/env.${ENV_NAME}.example"
+  ctpl="${VPS}/client/web/${app}/env.${ENV_NAME}.example"
   if [[ -f "$ctpl" ]]; then
     apply_template "$ctpl" "client/web/${app}/.env.local"
     patch_env "$COMPOSE_OUT" "NEXT_PUBLIC_SUPABASE_URL" "$(grep '^NEXT_PUBLIC_SUPABASE_URL=' "client/web/${app}/.env.local" | cut -d= -f2-)"

@@ -45,7 +45,7 @@ Root `docker-compose.yaml` loads each via `include` → `env_file` + `project_di
 # or: bash scripts/ensure-env.sh && docker compose up -d --build
 ```
 
-**VPS dev:** see [deploy/README.md](deploy/README.md) — `bash deploy/scripts/setup-dev.sh`
+**VPS dev:** see [deploy/vps/README.md](deploy/vps/README.md) — `bash deploy/vps/scripts/setup-dev.sh`
 
 ```bash
 # Legacy / manual local

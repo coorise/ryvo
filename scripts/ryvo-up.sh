@@ -17,17 +17,17 @@ case "$ENV" in
     exec docker compose up -d --build "${@:2}"
     ;;
   dev)
-    ENV_FILE="${RYVO_ENV_FILE:-deploy/compose/.env.dev}"
+    ENV_FILE="${RYVO_ENV_FILE:-deploy/vps/.env.dev}"
     if [[ ! -f "$ENV_FILE" ]]; then
-      echo "Missing $ENV_FILE — run: bash deploy/scripts/apply-env.sh dev"
+      echo "Missing $ENV_FILE — run: bash deploy/vps/scripts/apply-env.sh dev"
       exit 1
     fi
     exec docker compose -f docker-compose.dev.yaml --env-file "$ENV_FILE" up -d --build "${@:2}"
     ;;
   prod)
-    ENV_FILE="${RYVO_ENV_FILE:-deploy/compose/.env.prod}"
+    ENV_FILE="${RYVO_ENV_FILE:-deploy/vps/.env.prod}"
     if [[ ! -f "$ENV_FILE" ]]; then
-      echo "Missing $ENV_FILE — run: bash deploy/scripts/apply-env.sh prod"
+      echo "Missing $ENV_FILE — run: bash deploy/vps/scripts/apply-env.sh prod"
       exit 1
     fi
     exec docker compose -f docker-compose.prod.yaml --env-file "$ENV_FILE" up -d --build "${@:2}"

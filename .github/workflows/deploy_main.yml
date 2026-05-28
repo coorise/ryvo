@@ -23,11 +23,5 @@ jobs:
           script: |
             set -euo pipefail
             cd ~/Projects/Web/ryvo
-            git fetch origin main
-            git checkout main
-            git pull origin main
-            bash deploy/scripts/apply-env.sh prod
-            docker compose -f docker-compose.prod.yaml --env-file deploy/compose/.env.prod build --pull
-            docker compose -f docker-compose.prod.yaml --env-file deploy/compose/.env.prod up -d
-            docker compose -f docker-compose.prod.yaml --env-file deploy/compose/.env.prod exec -T caddy caddy reload --config /etc/caddy/Caddyfile || true
-            bash deploy/scripts/health-check.sh prod
+            git fetch origin main && git checkout main && git pull origin main
+            bash deploy/vps/scripts/deploy.sh prod

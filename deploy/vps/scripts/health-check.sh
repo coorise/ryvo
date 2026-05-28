@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Smoke test edge + auth login. Usage: bash deploy/scripts/health-check.sh [dev|prod|local]
+# Smoke test edge + auth login. Usage: bash deploy/vps/scripts/health-check.sh [dev|prod|local]
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$ROOT"
 
 ENV_NAME="${1:-dev}"
@@ -13,11 +13,11 @@ case "$ENV_NAME" in
     ;;
   dev)
     ADMIN_PORT=3400 CLIENT_PORT=3500 API_PORT=8500
-    COMPOSE_ENV="deploy/compose/.env.dev"
+    COMPOSE_ENV="deploy/vps/.env.dev"
     ;;
   prod)
     ADMIN_PORT=3200 CLIENT_PORT=3300 API_PORT=8400
-    COMPOSE_ENV="deploy/compose/.env.prod"
+    COMPOSE_ENV="deploy/vps/.env.prod"
     ;;
   *) echo "Usage: $0 [dev|prod|local]"; exit 1 ;;
 esac

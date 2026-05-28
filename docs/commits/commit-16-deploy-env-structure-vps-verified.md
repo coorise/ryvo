@@ -3,10 +3,10 @@
 ## Deploy layout
 
 ```
-deploy/compose/          # orchestrator env.dev|prod
-deploy/server/{module}/  # env.example + env.dev|prod.example
-deploy/client/web/{app}/ # env.dev|prod.example
-deploy/scripts/          # apply-env, setup-dev, health-check
+deploy/vps/.env.dev.example | .env.prod.example
+deploy/vps/server/{module}/env.example (+ env.prod.example overlay)
+deploy/vps/client/web/{app}/env.dev.example | env.prod.example
+deploy/vps/scripts/      # apply-env, setup-dev, health-check
 ```
 
 ## VPS verification (dev)
@@ -19,5 +19,5 @@ deploy/scripts/          # apply-env, setup-dev, health-check
 ## One command
 
 ```bash
-bash deploy/scripts/setup-dev.sh
+bash deploy/vps/scripts/setup-dev.sh
 ```
