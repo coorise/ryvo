@@ -5,7 +5,7 @@ services:
       - legacy-edge
 
   ryvo-migrate:
-    image: oven/bun:1.3
+    image: oven/bun:1.1.38
     container_name: ryvo-migrate
     profiles:
       - migrate
@@ -29,9 +29,13 @@ services:
     restart: "no"
 
   ryvo-functions:
-    image: oven/bun:1.3
+    image: oven/bun:1.1.38
     container_name: ryvo-functions
     working_dir: /home/deno/functions
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
     volumes:
       - ./volumes/functions:/home/deno/functions:Z
       - ./volumes/functions/ryvo-gateway/entrypoint.sh:/opt/ryvo/entrypoint.sh:ro
