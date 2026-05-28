@@ -3,7 +3,7 @@
 
 services:
   ryvo-migrate:
-    image: ${GHCR_REPO:-ghcr.io/coorise/ryvo}/ryvo-functions:${RYVO_IMAGE_TAG:-dev}
+    image: ${DOCKER_IMAGE_PREFIX:-coorise}/ryvo-functions:${RYVO_IMAGE_TAG:-dev}
     container_name: ryvo-migrate_dev
     profiles:
       - migrate
@@ -37,7 +37,7 @@ services:
       - ./functions-router.dev.Caddyfile:/etc/caddy/Caddyfile:ro
 
   ryvo-functions_blue_dev:
-    image: ${GHCR_REPO:-ghcr.io/coorise/ryvo}/ryvo-functions:${RYVO_IMAGE_TAG:-dev}
+    image: ${DOCKER_IMAGE_PREFIX:-coorise}/ryvo-functions:${RYVO_IMAGE_TAG:-dev}
     container_name: ryvo-functions_blue_dev
     restart: unless-stopped
     environment:
@@ -75,7 +75,7 @@ services:
         condition: service_healthy
 
   ryvo-functions_green_dev:
-    image: ${GHCR_REPO:-ghcr.io/coorise/ryvo}/ryvo-functions:${RYVO_IMAGE_TAG:-dev}
+    image: ${DOCKER_IMAGE_PREFIX:-coorise}/ryvo-functions:${RYVO_IMAGE_TAG:-dev}
     container_name: ryvo-functions_green_dev
     restart: unless-stopped
     environment:
@@ -113,7 +113,7 @@ services:
         condition: service_healthy
 
   ryvo-web-admin_blue_dev:
-    image: ${GHCR_REPO:-ghcr.io/coorise/ryvo}/ryvo-web-admin:${RYVO_IMAGE_TAG:-dev}
+    image: ${DOCKER_IMAGE_PREFIX:-coorise}/ryvo-web-admin:${RYVO_IMAGE_TAG:-dev}
     container_name: ryvo-web-admin_blue_dev
     restart: unless-stopped
     networks:
@@ -126,7 +126,7 @@ services:
       HOSTNAME: "0.0.0.0"
 
   ryvo-web-admin_green_dev:
-    image: ${GHCR_REPO:-ghcr.io/coorise/ryvo}/ryvo-web-admin:${RYVO_IMAGE_TAG:-dev}
+    image: ${DOCKER_IMAGE_PREFIX:-coorise}/ryvo-web-admin:${RYVO_IMAGE_TAG:-dev}
     container_name: ryvo-web-admin_green_dev
     restart: unless-stopped
     networks:
@@ -139,7 +139,7 @@ services:
       HOSTNAME: "0.0.0.0"
 
   ryvo-web-client_blue_dev:
-    image: ${GHCR_REPO:-ghcr.io/coorise/ryvo}/ryvo-web-client:${RYVO_IMAGE_TAG:-dev}
+    image: ${DOCKER_IMAGE_PREFIX:-coorise}/ryvo-web-client:${RYVO_IMAGE_TAG:-dev}
     container_name: ryvo-web-client_blue_dev
     restart: unless-stopped
     networks:
@@ -152,7 +152,7 @@ services:
       HOSTNAME: "0.0.0.0"
 
   ryvo-web-client_green_dev:
-    image: ${GHCR_REPO:-ghcr.io/coorise/ryvo}/ryvo-web-client:${RYVO_IMAGE_TAG:-dev}
+    image: ${DOCKER_IMAGE_PREFIX:-coorise}/ryvo-web-client:${RYVO_IMAGE_TAG:-dev}
     container_name: ryvo-web-client_green_dev
     restart: unless-stopped
     networks:

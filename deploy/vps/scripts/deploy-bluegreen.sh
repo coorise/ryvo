@@ -41,8 +41,13 @@ case "$ENV_NAME" in
     ;;
 esac
 
-export GHCR_REPO="ghcr.io/coorise/ryvo"
+# Docker Hub: coorise/ryvo-web-admin:sha-<gitsha> (set DOCKER_IMAGE_PREFIX in VPS .env if different)
+export DOCKER_IMAGE_PREFIX="${DOCKER_IMAGE_PREFIX:-coorise}"
 export RYVO_IMAGE_TAG="$IMAGE_TAG"
+
+if [[ -n "${DOCKER_TOKEN:-}" && -n "${DOCKER_USERNAME:-}" ]]; then
+  echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
+fi
 
 echo "==> bluegreen deploy ($ENV_NAME) tag=$RYVO_IMAGE_TAG"
 
@@ -67,9 +72,9 @@ docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" pull \
   "ryvo-web-admin_${next}_dev" "ryvo-web-client_${next}_dev" "ryvo-functions_${next}_dev" 2>/dev/null || true
 docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" pull \
   "ryvo-web-admin_${next}" "ryvo-web-client_${next}" "ryvo-functions_${next}" 2>/dev/null || true
-docker pull "${GHCR_REPO}/ryvo-web-admin:${RYVO_IMAGE_TAG}" || true
-docker pull "${GHCR_REPO}/ryvo-web-client:${RYVO_IMAGE_TAG}" || true
-docker pull "${GHCR_REPO}/ryvo-functions:${RYVO_IMAGE_TAG}" || true
+docker pull "${DOCKER_IMAGE_PREFIX}/ryvo-web-admin:${RYVO_IMAGE_TAG}" || true
+docker pull "${DOCKER_IMAGE_PREFIX}/ryvo-web-client:${RYVO_IMAGE_TAG}" || true
+docker pull "${DOCKER_IMAGE_PREFIX}/ryvo-functions:${RYVO_IMAGE_TAG}" || true
 
 echo "==> start base stack (stateful stays single)"
 docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" up -d
