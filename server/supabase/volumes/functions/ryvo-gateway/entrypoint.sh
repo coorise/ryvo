@@ -30,4 +30,5 @@ fi
 cd /home/deno/functions
 bun install --cwd /home/deno/functions
 
-exec bun run /home/deno/functions/ryvo-gateway/index.ts
+echo "[ryvo] Starting API gateway..."
+exec bun /home/deno/functions/ryvo-gateway/index.ts

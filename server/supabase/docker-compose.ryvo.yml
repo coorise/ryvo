@@ -47,7 +47,9 @@ services:
       default:
         aliases:
           - functions
-      ryvo-net: null
+      ryvo-net:
+        aliases:
+          - functions
     depends_on:
       db:
         condition: service_healthy

@@ -63,6 +63,6 @@ async function fetch(req: Request): Promise<Response> {
 }
 
 console.log(`[ryvo-gateway] Starting on :${env.port}`);
-startBackgroundWorkers().catch((e) => console.error("[workers]", e));
-
 Bun.serve({ port: env.port, fetch });
+console.log(`[ryvo-gateway] Listening on :${env.port}`);
+startBackgroundWorkers().catch((e) => console.error("[workers]", e));

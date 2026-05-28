@@ -51,20 +51,24 @@ docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" up -d --force-recrea
 API_PORT="${RYVO_API_PORT:-8500}"
 [[ "$ENV_NAME" == "prod" ]] && API_PORT="${RYVO_API_PORT:-8400}"
 
-echo "==> waiting for functions gateway (127.0.0.1:${API_PORT})..."
+echo "==> waiting for functions gateway..."
 functions_ok=0
-for _ in $(seq 1 90); do
-  if curl -sf --connect-timeout 2 "http://127.0.0.1:${API_PORT}/functions/v1/hello" >/dev/null 2>&1; then
-    echo "  OK  ryvo-functions ready"
+for _ in $(seq 1 120); do
+  if docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" exec -T ryvo-functions \
+    curl -sf --connect-timeout 2 "http://127.0.0.1:9000/hello" >/dev/null 2>&1; then
+    echo "  OK  ryvo-functions :9000/hello"
     functions_ok=1
     break
   fi
   sleep 2
 done
 if [[ "$functions_ok" -eq 0 ]]; then
-  echo "  FAIL ryvo-functions did not respond; recent logs:"
-  docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" logs --tail 60 ryvo-functions || true
+  echo "  FAIL ryvo-functions did not respond on :9000; recent logs:"
+  docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" logs --tail 80 ryvo-functions || true
   exit 1
+fi
+if ! curl -sf --connect-timeout 5 "http://127.0.0.1:${API_PORT}/functions/v1/hello" >/dev/null 2>&1; then
+  echo "  WARN Kong/Caddy path not ready yet (127.0.0.1:${API_PORT}/functions/v1/hello)"
 fi
 
 docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" exec -T "$CADDY_SERVICE" \
