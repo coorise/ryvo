@@ -56,7 +56,8 @@ echo "==> waiting for functions gateway..."
 functions_ok=0
 for _ in $(seq 1 120); do
   if docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" exec -T ryvo-functions \
-    curl -sf --connect-timeout 2 "http://127.0.0.1:9000/hello" >/dev/null 2>&1; then
+    bun -e "fetch('http://127.0.0.1:9000/hello').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" \
+    >/dev/null 2>&1; then
     echo "  OK  ryvo-functions :9000/hello"
     functions_ok=1
     break
