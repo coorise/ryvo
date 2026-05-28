@@ -67,13 +67,12 @@ echo "  active=$active next=$next"
 
 compose config --quiet
 
-echo "==> pull images (tag=$RYVO_IMAGE_TAG)"
-compose pull \
-  "ryvo-web-admin_${next}_dev" "ryvo-web-client_${next}_dev" "ryvo-functions_${next}_dev" 2>/dev/null || true
-compose pull \
-  "ryvo-web-admin_${next}" "ryvo-web-client_${next}" "ryvo-functions_${next}" 2>/dev/null || true
-docker pull "${DOCKER_IMAGE_PREFIX}/ryvo-web-admin:${RYVO_IMAGE_TAG}" || true
-docker pull "${DOCKER_IMAGE_PREFIX}/ryvo-web-client:${RYVO_IMAGE_TAG}" || true
+echo "==> build web images on VPS (bake NEXT_PUBLIC_* from $COMPOSE_ENV)"
+bash deploy/vps/scripts/build-web-images.sh "$ENV_NAME" "$RYVO_IMAGE_TAG"
+
+echo "==> pull functions image (tag=$RYVO_IMAGE_TAG)"
+compose pull "ryvo-functions_${next}_dev" 2>/dev/null || true
+compose pull "ryvo-functions_${next}" 2>/dev/null || true
 docker pull "${DOCKER_IMAGE_PREFIX}/ryvo-functions:${RYVO_IMAGE_TAG}" || true
 
 echo "==> start base stack (stateful stays single)"

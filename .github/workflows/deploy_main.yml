@@ -23,12 +23,25 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
+      - name: Validate web build env
+        env:
+          ANON: ${{ secrets.PROD_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$ANON" ]; then
+            echo "::warning::PROD_SUPABASE_ANON_KEY not set — CI web images will lack the anon key; VPS deploy rebuilds web images from server/supabase/.env"
+          fi
+
       - name: Build + push web admin image
         uses: docker/build-push-action@v6
         with:
           context: ./client/web/ryvo_admin
           file: ./client/web/ryvo_admin/Dockerfile
           push: true
+          build-args: |
+            NEXT_PUBLIC_SUPABASE_URL=https://ryvo-line-server.agglomy.com
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.PROD_SUPABASE_ANON_KEY }}
+            NEXT_PUBLIC_FUNCTIONS_URL=https://ryvo-line-server.agglomy.com/functions/v1
+            NEXT_PUBLIC_APP_ENV=production
           tags: |
             ${{ env.IMAGE_PREFIX }}/ryvo-web-admin:sha-${{ github.sha }}
             ${{ env.IMAGE_PREFIX }}/ryvo-web-admin:prod
@@ -41,6 +54,11 @@ jobs:
           context: ./client/web/ryvo
           file: ./client/web/ryvo/Dockerfile
           push: true
+          build-args: |
+            NEXT_PUBLIC_SUPABASE_URL=https://ryvo-line-server.agglomy.com
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.PROD_SUPABASE_ANON_KEY }}
+            NEXT_PUBLIC_FUNCTIONS_URL=https://ryvo-line-server.agglomy.com/functions/v1
+            NEXT_PUBLIC_APP_ENV=production
           tags: |
             ${{ env.IMAGE_PREFIX }}/ryvo-web-client:sha-${{ github.sha }}
             ${{ env.IMAGE_PREFIX }}/ryvo-web-client:prod
