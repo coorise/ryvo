@@ -23,7 +23,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ secrets.DOCKER_USERNAME || github.actor }}
-          password: ${{ secrets.DOCKER_TOKEN }}
+          password: ${{ secrets.DOCKER_TOKEN || github.token }}
 
       - name: Build + push web admin image
         uses: docker/build-push-action@v6
