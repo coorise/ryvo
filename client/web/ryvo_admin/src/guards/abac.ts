@@ -29,7 +29,7 @@ export function canAccessDashboard(user: SessionUser | null, area: "client" | "d
   switch (area) {
     case "admin":
       return (
-        hasRole(user, "super_admin", "admin") ||
+        hasRole(user, "super_admin", "admin", "staff", "moderator", "agent", "support") ||
         hasPermPrefix(user, "roles:") ||
         hasPermPrefix(user, "staff:") ||
         hasPermPrefix(user, "users:") ||
@@ -126,5 +126,7 @@ export function dashboardPathForUser(user: SessionUser | null): string {
   if (!user) return "/auth/login";
   if (canAccessDashboard(user, "admin")) return "/admin";
   if (hasRole(user, "driver")) return "/driver";
-  return "/client";
+  // Admin web app has no /client routes — avoid 404 after login when JWT lacks role claims.
+  if (hasRole(user, "client")) return "/landing";
+  return "/admin";
 }

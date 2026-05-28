@@ -9,6 +9,7 @@ import { AuthFormShell } from "@/components/auth/auth-form-shell";
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
 import { ROUTES } from "@/configs";
 import { dashboardPathForUser } from "@/guards/abac";
+import { enrichSessionUser } from "@/guards/enrich-session-user";
 import { authService } from "@/services";
 import { useAuthStore } from "@/stores/auth.store";
 import { loginSchema, type LoginInput } from "@/types/interfaces/schemas";
@@ -35,12 +36,13 @@ export default function LoginPage() {
         toast.error("No session returned");
         return;
       }
-      setAuth(session);
-      if (!session.user.emailVerified) {
+      const enrichedUser = await enrichSessionUser(session.user, session.accessToken);
+      setAuth({ ...session, user: enrichedUser });
+      if (!enrichedUser.emailVerified) {
         router.push(ROUTES.auth.verifyEmail);
         return;
       }
-      router.push(dashboardPathForUser(session.user));
+      router.push(dashboardPathForUser(enrichedUser));
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign in failed";
       toast.error(

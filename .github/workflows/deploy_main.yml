@@ -77,4 +77,6 @@ jobs:
             bash -lc 'set -euo pipefail
             cd ~/Projects/Web/ryvo
             git fetch origin main && git checkout main && git pull origin main
+            export DOCKER_USERNAME="${{ secrets.DOCKER_USERNAME }}"
+            export DOCKER_TOKEN="${{ secrets.DOCKER_TOKEN }}"
             bash deploy/vps/scripts/deploy-bluegreen.sh prod sha-${{ github.sha }}'

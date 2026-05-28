@@ -69,7 +69,19 @@ if [[ -f "$legacy" && ! -f "$COMPOSE_OUT" ]]; then
   mv "$legacy" "$COMPOSE_OUT"
   echo "  migrated $legacy -> $COMPOSE_OUT"
 fi
+saved_docker_user=""
+saved_docker_token=""
+if [[ -f "$COMPOSE_OUT" ]]; then
+  saved_docker_user="$(grep '^DOCKER_USERNAME=' "$COMPOSE_OUT" 2>/dev/null | cut -d= -f2- | tr -d "'\"" | head -1)"
+  saved_docker_token="$(grep '^DOCKER_TOKEN=' "$COMPOSE_OUT" 2>/dev/null | cut -d= -f2- | tr -d "'\"" | head -1)"
+fi
 cp "$COMPOSE_EX" "$COMPOSE_OUT"
+if [[ -n "$saved_docker_user" && "$saved_docker_user" != REPLACE_* ]]; then
+  patch_env "$COMPOSE_OUT" DOCKER_USERNAME "$saved_docker_user"
+fi
+if [[ -n "$saved_docker_token" && "$saved_docker_token" != REPLACE_* ]]; then
+  patch_env "$COMPOSE_OUT" DOCKER_TOKEN "$saved_docker_token"
+fi
 if [[ -f server/supabase/.env ]]; then
   for key in ANON_KEY SERVICE_ROLE_KEY JWT_SECRET POSTGRES_PASSWORD POSTGRES_DB SUPABASE_PUBLIC_URL; do
     val="$(grep "^${key}=" server/supabase/.env | cut -d= -f2- | tr -d "'\"" | head -1)"
@@ -77,6 +89,12 @@ if [[ -f server/supabase/.env ]]; then
   done
   ANON_KEY="$(grep '^ANON_KEY=' server/supabase/.env | cut -d= -f2- | tr -d "'\"")"
   patch_env "$COMPOSE_OUT" NEXT_PUBLIC_SUPABASE_ANON_KEY "$ANON_KEY"
+fi
+if [[ -n "${DOCKER_USERNAME:-}" ]]; then
+  patch_env "$COMPOSE_OUT" DOCKER_USERNAME "$DOCKER_USERNAME"
+fi
+if [[ -n "${DOCKER_TOKEN:-}" ]]; then
+  patch_env "$COMPOSE_OUT" DOCKER_TOKEN "$DOCKER_TOKEN"
 fi
 echo "  wrote $COMPOSE_OUT"
 
