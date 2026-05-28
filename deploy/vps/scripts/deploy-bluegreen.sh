@@ -130,23 +130,48 @@ else
     caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
 fi
 
-echo "==> switch edge Caddy upstreams to $next"
-if [[ "$ENV_NAME" == "dev" ]]; then
-  cat >network/caddy/Caddyfile.dev <<EOF
-:3400 { reverse_proxy ryvo-web-admin_${next}_dev:3000 }
-:3500 { reverse_proxy ryvo-web-client_${next}_dev:3000 }
-:8500 { reverse_proxy kong:8000 }
+write_edge_caddyfile() {
+  local color="$1"
+  if [[ "$ENV_NAME" == "dev" ]]; then
+    cat >network/caddy/Caddyfile.dev <<EOF
+# Dev VPS — switched by deploy-bluegreen.sh (active: ${color})
+:3400 {
+	reverse_proxy ryvo-web-admin_${color}_dev:3000
+}
+:3500 {
+	reverse_proxy ryvo-web-client_${color}_dev:3000
+}
+:8500 {
+	reverse_proxy kong:8000
+}
 EOF
-else
-  cat >network/caddy/Caddyfile.prod <<EOF
-:3200 { reverse_proxy ryvo-web-admin_${next}:3000 }
-:3300 { reverse_proxy ryvo-web-client_${next}:3000 }
-:8400 { reverse_proxy kong:8000 }
+  else
+    cat >network/caddy/Caddyfile.prod <<EOF
+# Prod VPS — switched by deploy-bluegreen.sh (active: ${color})
+:3200 {
+	reverse_proxy ryvo-web-admin_${color}:3000
+}
+:3300 {
+	reverse_proxy ryvo-web-client_${color}:3000
+}
+:8400 {
+	reverse_proxy kong:8000
+}
 EOF
-fi
+  fi
+}
 
-compose exec -T "$CADDY_SERVICE" \
-  caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
+echo "==> switch edge Caddy upstreams to $next"
+write_edge_caddyfile "$next"
+
+reload_edge_caddy() {
+  if ! compose exec -T "$CADDY_SERVICE" caddy reload --config /etc/caddy/Caddyfile; then
+    echo "  caddy reload failed — restarting $CADDY_SERVICE"
+    compose restart "$CADDY_SERVICE"
+  fi
+}
+
+reload_edge_caddy
 
 echo "==> health-check after switch (allow warm-up)"
 sleep 15
@@ -156,24 +181,16 @@ if ! bash deploy/vps/scripts/health-check.sh "$ENV_NAME"; then
     cat >"$ROUTER_FILE" <<EOF
 :9000 { reverse_proxy ryvo-functions_${active}_dev:9000 }
 EOF
-    cat >network/caddy/Caddyfile.dev <<EOF
-:3400 { reverse_proxy ryvo-web-admin_${active}_dev:3000 }
-:3500 { reverse_proxy ryvo-web-client_${active}_dev:3000 }
-:8500 { reverse_proxy kong:8000 }
-EOF
+    write_edge_caddyfile "$active"
     compose exec -T ryvo-functions-router_dev caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
   else
     cat >"$ROUTER_FILE" <<EOF
 :9000 { reverse_proxy ryvo-functions_${active}:9000 }
 EOF
-    cat >network/caddy/Caddyfile.prod <<EOF
-:3200 { reverse_proxy ryvo-web-admin_${active}:3000 }
-:3300 { reverse_proxy ryvo-web-client_${active}:3000 }
-:8400 { reverse_proxy kong:8000 }
-EOF
+    write_edge_caddyfile "$active"
     compose exec -T ryvo-functions-router caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
   fi
-  compose exec -T "$CADDY_SERVICE" caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
+  reload_edge_caddy
   exit 1
 fi
 
