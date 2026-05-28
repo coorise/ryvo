@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  BarChart3,
   Bell,
   Car,
   CreditCard,
@@ -11,6 +12,7 @@ import {
   MessagesSquare,
   Settings,
   Shield,
+  SlidersHorizontal,
   Star,
   User,
   Users,
@@ -23,7 +25,7 @@ export const PORTAL_NAV_GROUP_IDS = {
   hr: "hr",
   finances: "finances",
   audits: "audits",
-  advanced: "advanced",
+  settings: "settings",
 } as const;
 
 export type PortalNavGroupId = (typeof PORTAL_NAV_GROUP_IDS)[keyof typeof PORTAL_NAV_GROUP_IDS];
@@ -62,7 +64,9 @@ const DRIVER_ROUTES = {
   payments: "/driver/finances/payments",
   securityLogs: "/driver/audits/security-logs",
   activityLogs: "/driver/audits/activity-logs",
-  settings: "/driver/advanced/settings",
+  analytics: "/driver/audits/analytics",
+  profile: "/driver/settings/profile",
+  configurations: "/driver/settings/configurations",
 } as const;
 
 const CLIENT_ROUTES = {
@@ -77,7 +81,9 @@ const CLIENT_ROUTES = {
   payments: "/client/finances/payments",
   securityLogs: "/client/audits/security-logs",
   activityLogs: "/client/audits/activity-logs",
-  settings: "/client/advanced/settings",
+  analytics: "/client/audits/analytics",
+  profile: "/client/settings/profile",
+  configurations: "/client/settings/configurations",
 } as const;
 
 export const PORTAL_ROUTES = {
@@ -138,14 +144,20 @@ export const DRIVER_PORTAL_NAV: PortalNavConfig = {
       items: [
         { href: DRIVER_ROUTES.securityLogs, labelKey: "portal.nav.securityLogs", icon: Shield },
         { href: DRIVER_ROUTES.activityLogs, labelKey: "portal.nav.activityLogs", icon: FileText },
+        { href: DRIVER_ROUTES.analytics, labelKey: "portal.nav.analytics", icon: BarChart3 },
       ],
     },
     {
-      id: PORTAL_NAV_GROUP_IDS.advanced,
-      labelKey: "portal.nav.groups.advanced",
+      id: PORTAL_NAV_GROUP_IDS.settings,
+      labelKey: "portal.nav.groups.settings",
       defaultExpanded: false,
       items: [
-        { href: DRIVER_ROUTES.settings, labelKey: "portal.nav.settings", icon: Settings },
+        { href: DRIVER_ROUTES.profile, labelKey: "portal.nav.profile", icon: User },
+        {
+          href: DRIVER_ROUTES.configurations,
+          labelKey: "portal.nav.configurations",
+          icon: SlidersHorizontal,
+        },
       ],
     },
   ],
@@ -202,14 +214,20 @@ export const CLIENT_PORTAL_NAV: PortalNavConfig = {
       items: [
         { href: CLIENT_ROUTES.securityLogs, labelKey: "portal.nav.securityLogs", icon: Shield },
         { href: CLIENT_ROUTES.activityLogs, labelKey: "portal.nav.activityLogs", icon: FileText },
+        { href: CLIENT_ROUTES.analytics, labelKey: "portal.nav.analytics", icon: BarChart3 },
       ],
     },
     {
-      id: PORTAL_NAV_GROUP_IDS.advanced,
-      labelKey: "portal.nav.groups.advanced",
+      id: PORTAL_NAV_GROUP_IDS.settings,
+      labelKey: "portal.nav.groups.settings",
       defaultExpanded: false,
       items: [
-        { href: CLIENT_ROUTES.settings, labelKey: "portal.nav.settings", icon: Settings },
+        { href: CLIENT_ROUTES.profile, labelKey: "portal.nav.profile", icon: User },
+        {
+          href: CLIENT_ROUTES.configurations,
+          labelKey: "portal.nav.configurations",
+          icon: SlidersHorizontal,
+        },
       ],
     },
   ],

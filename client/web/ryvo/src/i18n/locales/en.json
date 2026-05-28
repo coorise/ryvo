@@ -1300,15 +1300,27 @@
       "payments": "Payments",
       "securityLogs": "Security logs",
       "activityLogs": "Activity logs",
-      "settings": "Settings",
+      "analytics": "Analytics",
+      "profile": "Profile",
+      "configurations": "Configurations",
       "groups": {
         "main": "Main",
         "communication": "Communication",
         "hr": "Human resources",
         "finances": "Finances",
         "audits": "Audits",
-        "advanced": "Advanced"
+        "settings": "Settings"
       }
+    },
+    "settings": {
+      "tabs": {
+        "general": "General",
+        "payment": "Payment",
+        "notifications": "Notifications"
+      },
+      "generalHint": "Language, timezone, and ride preferences for your account.",
+      "paymentHint": "Payout methods and billing preferences.",
+      "notificationsHint": "Choose how you receive ride and account alerts."
     }
   }
 }
