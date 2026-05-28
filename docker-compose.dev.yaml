@@ -13,9 +13,6 @@ include:
   - path: ./server/supabase/docker-compose.dev.yaml
     project_directory: ./server/supabase
     env_file: ${SUPABASE_ENV_FILE:-./server/supabase/.env}
-  - path: ./server/supabase/docker-compose.ryvo.yml
-    project_directory: ./server/supabase
-    env_file: ${SUPABASE_ENV_FILE:-./server/supabase/.env}
   - path: ./server/supabase/docker-compose.yml
     project_directory: ./server/supabase
     env_file: ${SUPABASE_ENV_FILE:-./server/supabase/.env}
@@ -46,7 +43,5 @@ include:
 
   - path: ./network/caddy/docker-compose.dev.yaml
     project_directory: ./network/caddy
-  - path: ./client/web/ryvo_admin/docker-compose.dev.yaml
-    project_directory: ./client/web/ryvo_admin
-  - path: ./client/web/ryvo/docker-compose.dev.yaml
-    project_directory: ./client/web/ryvo
+  - path: ./deploy/vps/compose/app.bluegreen.dev.yaml
+    project_directory: ./deploy/vps/compose

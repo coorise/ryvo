@@ -21,14 +21,5 @@ services:
       - ./volumes/db/pooler.sql:/docker-entrypoint-initdb.d/migrations/99-pooler.sql:Z
       - db-config:/etc/postgresql-custom
 
-  ryvo-functions:
-    container_name: ryvo-functions
-    environment:
-      NODE_ENV: production
-      REDIS_URL: redis://ryvo_redis:6379
-      KAFKA_BROKER: ryvo_kafka_broker:9092
-      BUNQUEUE_HOST: ryvo_bunqueue
-      SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL:-https://ryvo-line-server.agglomy.com}
-
 volumes:
   db-config:

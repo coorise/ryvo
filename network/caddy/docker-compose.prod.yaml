@@ -15,8 +15,6 @@ services:
     networks:
       ryvo-net: {}
     depends_on:
-      - ryvo-web-admin
-      - ryvo-web-client
       - kong
 
 volumes:

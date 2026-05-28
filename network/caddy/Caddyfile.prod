@@ -2,11 +2,11 @@
 # Domains (via cPanel): ryvo-line-admin / ryvo-line / ryvo-line-server .agglomy.com
 
 :3200 {
-	reverse_proxy ryvo-web-admin:3000
+	reverse_proxy ryvo-web-admin_blue:3000
 }
 
 :3300 {
-	reverse_proxy ryvo-web-client:3000
+	reverse_proxy ryvo-web-client_blue:3000
 }
 
 :8400 {
