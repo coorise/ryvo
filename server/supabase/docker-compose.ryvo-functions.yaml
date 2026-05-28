@@ -1,0 +1,5 @@
+# Disable Supabase Deno edge-runtime for /functions/v1 — Ryvo uses Bun (ryvo-functions + router).
+services:
+  functions:
+    profiles:
+      - legacy-edge
