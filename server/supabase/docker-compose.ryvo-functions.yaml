@@ -1,5 +1,10 @@
-# Disable Supabase Deno edge-runtime for /functions/v1 — Ryvo uses Bun (ryvo-functions + router).
+# Ryvo VPS: Bun gateway for /functions/v1 + JWT custom claims from Postgres.
 services:
   functions:
     profiles:
       - legacy-edge
+
+  auth:
+    environment:
+      GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_ENABLED: "true"
+      GOTRUE_HOOK_CUSTOM_ACCESS_TOKEN_URI: "pg-functions://postgres/public/custom_access_token_hook"
