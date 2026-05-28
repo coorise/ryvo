@@ -1,5 +1,5 @@
 # Ryvo-Line — dev VPS (branch: dev)
-# One command: docker compose -f docker-compose.dev.yaml --env-file deploy/vps/.env.dev up -d --build
+# One command: docker compose -f docker-compose.dev.yaml --env-file deploy/vps/compose/.env.dev up -d --build
 #
 # Include order: dev overlay first, then base (Compose merge keeps overlay values).
 

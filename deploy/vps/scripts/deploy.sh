@@ -16,12 +16,12 @@ fi
 case "$ENV_NAME" in
   dev)
     COMPOSE_FILE="docker-compose.dev.yaml"
-    COMPOSE_ENV="deploy/vps/.env.dev"
+    COMPOSE_ENV="deploy/vps/compose/.env.dev"
     CADDY_SERVICE="caddy_dev"
     ;;
   prod)
     COMPOSE_FILE="docker-compose.prod.yaml"
-    COMPOSE_ENV="deploy/vps/.env.prod"
+    COMPOSE_ENV="deploy/vps/compose/.env.prod"
     CADDY_SERVICE="caddy"
     ;;
 esac

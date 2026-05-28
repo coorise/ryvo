@@ -61,8 +61,14 @@ if [[ -f server/supabase/.env ]]; then
   sed -i '/^KONG_HTTP_PORT=/d;/^KONG_HTTPS_PORT=/d' server/supabase/.env
 fi
 
-COMPOSE_EX="${VPS}/.env.${ENV_NAME}.example"
-COMPOSE_OUT="${VPS}/.env.${ENV_NAME}"
+COMPOSE_EX="${VPS}/compose/env.${ENV_NAME}.example"
+COMPOSE_OUT="${VPS}/compose/.env.${ENV_NAME}"
+mkdir -p "${VPS}/compose"
+legacy="${VPS}/.env.${ENV_NAME}"
+if [[ -f "$legacy" && ! -f "$COMPOSE_OUT" ]]; then
+  mv "$legacy" "$COMPOSE_OUT"
+  echo "  migrated $legacy -> $COMPOSE_OUT"
+fi
 cp "$COMPOSE_EX" "$COMPOSE_OUT"
 ANON_KEY="$(grep '^ANON_KEY=' server/supabase/.env | cut -d= -f2- | tr -d "'\"")"
 patch_env "$COMPOSE_OUT" NEXT_PUBLIC_SUPABASE_ANON_KEY "$ANON_KEY"

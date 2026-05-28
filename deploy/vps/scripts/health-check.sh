@@ -13,11 +13,11 @@ case "$ENV_NAME" in
     ;;
   dev)
     ADMIN_PORT=3400 CLIENT_PORT=3500 API_PORT=8500
-    COMPOSE_ENV="deploy/vps/.env.dev"
+    COMPOSE_ENV="deploy/vps/compose/.env.dev"
     ;;
   prod)
     ADMIN_PORT=3200 CLIENT_PORT=3300 API_PORT=8400
-    COMPOSE_ENV="deploy/vps/.env.prod"
+    COMPOSE_ENV="deploy/vps/compose/.env.prod"
     ;;
   *) echo "Usage: $0 [dev|prod|local]"; exit 1 ;;
 esac

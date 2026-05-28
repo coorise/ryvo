@@ -3,7 +3,7 @@
 ## Deploy layout
 
 ```
-deploy/vps/.env.dev.example | .env.prod.example
+deploy/vps/compose/env.dev.example | env.prod.example
 deploy/vps/server/{module}/env.example (+ env.prod.example overlay)
 deploy/vps/client/web/{app}/env.dev.example | env.prod.example
 deploy/vps/scripts/      # apply-env, setup-dev, health-check
