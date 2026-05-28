@@ -1,0 +1,21 @@
+# Ryvo admin web (dev VPS) — service suffix _dev
+services:
+  ryvo-web-admin_dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-https://ryvo-line-server.dev.agglomy.com}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_FUNCTIONS_URL: ${NEXT_PUBLIC_FUNCTIONS_URL:-https://ryvo-line-server.dev.agglomy.com/functions/v1}
+        NEXT_PUBLIC_APP_ENV: development
+    container_name: ryvo-web-admin_dev
+    restart: unless-stopped
+    networks:
+      ryvo-net: {}
+    depends_on:
+      kong:
+        condition: service_healthy
+    environment:
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"

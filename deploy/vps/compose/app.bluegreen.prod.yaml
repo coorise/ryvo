@@ -1,0 +1,166 @@
+# Blue/green stateless app services (PROD VPS).
+# Uses GHCR images built in CI. Traffic switching is done by Caddy + functions router.
+
+services:
+  ryvo-migrate:
+    image: ${DOCKER_IMAGE_PREFIX:-coorise}/ryvo-functions:${RYVO_IMAGE_TAG:-prod}
+    container_name: ryvo-migrate
+    profiles:
+      - migrate
+    restart: "no"
+    environment:
+      PGHOST: ${POSTGRES_HOST:-db}
+      PGPORT: "5432"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      AUTH_URL: http://kong:8000
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+    networks:
+      default: {}
+      ryvo-net: {}
+    depends_on:
+      db:
+        condition: service_healthy
+      kong:
+        condition: service_healthy
+    command: ["/bin/sh", "/opt/ryvo/migrate-only.sh"]
+
+  ryvo-functions-router:
+    image: caddy:2.10-alpine
+    container_name: ryvo-functions-router
+    restart: unless-stopped
+    networks:
+      ryvo-net:
+        aliases:
+          - functions
+    volumes:
+      - ./functions-router.prod.Caddyfile:/etc/caddy/Caddyfile:ro
+
+  ryvo-functions_blue:
+    image: ${DOCKER_IMAGE_PREFIX:-coorise}/ryvo-functions:${RYVO_IMAGE_TAG:-prod}
+    container_name: ryvo-functions_blue
+    restart: unless-stopped
+    environment:
+      PORT: "9000"
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET}
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL}
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      REDIS_URL: redis://ryvo_redis:6379
+      KAFKA_BROKER: ryvo_kafka_broker:9092
+      BUNQUEUE_HOST: ryvo_bunqueue
+      BUNQUEUE_PORT: "6789"
+      BUNQUEUE_HTTP_BASE_URL: ${BUNQUEUE_HTTP_BASE_URL:-http://ryvo_bunqueue:6790}
+      BUNQUEUE_HTTP_TOKEN: ${BUNQUEUE_HTTP_TOKEN:-}
+      USE_BUNQUEUE_CRON: ${USE_BUNQUEUE_CRON:-true}
+      SERVICE_HMAC_SECRET: ${SERVICE_HMAC_SECRET:-ryvo-prod-hmac-secret}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      SMTP_HOST: ${SMTP_HOST:-smtp.freesmtpservers.com}
+      SMTP_PORT: ${SMTP_PORT:-25}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-no-reply@ryvo-line.com}
+      SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-Ryvo}
+      MAILER_OTP_EXP: ${MAILER_OTP_EXP:-1800}
+    networks:
+      ryvo-net: {}
+    depends_on:
+      kong:
+        condition: service_healthy
+
+  ryvo-functions_green:
+    image: ${DOCKER_IMAGE_PREFIX:-coorise}/ryvo-functions:${RYVO_IMAGE_TAG:-prod}
+    container_name: ryvo-functions_green
+    restart: unless-stopped
+    environment:
+      PORT: "9000"
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET}
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL}
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      REDIS_URL: redis://ryvo_redis:6379
+      KAFKA_BROKER: ryvo_kafka_broker:9092
+      BUNQUEUE_HOST: ryvo_bunqueue
+      BUNQUEUE_PORT: "6789"
+      BUNQUEUE_HTTP_BASE_URL: ${BUNQUEUE_HTTP_BASE_URL:-http://ryvo_bunqueue:6790}
+      BUNQUEUE_HTTP_TOKEN: ${BUNQUEUE_HTTP_TOKEN:-}
+      USE_BUNQUEUE_CRON: ${USE_BUNQUEUE_CRON:-true}
+      SERVICE_HMAC_SECRET: ${SERVICE_HMAC_SECRET:-ryvo-prod-hmac-secret}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      SMTP_HOST: ${SMTP_HOST:-smtp.freesmtpservers.com}
+      SMTP_PORT: ${SMTP_PORT:-25}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL:-no-reply@ryvo-line.com}
+      SMTP_SENDER_NAME: ${SMTP_SENDER_NAME:-Ryvo}
+      MAILER_OTP_EXP: ${MAILER_OTP_EXP:-1800}
+    networks:
+      ryvo-net: {}
+    depends_on:
+      kong:
+        condition: service_healthy
+
+  ryvo-web-admin_blue:
+    image: ${DOCKER_IMAGE_PREFIX:-coorise}/ryvo-web-admin:${RYVO_IMAGE_TAG:-prod}
+    container_name: ryvo-web-admin_blue
+    restart: unless-stopped
+    networks:
+      ryvo-net: {}
+    depends_on:
+      kong:
+        condition: service_healthy
+    environment:
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+
+  ryvo-web-admin_green:
+    image: ${DOCKER_IMAGE_PREFIX:-coorise}/ryvo-web-admin:${RYVO_IMAGE_TAG:-prod}
+    container_name: ryvo-web-admin_green
+    restart: unless-stopped
+    networks:
+      ryvo-net: {}
+    depends_on:
+      kong:
+        condition: service_healthy
+    environment:
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+
+  ryvo-web-client_blue:
+    image: ${DOCKER_IMAGE_PREFIX:-coorise}/ryvo-web-client:${RYVO_IMAGE_TAG:-prod}
+    container_name: ryvo-web-client_blue
+    restart: unless-stopped
+    networks:
+      ryvo-net: {}
+    depends_on:
+      kong:
+        condition: service_healthy
+    environment:
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+
+  ryvo-web-client_green:
+    image: ${DOCKER_IMAGE_PREFIX:-coorise}/ryvo-web-client:${RYVO_IMAGE_TAG:-prod}
+    container_name: ryvo-web-client_green
+    restart: unless-stopped
+    networks:
+      ryvo-net: {}
+    depends_on:
+      kong:
+        condition: service_healthy
+    environment:
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+

@@ -1,0 +1,26 @@
+FROM oven/bun:1.1.38
+
+WORKDIR /app
+
+# Install JS deps with good layer caching
+WORKDIR /home/deno/functions
+COPY server/supabase/volumes/functions/package.json server/supabase/volumes/functions/bun.lock ./
+RUN bun install --frozen-lockfile --ignore-scripts
+
+# Copy functions source
+COPY server/supabase/volumes/functions/ /home/deno/functions/
+
+# Copy migrations + bootstrap scripts into the image (portable deploy)
+COPY server/supabase/scripts/seeds/ /opt/ryvo/seeds/
+COPY server/supabase/scripts/migrate-idempotent.sh /opt/ryvo/migrate-idempotent.sh
+COPY server/supabase/scripts/bootstrap-users.sh /opt/ryvo/bootstrap-users.sh
+COPY server/supabase/volumes/functions/ryvo-gateway/migrate-only.sh /opt/ryvo/migrate-only.sh
+COPY server/supabase/volumes/functions/ryvo-gateway/entrypoint.sh /opt/ryvo/entrypoint.sh
+
+RUN chmod +x /opt/ryvo/*.sh
+
+ENV PORT=9000
+WORKDIR /home/deno/functions
+
+CMD ["/bin/sh", "/opt/ryvo/entrypoint.sh"]
+

@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Build admin + customer Next.js images on the VPS with NEXT_PUBLIC_* from compose env.
+# Usage: bash deploy/vps/scripts/build-web-images.sh dev|prod [tag]
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+cd "$ROOT"
+
+ENV_NAME="${1:-}"
+IMAGE_TAG="${2:-dev}"
+
+if [[ "$ENV_NAME" != "dev" && "$ENV_NAME" != "prod" ]]; then
+  echo "Usage: $0 dev|prod [sha-<gitsha>|dev|prod]"
+  exit 1
+fi
+
+COMPOSE_ENV="deploy/vps/compose/.env.${ENV_NAME}"
+[[ -f "$COMPOSE_ENV" ]] || { echo "Missing $COMPOSE_ENV — run apply-env.sh first"; exit 1; }
+
+# shellcheck source=/dev/null
+set -a
+source "$COMPOSE_ENV"
+set +a
+
+PREFIX="${DOCKER_IMAGE_PREFIX:-coorise}"
+URL="${NEXT_PUBLIC_SUPABASE_URL:-}"
+FUN="${NEXT_PUBLIC_FUNCTIONS_URL:-}"
+ANON="${NEXT_PUBLIC_SUPABASE_ANON_KEY:-${ANON_KEY:-}}"
+APP_ENV="${NEXT_PUBLIC_APP_ENV:-development}"
+
+if [[ -z "$URL" ]]; then
+  echo "NEXT_PUBLIC_SUPABASE_URL missing in $COMPOSE_ENV"
+  exit 1
+fi
+if [[ -z "$FUN" ]]; then
+  FUN="${URL%/}/functions/v1"
+fi
+if [[ -z "$ANON" || "$ANON" == REPLACE_* ]]; then
+  echo "NEXT_PUBLIC_SUPABASE_ANON_KEY missing in $COMPOSE_ENV (run apply-env.sh after server/supabase/.env has ANON_KEY)"
+  exit 1
+fi
+
+build_one() {
+  local app_dir="$1" image_name="$2"
+  echo "==> docker build $image_name:$IMAGE_TAG ($app_dir)"
+  docker build \
+    -f "$app_dir/Dockerfile" \
+    --build-arg "NEXT_PUBLIC_SUPABASE_URL=$URL" \
+    --build-arg "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON" \
+    --build-arg "NEXT_PUBLIC_FUNCTIONS_URL=$FUN" \
+    --build-arg "NEXT_PUBLIC_APP_ENV=$APP_ENV" \
+    -t "${PREFIX}/${image_name}:${IMAGE_TAG}" \
+    "$app_dir"
+}
+
+echo "==> build-web-images ($ENV_NAME tag=$IMAGE_TAG)"
+build_one "client/web/ryvo_admin" "ryvo-web-admin"
+build_one "client/web/ryvo" "ryvo-web-client"
+echo "==> done (local tags ${PREFIX}/ryvo-web-{admin,client}:${IMAGE_TAG})"

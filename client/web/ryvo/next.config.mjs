@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  /** Required for Bun Docker image (standalone server bundle). */
+  output: "standalone",
   /**
    * Production-grade dashboard needs server rendering + dynamic routes.
    * Keep default output (no static export).

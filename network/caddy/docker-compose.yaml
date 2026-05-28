@@ -1,0 +1,24 @@
+# Caddy edge (local) — ports 3200 admin / 3300 client / 8400 API
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    container_name: ryvo-caddy
+    restart: unless-stopped
+    ports:
+      - "${RYVO_ADMIN_PORT:-3200}:3200"
+      - "${RYVO_CLIENT_PORT:-3300}:3300"
+      - "${RYVO_API_PORT:-8400}:8400"
+    volumes:
+      - ./Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      ryvo-net: {}
+    depends_on:
+      - ryvo-web-admin
+      - ryvo-web-client
+      - kong
+
+volumes:
+  caddy_data:
+  caddy_config:

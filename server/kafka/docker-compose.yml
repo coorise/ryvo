@@ -27,8 +27,3 @@ services:
     networks:
       - ryvo-net
     restart: unless-stopped
-
-networks:
-  ryvo-net:
-    name: ryvo-net
-    external: true

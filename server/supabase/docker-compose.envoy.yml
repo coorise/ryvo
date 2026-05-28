@@ -19,7 +19,7 @@ services:
     image: envoyproxy/envoy:v1.37.2
     restart: unless-stopped
     ports:
-      - ${KONG_HTTP_PORT}:8000/tcp
+      # API is published via Caddy in this repo; no host ports needed by default.
     volumes:
       - ./volumes/api/envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
       - ./volumes/api/envoy/cds.yaml:/etc/envoy/cds.yaml:ro

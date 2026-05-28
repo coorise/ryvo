@@ -1,0 +1,6 @@
+services:
+  kong:
+    ports:
+      - ${KONG_HTTP_PORT:-8400}:8000/tcp
+      - ${KONG_HTTPS_PORT:-8443}:8443/tcp
+

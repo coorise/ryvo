@@ -1,0 +1,4 @@
+:9000 {
+	reverse_proxy ryvo-functions_blue:9000
+}
+

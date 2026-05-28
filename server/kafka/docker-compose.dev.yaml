@@ -1,0 +1,10 @@
+# Kafka (dev VPS) — _dev service name and isolated data
+services:
+  ryvo_kafka_broker:
+    container_name: ryvo_kafka_broker_dev
+    hostname: ryvo_kafka_broker_dev
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://ryvo_kafka_broker_dev:9092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@ryvo_kafka_broker_dev:9093
+    volumes:
+      - ./data_dev:/var/lib/kafka/data

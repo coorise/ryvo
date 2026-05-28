@@ -47,6 +47,9 @@ AS $$
   );
 $$;
 
+REVOKE ALL ON FUNCTION public.has_role(text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.has_role(text) TO postgres, service_role;
+
 -- Riders: own data
 DROP POLICY IF EXISTS rider_profiles_self ON public.rider_profiles;
 CREATE POLICY rider_profiles_self ON public.rider_profiles

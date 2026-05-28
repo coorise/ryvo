@@ -5,6 +5,13 @@ docs/project
 
 # Docker persisted data
 server/supabase/volumes/db/data/
+server/supabase/volumes/db/data_dev/
+server/supabase/volumes/storage_dev/
+server/kafka/data_dev/
+server/redis/data_dev/
+server/bunqueue/data_dev/
+deploy/vps/compose/.env.dev
+deploy/vps/compose/.env.prod
 server/supabase/home/
 server/kafka/data/
 server/redis/data/

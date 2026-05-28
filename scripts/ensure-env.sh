@@ -21,8 +21,43 @@ copy_if_missing "${ROOT}/server/kafka"
 copy_if_missing "${ROOT}/server/redis"
 copy_if_missing "${ROOT}/server/bunqueue"
 
-# PostgREST/database URLs break when POSTGRES_PASSWORD contains '@' — set encoded form.
+# Client env (local): populate Supabase URL + anon key from server/supabase/.env
 SUPABASE_ENV="${ROOT}/server/supabase/.env"
+read_kv() {
+  local file="$1" key="$2"
+  grep -E "^${key}=" "$file" 2>/dev/null | head -n1 | cut -d= -f2- | sed "s/^['\"]//;s/['\"]$//"
+}
+
+patch_kv() {
+  local file="$1" key="$2" value="$3"
+  [[ -f "$file" ]] || touch "$file"
+  if grep -qE "^${key}=" "$file" 2>/dev/null; then
+    sed -i "s|^${key}=.*|${key}=${value}|" "$file"
+  else
+    echo "${key}=${value}" >>"$file"
+  fi
+}
+
+if [[ -f "$SUPABASE_ENV" ]]; then
+  anon="$(read_kv "$SUPABASE_ENV" "ANON_KEY")"
+  pub_url="$(read_kv "$SUPABASE_ENV" "SUPABASE_PUBLIC_URL")"
+  # Local defaults: hit Caddy -> Kong on 8400
+  local_url="http://localhost:8400"
+  functions_url="http://localhost:8400/functions/v1"
+
+  for f in \
+    "${ROOT}/client/web/ryvo/.env.local" \
+    "${ROOT}/client/web/ryvo_admin/.env.local" \
+    "${ROOT}/.env"; do
+    # For local dev, always point to localhost (Supabase/Kong is exposed via Caddy on 8400).
+    patch_kv "$f" "NEXT_PUBLIC_SUPABASE_URL" "${local_url}"
+    patch_kv "$f" "NEXT_PUBLIC_FUNCTIONS_URL" "${functions_url}"
+    [[ -n "${anon:-}" ]] && patch_kv "$f" "NEXT_PUBLIC_SUPABASE_ANON_KEY" "${anon}"
+    patch_kv "$f" "NEXT_PUBLIC_APP_ENV" "development"
+  done
+fi
+
+# PostgREST/database URLs break when POSTGRES_PASSWORD contains '@' — set encoded form.
 if [[ -f "$SUPABASE_ENV" ]] && grep -q '^POSTGRES_PASSWORD=' "$SUPABASE_ENV"; then
   pw="$(grep '^POSTGRES_PASSWORD=' "$SUPABASE_ENV" | cut -d= -f2- | sed "s/^['\"]//;s/['\"]$//")"
   enc="$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$pw")"

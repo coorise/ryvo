@@ -1,0 +1,14 @@
+# Production VPS — host ports 3200 (admin) / 3300 (client) / 8400 (API)
+# Domains (via cPanel): ryvo-line-admin / ryvo-line / ryvo-line-server .agglomy.com
+
+:3200 {
+	reverse_proxy ryvo-web-admin_blue:3000
+}
+
+:3300 {
+	reverse_proxy ryvo-web-client_blue:3000
+}
+
+:8400 {
+	reverse_proxy kong:8000
+}

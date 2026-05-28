@@ -1,0 +1,866 @@
+"use client";
+
+import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+
+import { TariffCardPreview } from "@/components/admin/finance/tariff-card-badge";
+import { TariffCardLabel, TariffCardTitle } from "@/components/admin/finance/tariff-card-labels";
+import { autoLabelStyle, pillClassName, resolveLabelStyle } from "@/lib/tariff-card-styles";
+import {
+  TARIFF_BADGE_POSITIONS,
+  TARIFF_PACKAGE_TYPES,
+  TARIFF_PAYOUT_LABELS,
+  isBasicTariff,
+  type TariffCardDisplay,
+  type TariffLabelStyle,
+  type TariffPackageInput,
+} from "@/lib/tariff-types";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
+import { storageService } from "@/services/storage.service";
+
+
+function splitValidUntil(iso: string | null): { date: string; time: string } {
+  if (!iso) return { date: "", time: "00:00" };
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return { date: "", time: "00:00" };
+  const date = d.toISOString().slice(0, 10);
+  const time = d.toISOString().slice(11, 16);
+  return { date, time };
+}
+
+function mergeValidUntil(date: string, time: string): string | null {
+  if (!date) return null;
+  const t = time || "00:00";
+  return new Date(`${date}T${t}:00`).toISOString();
+}
+
+function payoutSummary(form: TariffPackageInput): string {
+  const label = form.payout_custom_label?.trim() || form.payout_label;
+  if (form.payout_label === "days") {
+    return `${label} · ${form.payout_delay_days}d`;
+  }
+  if (form.payout_delay_minutes > 0) {
+    return `${label} · ${form.payout_delay_minutes} min`;
+  }
+  return label;
+}
+
+type TariffPackageFormProps = {
+  form: TariffPackageInput;
+  setForm: (f: TariffPackageInput) => void;
+  isNew?: boolean;
+  readOnly?: boolean;
+};
+
+export function TariffPackageForm({ form, setForm, isNew, readOnly }: TariffPackageFormProps) {
+  const { t } = useTranslation();
+  const { accessToken } = useAuth();
+  const disabled = readOnly;
+  const isBasic = isBasicTariff(form);
+  const validParts = splitValidUntil(form.valid_until);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploadingBadge, setUploadingBadge] = useState(false);
+
+  function patch(patch: Partial<TariffPackageInput>) {
+    setForm({ ...form, ...patch });
+  }
+
+  function patchFeatures(patch: Partial<TariffPackageInput["features"]>) {
+    setForm({ ...form, features: { ...form.features, ...patch } });
+  }
+
+  function patchCardDisplay(patch: Partial<TariffCardDisplay>) {
+    setForm({ ...form, card_display: { ...form.card_display, ...patch } });
+  }
+
+  function patchBadge(patch: Partial<TariffCardDisplay["badge"]>) {
+    setForm({
+      ...form,
+      card_display: { ...form.card_display, badge: { ...form.card_display.badge, ...patch } },
+    });
+  }
+
+  function patchTextStyles(patch: Partial<TariffCardDisplay["text_styles"]>) {
+    setForm({
+      ...form,
+      card_display: {
+        ...form.card_display,
+        text_styles: { ...form.card_display.text_styles, ...patch },
+      },
+    });
+  }
+
+  function patchLabelStyle(
+    kind: keyof Pick<
+      TariffCardDisplay["text_styles"],
+      "title" | "commission" | "features" | "subscription"
+    >,
+    patch: Partial<TariffLabelStyle>,
+  ) {
+    const cardBg = form.card_display.background_color ?? "#ffffff";
+    const base =
+      form.card_display.text_styles[kind] ?? autoLabelStyle(cardBg);
+    patchTextStyles({
+      [kind]: { ...base, ...patch },
+    } as Partial<TariffCardDisplay["text_styles"]>);
+  }
+
+  async function onBadgeFile(file: File) {
+    if (!file.type.startsWith("image/")) {
+      toast.error(t("financeTariffs.display.badgeImageType"));
+      return;
+    }
+    const code = form.code.trim() || "draft";
+    const storagePath = `admin/tariff-badges/${code}/${Date.now()}.png`;
+    setUploadingBadge(true);
+    try {
+      const path = await storageService.uploadPng(accessToken, file, storagePath);
+      patchBadge({ kind: "image", image_path: path, enabled: true });
+      toast.success(t("financeTariffs.display.badgeUploaded"));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploadingBadge(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  return (
+    <div className="grid max-h-[70vh] gap-5 overflow-y-auto pr-1">
+      <section className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1 sm:col-span-2">
+          <Label>{t("financeTariffs.form.name")}</Label>
+          <Input
+            disabled={disabled}
+            value={form.name}
+            onChange={(e) => patch({ name: e.target.value })}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label>{t("financeTariffs.form.code")}</Label>
+          <Input
+            disabled={disabled || (!isNew && form.is_system)}
+            value={form.code}
+            onChange={(e) =>
+              patch({ code: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "_") })
+            }
+            placeholder="pro"
+          />
+        </div>
+        <div className="space-y-1 sm:col-span-2">
+          <Label>{t("financeTariffs.form.recurrences")}</Label>
+          <div className="flex flex-wrap items-center gap-3">
+            <Switch
+              disabled={disabled || isBasic}
+              checked={form.recurrence_unlimited}
+              onCheckedChange={(v) =>
+                patch({ recurrence_unlimited: v, recurrence_count: v ? null : 12 })
+              }
+            />
+            <span className="text-muted-foreground text-xs">
+              {form.recurrence_unlimited
+                ? t("financeTariffs.form.unlimited")
+                : t("financeTariffs.form.recurrencesHint")}
+            </span>
+            {!form.recurrence_unlimited && (
+              <Input
+                type="number"
+                min={1}
+                className="w-28"
+                disabled={disabled || isBasic}
+                value={form.recurrence_count ?? 1}
+                onChange={(e) => patch({ recurrence_count: Number(e.target.value) })}
+              />
+            )}
+          </div>
+        </div>
+        <div className="space-y-1">
+          <Label>{t("financeTariffs.form.type")}</Label>
+          <select
+            disabled={disabled || form.is_system}
+            className="border-border bg-background w-full rounded-xl border px-3 py-2 text-sm"
+            value={form.package_type}
+            onChange={(e) => patch({ package_type: e.target.value })}
+          >
+            {TARIFF_PACKAGE_TYPES.map((pt) => (
+              <option key={pt} value={pt}>
+                {t(`financeTariffs.types.${pt}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1 sm:col-span-2">
+          <Label>{t("financeTariffs.form.description")}</Label>
+          <textarea
+            disabled={disabled}
+            rows={2}
+            className="border-border bg-background w-full rounded-xl border px-3 py-2 text-sm"
+            value={form.description ?? ""}
+            onChange={(e) => patch({ description: e.target.value })}
+          />
+        </div>
+      </section>
+
+      <section className="grid gap-3 sm:grid-cols-2">
+        <h3 className="text-muted-foreground sm:col-span-2 text-xs font-bold tracking-wider uppercase">
+          {t("financeTariffs.form.pricing")}
+        </h3>
+        <div className="space-y-1">
+          <Label>{t("financeTariffs.form.commission")}</Label>
+          <Input
+            type="number"
+            step="0.1"
+            disabled={disabled}
+            value={form.commission_percent}
+            onChange={(e) => patch({ commission_percent: Number(e.target.value) })}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label>{t("financeTariffs.form.discount")}</Label>
+          <Input
+            type="number"
+            disabled={disabled}
+            value={form.discount_percent}
+            onChange={(e) => patch({ discount_percent: Number(e.target.value) })}
+          />
+        </div>
+        {!isBasic && (
+          <div className="space-y-1">
+            <Label>{t("financeTariffs.form.monthlyPrice")}</Label>
+            <Input
+              type="number"
+              step="0.01"
+              disabled={disabled}
+              value={form.subscription_monthly ?? 0}
+              onChange={(e) => patch({ subscription_monthly: Number(e.target.value) })}
+            />
+          </div>
+        )}
+      </section>
+
+      <section className="grid gap-3 sm:grid-cols-2">
+        <h3 className="text-muted-foreground sm:col-span-2 text-xs font-bold tracking-wider uppercase">
+          {t("financeTariffs.form.payoutSection")}
+        </h3>
+        <div className="space-y-1">
+          <Label>{t("financeTariffs.form.minWithdraw")}</Label>
+          <Input
+            type="number"
+            step="0.01"
+            min={0}
+            disabled={disabled}
+            value={form.min_withdraw_amount}
+            onChange={(e) => patch({ min_withdraw_amount: Number(e.target.value) })}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label>{t("financeTariffs.form.maxWithdraw")}</Label>
+          <div className="flex flex-wrap items-center gap-3">
+            <Switch
+              disabled={disabled}
+              checked={form.max_withdraw_unlimited}
+              onCheckedChange={(v) =>
+                patch({
+                  max_withdraw_unlimited: v,
+                  max_withdraw_amount: v ? null : form.max_withdraw_amount ?? 500,
+                })
+              }
+            />
+            <span className="text-muted-foreground text-xs">
+              {form.max_withdraw_unlimited
+                ? t("financeTariffs.form.unlimited")
+                : t("financeTariffs.form.maxWithdrawHint")}
+            </span>
+            {!form.max_withdraw_unlimited && (
+              <Input
+                type="number"
+                step="0.01"
+                min={form.min_withdraw_amount}
+                className="w-32"
+                disabled={disabled}
+                value={form.max_withdraw_amount ?? 0}
+                onChange={(e) => patch({ max_withdraw_amount: Number(e.target.value) })}
+              />
+            )}
+          </div>
+        </div>
+        <div className="space-y-1 sm:col-span-2">
+          <Label>{t("financeTariffs.form.validUntil")}</Label>
+          <div className="flex flex-wrap items-center gap-3">
+            <Switch
+              disabled={disabled || isBasic}
+              checked={form.valid_unlimited}
+              onCheckedChange={(v) => patch({ valid_unlimited: v, valid_until: v ? null : form.valid_until })}
+            />
+            <span className="text-muted-foreground text-xs">
+              {form.valid_unlimited ? t("financeTariffs.form.unlimited") : t("financeTariffs.form.validUntilHint")}
+            </span>
+            {!form.valid_unlimited && (
+              <>
+                <Input
+                  type="date"
+                  className="w-40"
+                  disabled={disabled || isBasic}
+                  value={validParts.date}
+                  onChange={(e) =>
+                    patch({ valid_until: mergeValidUntil(e.target.value, validParts.time) })
+                  }
+                />
+                <Input
+                  type="time"
+                  className="w-32"
+                  disabled={disabled || isBasic}
+                  value={validParts.time}
+                  onChange={(e) =>
+                    patch({ valid_until: mergeValidUntil(validParts.date, e.target.value) })
+                  }
+                />
+              </>
+            )}
+          </div>
+        </div>
+        <div className="space-y-1">
+          <Label>{t("financeTariffs.form.payoutLabel")}</Label>
+          <select
+            disabled={disabled}
+            className="border-border bg-background w-full rounded-xl border px-3 py-2 text-sm"
+            value={form.payout_label}
+            onChange={(e) =>
+              patch({ payout_label: e.target.value as TariffPackageInput["payout_label"] })
+            }
+          >
+            {TARIFF_PAYOUT_LABELS.map((p) => (
+              <option key={p} value={p}>
+                {t(`financeTariffs.payoutLabels.${p}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1">
+          <Label>{t("financeTariffs.form.payoutCustom")}</Label>
+          <Input
+            disabled={disabled}
+            value={form.payout_custom_label ?? ""}
+            onChange={(e) => patch({ payout_custom_label: e.target.value || null })}
+            placeholder={t("financeTariffs.form.payoutCustomPlaceholder")}
+          />
+        </div>
+        {form.payout_label === "instant" ? (
+          <div className="space-y-1">
+            <Label>{t("financeTariffs.form.payoutDelay")}</Label>
+            <Input
+              type="number"
+              disabled={disabled}
+              value={form.payout_delay_minutes}
+              onChange={(e) => patch({ payout_delay_minutes: Number(e.target.value) })}
+            />
+            <p className="text-muted-foreground text-xs">{t("financeTariffs.form.payoutDelayHint")}</p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <Label>{t("financeTariffs.form.payoutDays")}</Label>
+            <Input
+              type="number"
+              min={0}
+              disabled={disabled}
+              value={form.payout_delay_days}
+              onChange={(e) => patch({ payout_delay_days: Number(e.target.value) })}
+            />
+            <p className="text-muted-foreground text-xs">{t("financeTariffs.form.payoutDaysHint")}</p>
+          </div>
+        )}
+      </section>
+
+      <section className="border-border space-y-4 rounded-xl border p-4">
+        <h3 className="text-sm font-semibold">{t("financeTariffs.display.title")}</h3>
+        <TariffCardPreview display={form.card_display} accessToken={accessToken} className="min-h-[88px]">
+          <TariffCardTitle display={form.card_display}>
+            {form.name || t("financeTariffs.form.name")}
+          </TariffCardTitle>
+          <TariffCardLabel display={form.card_display} kind="commission">
+            {form.commission_percent}% · {payoutSummary(form)}
+          </TariffCardLabel>
+          <TariffFeatureChips form={form} display={form.card_display} />
+        </TariffCardPreview>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1">
+            <Label>{t("financeTariffs.display.cardBackground")}</Label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                disabled={disabled}
+                value={form.card_display.background_color ?? "#ffffff"}
+                onChange={(e) => patchCardDisplay({ background_color: e.target.value })}
+                className="border-border h-10 w-14 cursor-pointer rounded-lg border p-0.5"
+              />
+              <Input
+                disabled={disabled}
+                value={form.card_display.background_color ?? ""}
+                placeholder="#ffffff"
+                onChange={(e) => {
+                  const v = e.target.value.trim();
+                  patchCardDisplay({
+                    background_color: /^#[0-9A-Fa-f]{6}$/.test(v) ? v : null,
+                  });
+                }}
+              />
+              {!disabled && form.card_display.background_color && (
+                <button
+                  type="button"
+                  className="text-muted-foreground text-xs underline"
+                  onClick={() => patchCardDisplay({ background_color: null })}
+                >
+                  {t("financeTariffs.display.clearColor")}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {form.card_display.background_color && (
+            <>
+              <div className="space-y-1 sm:col-span-2">
+                <Label>{t("financeTariffs.display.textMode")}</Label>
+                <select
+                  disabled={disabled}
+                  className="border-border bg-background w-full rounded-xl border px-3 py-2 text-sm"
+                  value={form.card_display.text_styles.mode}
+                  onChange={(e) => {
+                    const mode = e.target.value as "auto" | "custom";
+                    if (mode === "custom" && form.card_display.background_color) {
+                      const auto = autoLabelStyle(form.card_display.background_color);
+                      const ts = form.card_display.text_styles;
+                      patchTextStyles({
+                        mode: "custom",
+                        title: ts.title ?? auto,
+                        commission: ts.commission ?? auto,
+                        features: ts.features ?? auto,
+                        subscription: ts.subscription ?? auto,
+                      });
+                    } else {
+                      patchTextStyles({ mode });
+                    }
+                  }}
+                >
+                  <option value="auto">{t("financeTariffs.display.textModeAuto")}</option>
+                  <option value="custom">{t("financeTariffs.display.textModeCustom")}</option>
+                </select>
+                <p className="text-muted-foreground text-xs">
+                  {form.card_display.text_styles.mode === "auto"
+                    ? t("financeTariffs.display.textModeAutoHint")
+                    : t("financeTariffs.display.textModeCustomHint")}
+                </p>
+              </div>
+              {form.card_display.text_styles.mode === "custom" && (
+                <div className="border-border space-y-4 rounded-xl border border-dashed p-3 sm:col-span-2">
+                  <LabelStyleRow
+                    label={t("financeTariffs.display.styleTitle")}
+                    disabled={disabled}
+                    style={form.card_display.text_styles.title ?? autoLabelStyle(form.card_display.background_color)}
+                    onChange={(p) => patchLabelStyle("title", p)}
+                  />
+                  <LabelStyleRow
+                    label={t("financeTariffs.display.styleCommission")}
+                    disabled={disabled}
+                    style={
+                      form.card_display.text_styles.commission ??
+                      autoLabelStyle(form.card_display.background_color)
+                    }
+                    onChange={(p) => patchLabelStyle("commission", p)}
+                  />
+                  <LabelStyleRow
+                    label={t("financeTariffs.display.styleFeatures")}
+                    disabled={disabled}
+                    style={
+                      form.card_display.text_styles.features ??
+                      autoLabelStyle(form.card_display.background_color)
+                    }
+                    onChange={(p) => patchLabelStyle("features", p)}
+                  />
+                  <LabelStyleRow
+                    label={t("financeTariffs.display.styleSubscription")}
+                    disabled={disabled}
+                    style={
+                      form.card_display.text_styles.subscription ??
+                      autoLabelStyle(form.card_display.background_color)
+                    }
+                    onChange={(p) => patchLabelStyle("subscription", p)}
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          <div className="flex items-center justify-between sm:col-span-2">
+            <Label>{t("financeTariffs.display.showBadge")}</Label>
+            <Switch
+              disabled={disabled}
+              checked={form.card_display.badge.enabled}
+              onCheckedChange={(v) => patchBadge({ enabled: v })}
+            />
+          </div>
+          {form.card_display.badge.enabled && (
+            <>
+              <div className="space-y-1">
+                <Label>{t("financeTariffs.display.badgePosition")}</Label>
+                <select
+                  disabled={disabled}
+                  className="border-border bg-background w-full rounded-xl border px-3 py-2 text-sm"
+                  value={form.card_display.badge.position}
+                  onChange={(e) =>
+                    patchBadge({
+                      position: e.target.value as TariffCardDisplay["badge"]["position"],
+                    })
+                  }
+                >
+                  {TARIFF_BADGE_POSITIONS.map((p) => (
+                    <option key={p} value={p}>
+                      {t(`financeTariffs.display.positions.${p}`)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label>{t("financeTariffs.display.badgeKind")}</Label>
+                <select
+                  disabled={disabled}
+                  className="border-border bg-background w-full rounded-xl border px-3 py-2 text-sm"
+                  value={form.card_display.badge.kind}
+                  onChange={(e) =>
+                    patchBadge({ kind: e.target.value as "text" | "image" })
+                  }
+                >
+                  <option value="text">{t("financeTariffs.display.kindText")}</option>
+                  <option value="image">{t("financeTariffs.display.kindImage")}</option>
+                </select>
+              </div>
+              {form.card_display.badge.kind === "text" ? (
+                <>
+                  <div className="space-y-1">
+                    <Label>{t("financeTariffs.display.badgeText")}</Label>
+                    <Input
+                      disabled={disabled}
+                      maxLength={24}
+                      value={form.card_display.badge.text}
+                      onChange={(e) => patchBadge({ text: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>{t("financeTariffs.display.badgeTextColor")}</Label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        disabled={disabled}
+                        value={form.card_display.badge.text_background_color}
+                        onChange={(e) => patchBadge({ text_background_color: e.target.value })}
+                        className="border-border h-10 w-14 cursor-pointer rounded-lg border p-0.5"
+                      />
+                      <Input
+                        disabled={disabled}
+                        value={form.card_display.badge.text_background_color}
+                        onChange={(e) => patchBadge({ text_background_color: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between sm:col-span-2">
+                    <Label>{t("financeTariffs.display.badgeBlink")}</Label>
+                    <Switch
+                      disabled={disabled}
+                      checked={form.card_display.badge.blink}
+                      onCheckedChange={(v) => patchBadge({ blink: v })}
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>{t("financeTariffs.display.badgeImage")}</Label>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/png,image/webp,image/jpeg"
+                    disabled={disabled || uploadingBadge}
+                    className="text-sm"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) void onBadgeFile(f);
+                    }}
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    {t("financeTariffs.display.badgeImageHint")}
+                  </p>
+                  {form.card_display.badge.image_path && (
+                    <button
+                      type="button"
+                      className="text-destructive text-xs underline"
+                      disabled={disabled}
+                      onClick={() => patchBadge({ image_path: null })}
+                    >
+                      {t("financeTariffs.display.removeBadgeImage")}
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+
+      <section className="border-border space-y-3 rounded-xl border p-4">
+        <h3 className="text-sm font-semibold">{t("financeTariffs.form.featuresTitle")}</h3>
+        <FeatureRow
+          label={t("financeTariffs.features.searchPriority")}
+          hint={t("financeTariffs.features.searchPriorityHint")}
+          checked={form.features.search_priority}
+          disabled={disabled}
+          onCheckedChange={(v) =>
+            patchFeatures({
+              search_priority: v,
+              search_priority_rank: v ? Math.min(form.features.search_priority_rank, 100) : 999,
+            })
+          }
+        />
+        {form.features.search_priority && (
+          <div className="space-y-1 pl-4">
+            <Label>{t("financeTariffs.features.searchPriorityRank")}</Label>
+            <Input
+              type="number"
+              min={1}
+              disabled={disabled}
+              value={form.features.search_priority_rank}
+              onChange={(e) =>
+                patchFeatures({ search_priority_rank: Number(e.target.value) || 1 })
+              }
+            />
+            <p className="text-muted-foreground text-xs">{t("financeTariffs.features.searchPriorityRankHint")}</p>
+          </div>
+        )}
+        <FeatureRow
+          label={t("financeTariffs.features.removeAds")}
+          hint={t("financeTariffs.features.removeAdsHint")}
+          checked={form.features.remove_ads}
+          disabled={disabled}
+          onCheckedChange={(v) => patchFeatures({ remove_ads: v })}
+        />
+        <FeatureRow
+          label={t("financeTariffs.features.promotedListing")}
+          hint={t("financeTariffs.features.promotedListingHint")}
+          checked={form.features.promoted_listing}
+          disabled={disabled}
+          onCheckedChange={(v) => patchFeatures({ promoted_listing: v })}
+        />
+        <FeatureRow
+          label={t("financeTariffs.features.mediaGallery")}
+          hint={t("financeTariffs.features.mediaGalleryHint")}
+          checked={form.features.media_gallery}
+          disabled={disabled}
+          onCheckedChange={(v) => patchFeatures({ media_gallery: v })}
+        />
+        {form.features.media_gallery && (
+          <div className="grid grid-cols-2 gap-2 pl-4">
+            <div className="space-y-1">
+              <Label>{t("financeTariffs.features.maxPhotos")}</Label>
+              <Input
+                type="number"
+                disabled={disabled}
+                value={form.features.max_photos}
+                onChange={(e) => patchFeatures({ max_photos: Number(e.target.value) })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>{t("financeTariffs.features.maxVideos")}</Label>
+              <Input
+                type="number"
+                disabled={disabled}
+                value={form.features.max_videos}
+                onChange={(e) => patchFeatures({ max_videos: Number(e.target.value) })}
+              />
+            </div>
+          </div>
+        )}
+        <FeatureRow
+          label={t("financeTariffs.features.customBadge")}
+          checked={form.features.custom_badge}
+          disabled={disabled}
+          onCheckedChange={(v) => patchFeatures({ custom_badge: v })}
+        />
+        {form.features.custom_badge && (
+          <div className="space-y-1 pl-4">
+            <Label>{t("financeTariffs.features.badgeLabel")}</Label>
+            <Input
+              disabled={disabled}
+              value={form.features.badge_label}
+              onChange={(e) => patchFeatures({ badge_label: e.target.value })}
+              placeholder="Pro"
+            />
+          </div>
+        )}
+        <FeatureRow
+          label={t("financeTariffs.features.prioritySupport")}
+          checked={form.features.priority_support}
+          disabled={disabled}
+          onCheckedChange={(v) => patchFeatures({ priority_support: v })}
+        />
+      </section>
+
+      <div className="flex items-center justify-between">
+        <Label>{t("financeTariffs.form.active")}</Label>
+        <Switch
+          disabled={disabled}
+          checked={form.active}
+          onCheckedChange={(v) => patch({ active: v })}
+        />
+      </div>
+    </div>
+  );
+}
+
+function FeatureRow({
+  label,
+  hint,
+  checked,
+  disabled,
+  onCheckedChange,
+}: {
+  label: string;
+  hint?: string;
+  checked: boolean;
+  disabled?: boolean;
+  onCheckedChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <p className="text-sm font-medium">{label}</p>
+        {hint && <p className="text-muted-foreground text-xs">{hint}</p>}
+      </div>
+      <Switch checked={checked} disabled={disabled} onCheckedChange={onCheckedChange} />
+    </div>
+  );
+}
+
+function LabelStyleRow({
+  label,
+  style,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  style: TariffLabelStyle;
+  disabled?: boolean;
+  onChange: (p: Partial<TariffLabelStyle>) => void;
+}) {
+  return (
+    <div className="grid gap-2 sm:grid-cols-[1fr_1fr_1fr] sm:items-end">
+      <p className="text-sm font-medium sm:col-span-3 sm:mb-0">{label}</p>
+      <div className="space-y-1">
+        <Label className="text-xs">Text</Label>
+        <div className="flex gap-1">
+          <input
+            type="color"
+            disabled={disabled}
+            value={style.text_color}
+            onChange={(e) => onChange({ text_color: e.target.value })}
+            className="border-border h-9 w-12 cursor-pointer rounded-lg border p-0.5"
+          />
+          <Input
+            disabled={disabled}
+            value={style.text_color}
+            onChange={(e) => onChange({ text_color: e.target.value })}
+            className="h-9"
+          />
+        </div>
+      </div>
+      <div className="space-y-1 sm:col-span-2">
+        <Label className="text-xs">Background</Label>
+        <div className="flex gap-1">
+          <input
+            type="color"
+            disabled={disabled}
+            value={
+              style.background_color.startsWith("#")
+                ? style.background_color
+                : "#ffffff"
+            }
+            onChange={(e) => onChange({ background_color: e.target.value })}
+            className="border-border h-9 w-12 cursor-pointer rounded-lg border p-0.5"
+          />
+          <Input
+            disabled={disabled}
+            value={style.background_color}
+            onChange={(e) => onChange({ background_color: e.target.value })}
+            className="h-9"
+          />
+        </div>
+      </div>
+      <span
+        className="rounded-md px-2 py-1 text-xs font-semibold sm:col-span-3"
+        style={{ color: style.text_color, backgroundColor: style.background_color }}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+export function TariffFeatureChips({
+  form,
+  display,
+}: {
+  form: TariffPackageInput;
+  display?: TariffCardDisplay;
+}) {
+  const { t } = useTranslation();
+  const cardDisplay = display ?? form.card_display;
+  const chips: string[] = [];
+  if (form.features.search_priority) {
+    chips.push(
+      `${t("financeTariffs.features.searchPriority")} #${form.features.search_priority_rank}`,
+    );
+  }
+  if (form.features.remove_ads) chips.push(t("financeTariffs.features.removeAds"));
+  if (form.features.promoted_listing) chips.push(t("financeTariffs.features.promotedListing"));
+  if (form.features.media_gallery) {
+    chips.push(
+      `${t("financeTariffs.features.mediaGallery")} (${form.features.max_photos}/${form.features.max_videos})`,
+    );
+  }
+  if (form.features.custom_badge && form.features.badge_label) {
+    chips.push(form.features.badge_label);
+  }
+  if (form.discount_percent > 0) chips.push(`-${form.discount_percent}%`);
+
+  const featureResolved = resolveLabelStyle(cardDisplay, "features");
+  const emptyResolved = resolveLabelStyle(cardDisplay, "features");
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-1">
+      {chips.map((c) => (
+        <span
+          key={c}
+          className={cn(
+            featureResolved.pill
+              ? pillClassName("text-[10px]")
+              : "bg-muted text-muted-foreground rounded-md px-1.5 py-0.5 text-[10px] font-semibold",
+          )}
+          style={featureResolved.pill ? featureResolved.style : undefined}
+        >
+          {c}
+        </span>
+      ))}
+      {!chips.length && (
+        <span
+          className={cn(
+            emptyResolved.pill ? pillClassName("text-[10px]") : "text-muted-foreground text-[10px]",
+          )}
+          style={emptyResolved.pill ? emptyResolved.style : undefined}
+        >
+          {t("financeTariffs.noFeatures")}
+        </span>
+      )}
+    </div>
+  );
+}

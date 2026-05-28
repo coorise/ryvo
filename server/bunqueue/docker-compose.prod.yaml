@@ -1,0 +1,6 @@
+# Bunqueue (production VPS)
+services:
+  ryvo_bunqueue:
+    container_name: ryvo_bunqueue
+    volumes:
+      - ./data:/app/data

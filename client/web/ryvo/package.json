@@ -1,12 +1,12 @@
 {
-  "name": "ryvo-line-web",
+  "name": "@ryvo-line/client",
   "version": "0.0.1",
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "HOSTNAME=0.0.0.0 PORT=3200 next dev --turbopack -H 0.0.0.0 -p 3200",
+    "dev": "HOSTNAME=0.0.0.0 PORT=3300 next dev --turbopack -H 0.0.0.0 -p 3300",
     "build": "next build",
-    "preview:static": "bunx serve out -p 3200",
+    "preview:static": "bunx serve out -p 3300",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit"
