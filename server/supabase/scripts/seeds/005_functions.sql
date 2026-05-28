@@ -8,6 +8,7 @@ CREATE OR REPLACE FUNCTION public.nearby_drivers(
 RETURNS SETOF public.driver_availability
 LANGUAGE sql
 STABLE
+SET search_path = public, extensions
 AS $$
   SELECT da.*
   FROM public.driver_availability da
@@ -32,6 +33,7 @@ CREATE OR REPLACE FUNCTION public.point_in_geofence(
 RETURNS SETOF public.geofences
 LANGUAGE sql
 STABLE
+SET search_path = public, extensions
 AS $$
   SELECT g.*
   FROM public.geofences g

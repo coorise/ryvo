@@ -99,10 +99,13 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
 
+REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+
 CREATE OR REPLACE FUNCTION public.match_drivers_for_request(p_request_id uuid)
 RETURNS TABLE(driver_id uuid, dist_m double precision)
 LANGUAGE sql
 STABLE
+SET search_path = public, extensions
 AS $$
   WITH req AS (
     SELECT pickup_geom

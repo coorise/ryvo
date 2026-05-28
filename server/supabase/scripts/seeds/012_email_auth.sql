@@ -100,6 +100,8 @@ CREATE TRIGGER on_auth_user_welcome_email
   FOR EACH ROW
   EXECUTE FUNCTION public.enqueue_welcome_email();
 
+REVOKE ALL ON FUNCTION public.enqueue_welcome_email() FROM PUBLIC, anon, authenticated;
+
 -- JWT: email_verified + is_email_verified (admin bypass)
 CREATE OR REPLACE FUNCTION public.custom_access_token_hook(event jsonb)
 RETURNS jsonb
@@ -197,5 +199,5 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.admin_set_email_verified(uuid, boolean) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.admin_set_email_verified(uuid, boolean) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_set_email_verified(uuid, boolean) TO service_role;

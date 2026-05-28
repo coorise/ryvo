@@ -47,6 +47,6 @@ AS $$
   LIMIT 200;
 $$;
 
-REVOKE ALL ON FUNCTION public.admin_online_drivers(text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.admin_online_drivers(text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_online_drivers(text) TO service_role;
 

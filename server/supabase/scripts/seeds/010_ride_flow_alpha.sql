@@ -107,6 +107,7 @@ CREATE OR REPLACE FUNCTION public.expire_trip_offers()
 RETURNS int
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   n int := 0;

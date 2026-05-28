@@ -35,5 +35,5 @@ AS $$
   WHERE cardinality(p_ids) > 0 AND u.id = ANY (p_ids);
 $$;
 
-REVOKE ALL ON FUNCTION public.admin_user_emails(uuid[]) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.admin_user_emails(uuid[]) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_user_emails(uuid[]) TO service_role;
