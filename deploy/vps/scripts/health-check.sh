@@ -55,6 +55,7 @@ echo "==> health-check ($ENV_NAME)"
 check "admin web" "$ADMIN_URL/" "200"
 check "client web" "$CLIENT_URL/" "200"
 check "auth health" "$API_BASE/auth/v1/health" "401"
+check "functions gateway" "$API_BASE/functions/v1/hello" "200"
 
 if [[ -z "$ANON" ]]; then
   echo "  SKIP login (ANON_KEY missing)"
@@ -65,6 +66,15 @@ else
   token=$(echo "$resp" | jq -r '.access_token // empty' 2>/dev/null || true)
   if [[ -n "$token" && "$token" != "null" ]]; then
     echo "  OK  admin login (access_token received)"
+    dash_code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 \
+      -H "apikey: $ANON" -H "Authorization: Bearer $token" \
+      "$API_BASE/functions/v1/audit-service/v1/admin/dashboard" || echo "000")
+    if [[ "$dash_code" == "200" ]]; then
+      echo "  OK  audit dashboard ($dash_code)"
+    else
+      echo "  FAIL audit dashboard (got $dash_code)"
+      fail=1
+    fi
   else
     echo "  FAIL admin login: $resp"
     fail=1

@@ -37,3 +37,9 @@ WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relrowsecurity
 
 - `postgis` in `public` on **existing** DBs cannot be moved; lint 0014 may remain until DB rebuild.
 - `pg_graphql` dropped in `044` (app uses REST only).
+
+## Follow-up (functions 502 on dev VPS)
+
+- **Symptom:** Admin overview blank; `/functions/v1/*` → 502 (Kong upstream down).
+- **Cause:** `ryvo-functions` entrypoint exits when migrations fail (`045` as `supabase_admin` without matching password); deploy did not recreate the functions container reliably.
+- **Fix:** `045` uses `SET LOCAL ROLE supabase_admin`; entrypoint continues on migrate failure; `deploy.sh` force-recreates `ryvo-functions` + health-checks `/functions/v1/hello`; dev Redis/Bunqueue hostnames aligned.

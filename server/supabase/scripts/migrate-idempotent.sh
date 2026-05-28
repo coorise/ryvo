@@ -68,11 +68,7 @@ for file in $(ls -1 "$SEEDS_DIR"/[0-9][0-9]*.sql 2>/dev/null | sort); do
     echo "[ryvo-migrate] apply $version (new)"
   fi
 
-  if [[ "$version" == 045_postgis_catalog_privileges.sql ]]; then
-    psql -h "$PGHOST" -p "$PGPORT" -U supabase_admin -d "$PGDATABASE" -v ON_ERROR_STOP=1 -f "$file"
-  else
-    psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -v ON_ERROR_STOP=1 -f "$file"
-  fi
+  psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -v ON_ERROR_STOP=1 -f "$file"
 
   psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -v ON_ERROR_STOP=1 <<SQL
 INSERT INTO ryvo.schema_migrations (version, checksum, applied_at)

@@ -15,7 +15,9 @@ export SEEDS_DIR="${SEEDS_DIR:-/opt/ryvo/seeds}"
 
 if [ -f /opt/ryvo/migrate-idempotent.sh ]; then
   echo "[ryvo] Running idempotent migrations..."
-  bash /opt/ryvo/migrate-idempotent.sh
+  if ! bash /opt/ryvo/migrate-idempotent.sh; then
+    echo "[ryvo] WARN: migrations failed — starting API gateway anyway (check logs)"
+  fi
 fi
 
 if [ -f /opt/ryvo/bootstrap-users.sh ]; then

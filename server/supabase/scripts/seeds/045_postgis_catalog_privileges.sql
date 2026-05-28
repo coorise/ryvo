@@ -1,5 +1,7 @@
 -- PostGIS catalog objects are owned by supabase_admin with default grants to anon/authenticated.
--- Apply as supabase_admin (see migrate-idempotent.sh).
+-- Run as postgres via migrate-idempotent.sh (SET ROLE avoids a separate supabase_admin password).
+
+SET LOCAL ROLE supabase_admin;
 
 REVOKE ALL ON TABLE public.spatial_ref_sys FROM anon, authenticated, PUBLIC;
 REVOKE ALL ON TABLE public.geography_columns FROM anon, authenticated, PUBLIC;
@@ -23,3 +25,5 @@ BEGIN
     );
   END LOOP;
 END $$;
+
+RESET ROLE;
