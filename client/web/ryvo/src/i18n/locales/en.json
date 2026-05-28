@@ -1283,5 +1283,32 @@
       "lastSeen": "Last seen",
       "status": "Status"
     }
+  },
+  "portal": {
+    "nav": {
+      "overview": "Overview",
+      "liveMap": "Live map",
+      "rides": "Rides",
+      "clients": "Clients",
+      "drivers": "Drivers",
+      "driverKyc": "Driver KYC",
+      "notifications": "Notifications",
+      "chat": "Chat",
+      "messages": "Messages",
+      "chatSupport": "Chat support",
+      "feedbacks": "Feedbacks",
+      "payments": "Payments",
+      "securityLogs": "Security logs",
+      "activityLogs": "Activity logs",
+      "settings": "Settings",
+      "groups": {
+        "main": "Main",
+        "communication": "Communication",
+        "hr": "Human resources",
+        "finances": "Finances",
+        "audits": "Audits",
+        "advanced": "Advanced"
+      }
+    }
   }
 }

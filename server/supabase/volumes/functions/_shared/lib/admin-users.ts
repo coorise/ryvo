@@ -14,6 +14,7 @@ export type AdminUserRow = {
   full_name: string | null;
   phone: string | null;
   username: string | null;
+  custom_fields: Record<string, string>;
 };
 
 export type AdminReviewRow = {
@@ -54,7 +55,7 @@ async function enrichUsers(userIds: string[]) {
 
     const { data: profile } = await db
       .from("user_profiles")
-      .select("banned_at, deleted_at, username")
+      .select("banned_at, deleted_at, username, custom_fields")
       .eq("user_id", id)
       .maybeSingle();
 
@@ -74,9 +75,32 @@ async function enrichUsers(userIds: string[]) {
       full_name: (authUser.user.user_metadata?.full_name as string) ?? null,
       phone: (authUser.user.user_metadata?.phone as string) ?? null,
       username: profile?.username != null ? String(profile.username) : null,
+      custom_fields: normalizeCustomFields(profile?.custom_fields),
     });
   }
   return rows;
+}
+
+function normalizeCustomFields(raw: unknown): Record<string, string> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof k === "string" && k.length > 0 && typeof v === "string") out[k] = v;
+  }
+  return out;
+}
+
+function canUpdateAdminUser(actor: AuthLike, target: AdminUserRow): boolean {
+  const isDriver = target.roles.includes("driver");
+  const isClient =
+    target.roles.includes("client") &&
+    !target.roles.some((r) => r !== "client" && r !== "driver");
+  const isStaff = target.roles.some((r) => r !== "client" && r !== "driver");
+
+  if (isDriver && hasPerm(actor, "drivers:update")) return true;
+  if (isClient && hasPerm(actor, "users:update")) return true;
+  if (isStaff && hasPerm(actor, "staff:update")) return true;
+  return false;
 }
 
 export async function listAdminUsers(opts: {
@@ -187,19 +211,59 @@ export async function createClientUser(
   return enrichUsers([userId]).then((r) => r[0]);
 }
 
+export type UpdateAdminUserInput = {
+  full_name?: string;
+  email?: string;
+  phone?: string;
+  username?: string | null;
+  custom_fields?: Record<string, string>;
+};
+
+export async function updateAdminUser(
+  actor: AuthLike,
+  userId: string,
+  input: UpdateAdminUserInput,
+) {
+  const rows = await enrichUsers([userId]);
+  const target = rows[0];
+  if (!target) throw new Error("NOT_FOUND");
+  if (!canUpdateAdminUser(actor, target)) throw new Error("FORBIDDEN");
+
+  const db = getAdminClient();
+  const meta: Record<string, string> = {};
+  if (input.full_name !== undefined) meta.full_name = input.full_name;
+  if (input.phone !== undefined) meta.phone = input.phone;
+
+  await db.auth.admin.updateUserById(userId, {
+    email: input.email,
+    user_metadata: Object.keys(meta).length > 0 ? meta : undefined,
+  });
+
+  const profilePatch: Record<string, unknown> = { user_id: userId };
+  let hasProfilePatch = false;
+  if (input.username !== undefined) {
+    profilePatch.username = input.username;
+    hasProfilePatch = true;
+  }
+  if (input.custom_fields !== undefined) {
+    profilePatch.custom_fields = normalizeCustomFields(input.custom_fields);
+    hasProfilePatch = true;
+  }
+  if (hasProfilePatch) {
+    await db.from("user_profiles").upsert(profilePatch, { onConflict: "user_id" });
+  }
+
+  await emitAudit(actor.userId, "user.update", "user", userId, input);
+  return enrichUsers([userId]).then((r) => r[0]);
+}
+
+/** @deprecated use updateAdminUser */
 export async function updateClientUser(
   actor: AuthLike,
   userId: string,
   input: { full_name?: string; email?: string },
 ) {
-  if (!hasPerm(actor, "users:update")) throw new Error("FORBIDDEN");
-  const db = getAdminClient();
-  await db.auth.admin.updateUserById(userId, {
-    email: input.email,
-    user_metadata: input.full_name ? { full_name: input.full_name } : undefined,
-  });
-  await emitAudit(actor.userId, "user.update", "user", userId, input);
-  return enrichUsers([userId]).then((r) => r[0]);
+  return updateAdminUser(actor, userId, input);
 }
 
 export async function loadReviewsForUser(userId: string): Promise<AdminReviewRow[]> {

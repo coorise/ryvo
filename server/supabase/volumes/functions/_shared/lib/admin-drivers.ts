@@ -126,6 +126,55 @@ export async function createDriverManual(
   return getDriverDetail(userId);
 }
 
+const STORAGE_BUCKET = "ryvo-storage";
+
+function mimeFromKey(key: string): string {
+  const lower = key.toLowerCase();
+  if (lower.endsWith(".pdf")) return "application/pdf";
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".webp")) return "image/webp";
+  if (lower.endsWith(".gif")) return "image/gif";
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+  return "application/octet-stream";
+}
+
+export async function getDriverDocumentViewUrl(
+  actor: AuthLike,
+  driverId: string,
+  docType: string,
+) {
+  if (
+    !hasPerm(actor, "drivers:kyc:read") &&
+    !hasPerm(actor, "drivers:kyc:verify") &&
+    !hasPerm(actor, "drivers:read")
+  ) {
+    throw new Error("FORBIDDEN");
+  }
+
+  const db = getAdminClient();
+  const { data: doc, error } = await db
+    .from("kyc_documents")
+    .select("s3_key, status")
+    .eq("driver_id", driverId)
+    .eq("doc_type", docType)
+    .maybeSingle();
+  if (error || !doc) throw new Error("NOT_FOUND");
+  if (!doc.s3_key || doc.s3_key.startsWith("pending/")) {
+    throw new Error("NO_FILE");
+  }
+
+  const { data: signed, error: signErr } = await db.storage
+    .from(STORAGE_BUCKET)
+    .createSignedUrl(doc.s3_key, 3600);
+  if (signErr || !signed?.signedUrl) throw new Error(signErr?.message ?? "STORAGE_ERROR");
+
+  return {
+    url: signed.signedUrl,
+    mime_type: mimeFromKey(doc.s3_key),
+    status: doc.status,
+  };
+}
+
 export async function reviewDriverDocument(
   actor: AuthLike,
   driverId: string,
@@ -150,10 +199,13 @@ export async function reviewDriverDocument(
 
   await syncDriverKycStatus(driverId);
 
+  const reason = rejectionReason ?? "Document not valid";
   if (status === "rejected") {
-    await queueNotification(driverId, "in_app", "kyc.document_rejected", {
-      doc_type: docType,
-      reason: rejectionReason ?? "Document not valid",
+    const payload = { doc_type: docType, reason };
+    await queueNotification(driverId, "in_app", "kyc.document_rejected", payload);
+    await queueNotification(driverId, "email", "kyc.document_rejected", {
+      ...payload,
+      subject: "Ryvo-Line — document update required",
     });
   } else {
     await queueNotification(driverId, "in_app", "kyc.document_approved", { doc_type: docType });

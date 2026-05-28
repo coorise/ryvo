@@ -9,8 +9,10 @@ import { useTranslation } from "react-i18next";
 
 import { BrandLogo } from "@/components/ryvo/brand-logo";
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
+import { PortalSidebarNav } from "@/components/layout/portal-sidebar-nav";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ROUTES } from "@/configs";
+import type { PortalArea } from "@/configs/portal-nav";
 import { hasPermission, hasRole } from "@/guards/abac";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -26,11 +28,13 @@ type DashboardShellProps = {
   children: ReactNode;
   title: string;
   subtitle?: string;
-  nav: NavItem[];
+  nav?: NavItem[];
+  /** When set, renders grouped sidebar per draft portal spec (driver/client). */
+  portal?: PortalArea;
   area: "client" | "driver" | "admin";
 };
 
-export function DashboardShell({ children, title, subtitle, nav, area }: DashboardShellProps) {
+export function DashboardShell({ children, title, subtitle, nav = [], portal, area }: DashboardShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, signOut } = useAuth();
@@ -46,6 +50,8 @@ export function DashboardShell({ children, title, subtitle, nav, area }: Dashboa
     return true;
   });
 
+  const usePortalNav = portal === "driver" || portal === "client";
+
   const closeNav = () => setNavOpen(false);
 
   const handleSignOut = () => {
@@ -58,26 +64,30 @@ export function DashboardShell({ children, title, subtitle, nav, area }: Dashboa
       <div className="border-border shrink-0 border-b px-5 py-5">
         <BrandLogo subtitle={`${area} console`} href={ROUTES[area].home} onNavigate={closeNav} />
       </div>
-      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4">
-        {visibleNav.map((item) => {
-          const active = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={closeNav}
-              className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
-                active
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
+      {usePortalNav ? (
+        <PortalSidebarNav area={portal} onNavigate={closeNav} />
+      ) : (
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4">
+          {visibleNav.map((item) => {
+            const active = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={closeNav}
+                className={cn(
+                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
+                  active
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      )}
       <div className="border-border mt-auto shrink-0 border-t p-3">
         <RyvoButton
           intent="danger"

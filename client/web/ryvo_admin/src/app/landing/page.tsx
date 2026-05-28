@@ -63,14 +63,11 @@ export default function LandingPage() {
             <p className="text-muted-foreground max-w-xl text-lg leading-relaxed">{APP_TAGLINE}</p>
             <div className="flex flex-wrap gap-3">
               <RyvoButton intent="cta" size="lg" className="rounded-full" asChild>
-                <Link href={ROUTES.auth.register}>
+                <Link href={ROUTES.auth.login}>
                   <Smartphone className="size-5" />
-                  Get started
+                  Staff sign in
                   <ArrowRight className="size-4" />
                 </Link>
-              </RyvoButton>
-              <RyvoButton intent="signIn" size="lg" className="rounded-full" asChild>
-                <Link href={ROUTES.auth.login}>Sign in</Link>
               </RyvoButton>
             </div>
           </div>
@@ -145,8 +142,8 @@ export default function LandingPage() {
               Flexible hours, transparent earnings, and fast KYC onboarding.
             </p>
           </div>
-          <RyvoButton intent="cta" size="lg" className="rounded-full bg-foreground text-background hover:bg-foreground/90" asChild>
-            <Link href={ROUTES.auth.register}>Apply now</Link>
+          <RyvoButton intent="signIn" size="lg" className="rounded-full" asChild>
+            <Link href={ROUTES.auth.login}>Staff sign in</Link>
           </RyvoButton>
         </div>
       </section>

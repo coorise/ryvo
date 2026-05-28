@@ -6,4 +6,7 @@ export { fail } from "../../../_shared/core/response.ts";
 export { listDrivers } from "../../../_shared/lib/admin-drivers.ts";
 export { getDriverDetail } from "../../../_shared/lib/admin-drivers.ts";
 export { createDriverManual } from "../../../_shared/lib/admin-drivers.ts";
-export { reviewDriverDocument } from "../../../_shared/lib/admin-drivers.ts";
+export {
+  getDriverDocumentViewUrl,
+  reviewDriverDocument,
+} from "../../../_shared/lib/admin-drivers.ts";
