@@ -89,9 +89,8 @@ services:
     depends_on:
       studio:
         condition: service_healthy
-    ports:
-      - ${KONG_HTTP_PORT:-8400}:8000/tcp
-      - ${KONG_HTTPS_PORT:-8443}:8443/tcp
+    # API is published via Caddy in this repo (8400/8500), so Kong doesn't need host ports.
+    # If you need to expose Kong directly (debug), use server/supabase/docker-compose.kong-ports.yaml.
     volumes:
       # https://github.com/supabase/supabase/issues/12661
       - ./volumes/api/kong.yml:/home/kong/temp.yml:ro,z
