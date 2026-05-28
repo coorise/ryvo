@@ -68,16 +68,18 @@ jobs:
 
       - name: Deploy on VPS (dev stack)
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_SSH_PORT || 22 }}
+          envs: DOCKER_USERNAME,DOCKER_TOKEN
           script_stop: true
           script: |
-            bash -lc 'set -euo pipefail
+            set -euo pipefail
             cd ~/Projects/Web/ryvo
             git fetch origin dev && git checkout dev && git pull origin dev
-            export DOCKER_USERNAME="${{ secrets.DOCKER_USERNAME }}"
-            export DOCKER_TOKEN="${{ secrets.DOCKER_TOKEN }}"
-            bash deploy/vps/scripts/deploy-bluegreen.sh dev sha-${{ github.sha }}'
+            bash deploy/vps/scripts/deploy-bluegreen.sh dev sha-${{ github.sha }}

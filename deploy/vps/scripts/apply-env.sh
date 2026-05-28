@@ -72,8 +72,13 @@ fi
 saved_docker_user=""
 saved_docker_token=""
 if [[ -f "$COMPOSE_OUT" ]]; then
-  saved_docker_user="$(grep '^DOCKER_USERNAME=' "$COMPOSE_OUT" 2>/dev/null | cut -d= -f2- | tr -d "'\"" | head -1)"
-  saved_docker_token="$(grep '^DOCKER_TOKEN=' "$COMPOSE_OUT" 2>/dev/null | cut -d= -f2- | tr -d "'\"" | head -1)"
+  # grep exits 1 when missing — do not use bare pipelines with set -o pipefail
+  if grep -q '^DOCKER_USERNAME=' "$COMPOSE_OUT" 2>/dev/null; then
+    saved_docker_user="$(grep '^DOCKER_USERNAME=' "$COMPOSE_OUT" | cut -d= -f2- | tr -d "'\"" | head -1)"
+  fi
+  if grep -q '^DOCKER_TOKEN=' "$COMPOSE_OUT" 2>/dev/null; then
+    saved_docker_token="$(grep '^DOCKER_TOKEN=' "$COMPOSE_OUT" | cut -d= -f2- | tr -d "'\"" | head -1)"
+  fi
 fi
 cp "$COMPOSE_EX" "$COMPOSE_OUT"
 if [[ -n "$saved_docker_user" && "$saved_docker_user" != REPLACE_* ]]; then

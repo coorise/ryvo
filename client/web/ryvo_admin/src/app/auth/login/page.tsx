@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { AuthFormShell } from "@/components/auth/auth-form-shell";
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
 import { ROUTES } from "@/configs";
-import { dashboardPathForUser } from "@/guards/abac";
 import { enrichSessionUser } from "@/guards/enrich-session-user";
 import { authService } from "@/services";
 import { useAuthStore } from "@/stores/auth.store";
@@ -42,7 +41,7 @@ export default function LoginPage() {
         router.push(ROUTES.auth.verifyEmail);
         return;
       }
-      router.push(dashboardPathForUser(enrichedUser));
+      router.push(ROUTES.admin.home);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign in failed";
       toast.error(
