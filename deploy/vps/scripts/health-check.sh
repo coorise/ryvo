@@ -66,9 +66,14 @@ else
   token=$(echo "$resp" | jq -r '.access_token // empty' 2>/dev/null || true)
   if [[ -n "$token" && "$token" != "null" ]]; then
     echo "  OK  admin login (access_token received)"
-    dash_code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 \
-      -H "apikey: $ANON" -H "Authorization: Bearer $token" \
-      "$API_BASE/functions/v1/audit-service/v1/admin/dashboard" || echo "000")
+    dash_code="000"
+    for _ in $(seq 1 12); do
+      dash_code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 \
+        -H "apikey: $ANON" -H "Authorization: Bearer $token" \
+        "$API_BASE/functions/v1/audit-service/v1/admin/dashboard" || echo "000")
+      [[ "$dash_code" == "200" ]] && break
+      sleep 5
+    done
     if [[ "$dash_code" == "200" ]]; then
       echo "  OK  audit dashboard ($dash_code)"
     else

@@ -25,9 +25,6 @@ case "$ENV_NAME" in
     CADDY_SERVICE="caddy_dev"
     ACTIVE_FILE="deploy/vps/.active_color.dev"
     ROUTER_FILE="deploy/vps/compose/functions-router.dev.Caddyfile"
-    ADMIN_PORT="3400"
-    CLIENT_PORT="3500"
-    API_PORT="8500"
     ;;
   prod)
     COMPOSE_FILE="docker-compose.prod.yaml"
@@ -35,13 +32,10 @@ case "$ENV_NAME" in
     CADDY_SERVICE="caddy"
     ACTIVE_FILE="deploy/vps/.active_color.prod"
     ROUTER_FILE="deploy/vps/compose/functions-router.prod.Caddyfile"
-    ADMIN_PORT="3200"
-    CLIENT_PORT="3300"
-    API_PORT="8400"
     ;;
 esac
 
-# Docker Hub: coorise/ryvo-web-admin:sha-<gitsha> (set DOCKER_IMAGE_PREFIX in VPS .env if different)
+# Docker Hub: coorise/ryvo-web-admin:sha-<gitsha>
 export DOCKER_IMAGE_PREFIX="${DOCKER_IMAGE_PREFIX:-coorise}"
 export RYVO_IMAGE_TAG="$IMAGE_TAG"
 
@@ -52,6 +46,12 @@ fi
 echo "==> bluegreen deploy ($ENV_NAME) tag=$RYVO_IMAGE_TAG"
 
 bash deploy/vps/scripts/apply-env.sh "$ENV_NAME"
+
+compose() {
+  local args=(-f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV")
+  [[ -f server/supabase/.env ]] && args+=(--env-file server/supabase/.env)
+  docker compose "${args[@]}" "$@"
+}
 
 if [[ ! -f "$ACTIVE_FILE" ]]; then
   echo "blue" >"$ACTIVE_FILE"
@@ -65,38 +65,38 @@ next="green"
 
 echo "  active=$active next=$next"
 
-docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" config --quiet
+compose config --quiet
 
 echo "==> pull images (tag=$RYVO_IMAGE_TAG)"
-docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" pull \
+compose pull \
   "ryvo-web-admin_${next}_dev" "ryvo-web-client_${next}_dev" "ryvo-functions_${next}_dev" 2>/dev/null || true
-docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" pull \
+compose pull \
   "ryvo-web-admin_${next}" "ryvo-web-client_${next}" "ryvo-functions_${next}" 2>/dev/null || true
 docker pull "${DOCKER_IMAGE_PREFIX}/ryvo-web-admin:${RYVO_IMAGE_TAG}" || true
 docker pull "${DOCKER_IMAGE_PREFIX}/ryvo-web-client:${RYVO_IMAGE_TAG}" || true
 docker pull "${DOCKER_IMAGE_PREFIX}/ryvo-functions:${RYVO_IMAGE_TAG}" || true
 
 echo "==> start base stack (stateful stays single)"
-docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" up -d
+compose up -d
 
 echo "==> run migrations/bootstraps"
-docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" --profile migrate run --rm ryvo-migrate || true
+compose --profile migrate run --rm ryvo-migrate
 
 echo "==> start next color services"
-docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" up -d \
+compose up -d \
   "ryvo-web-admin_${next}_dev" "ryvo-web-client_${next}_dev" "ryvo-functions_${next}_dev" 2>/dev/null || true
-docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" up -d \
+compose up -d \
   "ryvo-web-admin_${next}" "ryvo-web-client_${next}" "ryvo-functions_${next}" 2>/dev/null || true
 
 echo "==> wait for next functions to answer /hello via direct container"
 ok=0
 for _ in $(seq 1 90); do
-  if docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" exec -T "ryvo-functions_${next}_dev" \
+  if compose exec -T "ryvo-functions_${next}_dev" \
     bun -e "fetch('http://127.0.0.1:9000/hello').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" \
     >/dev/null 2>&1; then
     ok=1; break
   fi
-  if docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" exec -T "ryvo-functions_${next}" \
+  if compose exec -T "ryvo-functions_${next}" \
     bun -e "fetch('http://127.0.0.1:9000/hello').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" \
     >/dev/null 2>&1; then
     ok=1; break
@@ -123,10 +123,10 @@ else
 EOF
 fi
 if [[ "$ENV_NAME" == "dev" ]]; then
-  docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" exec -T ryvo-functions-router_dev \
+  compose exec -T ryvo-functions-router_dev \
     caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
 else
-  docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" exec -T ryvo-functions-router \
+  compose exec -T ryvo-functions-router \
     caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
 fi
 
@@ -145,12 +145,12 @@ else
 EOF
 fi
 
-docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" exec -T "$CADDY_SERVICE" \
+compose exec -T "$CADDY_SERVICE" \
   caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
 
-echo "==> health-check after switch"
+echo "==> health-check after switch (allow warm-up)"
+sleep 15
 bash deploy/vps/scripts/health-check.sh "$ENV_NAME"
 
 echo "$next" >"$ACTIVE_FILE"
 echo "==> bluegreen deploy ($ENV_NAME) done (active=$next)"
-

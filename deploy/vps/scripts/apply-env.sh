@@ -70,8 +70,14 @@ if [[ -f "$legacy" && ! -f "$COMPOSE_OUT" ]]; then
   echo "  migrated $legacy -> $COMPOSE_OUT"
 fi
 cp "$COMPOSE_EX" "$COMPOSE_OUT"
-ANON_KEY="$(grep '^ANON_KEY=' server/supabase/.env | cut -d= -f2- | tr -d "'\"")"
-patch_env "$COMPOSE_OUT" NEXT_PUBLIC_SUPABASE_ANON_KEY "$ANON_KEY"
+if [[ -f server/supabase/.env ]]; then
+  for key in ANON_KEY SERVICE_ROLE_KEY JWT_SECRET POSTGRES_PASSWORD POSTGRES_DB SUPABASE_PUBLIC_URL; do
+    val="$(grep "^${key}=" server/supabase/.env | cut -d= -f2- | tr -d "'\"" | head -1)"
+    [[ -n "$val" ]] && patch_env "$COMPOSE_OUT" "$key" "$val"
+  done
+  ANON_KEY="$(grep '^ANON_KEY=' server/supabase/.env | cut -d= -f2- | tr -d "'\"")"
+  patch_env "$COMPOSE_OUT" NEXT_PUBLIC_SUPABASE_ANON_KEY "$ANON_KEY"
+fi
 echo "  wrote $COMPOSE_OUT"
 
 for app in ryvo ryvo_admin; do
