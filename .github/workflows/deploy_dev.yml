@@ -59,7 +59,7 @@ jobs:
           set +e
           ANON_FROM_VPS="$(
             ssh -i ~/.ssh/id_vps -p "${VPS_SSH_PORT}" -o StrictHostKeyChecking=accept-new "${VPS_USER}@${VPS_HOST}" \
-              'bash -lc '"'"'set -euo pipefail;
+              'bash -c '"'"'set -euo pipefail;
                 for p in "$HOME/Projects/Web/ryvo/server/supabase/.env" "$HOME/ryvo/server/supabase/.env" "/opt/ryvo/server/supabase/.env"; do
                   if [ -f "$p" ]; then
                     key="$(grep -E "^ANON_KEY=" "$p" | head -1 | cut -d= -f2- || true)"
