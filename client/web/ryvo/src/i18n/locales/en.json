@@ -6,7 +6,8 @@
       "drivers": "Drivers",
       "safety": "Safety"
     },
-    "goToDashboard": "Go to dashboard"
+    "goToDashboard": "Go to dashboard",
+    "goHome": "Go home"
   },
   "common": {
     "appName": "Ryvo-Line",
@@ -1329,7 +1330,110 @@
       },
       "generalHint": "Language, timezone, and ride preferences for your account.",
       "paymentHint": "Payout methods and billing preferences.",
-      "notificationsHint": "Choose how you receive ride and account alerts."
+      "notificationsHint": "Choose how you receive ride and account alerts.",
+      "openInbox": "Open notification inbox",
+      "language": "Language"
+    },
+    "home": {
+      "open": "Open",
+      "driver": {
+        "subtitle": "Your driver workspace — go online, manage trips, and track earnings.",
+        "liveMapTitle": "Live map",
+        "liveMapDesc": "Set your presence, zone pricing, and incoming requests."
+      },
+      "client": {
+        "subtitle": "Book rides, track trips, and manage your account.",
+        "liveMapTitle": "Find a ride",
+        "liveMapDesc": "Search destinations and request a driver near you."
+      }
+    },
+    "rides": {
+      "subtitle": "Trip history and your active ride.",
+      "activeTrip": "Active trip",
+      "trackOnMap": "Track on map",
+      "historyUnavailable": "Trip history is loading from the platform. Your active trip still appears above when applicable.",
+      "emptyHint": "No trips yet — start from the live map.",
+      "columns": {
+        "when": "When",
+        "route": "Route",
+        "status": "Status"
+      }
+    },
+    "payments": {
+      "subtitle": "Payments linked to your account.",
+      "unavailable": "Payment history is not available for your role yet.",
+      "stats": {
+        "total": "Transactions",
+        "volume": "Succeeded volume",
+        "pending": "Pending"
+      },
+      "filters": {
+        "all": "All",
+        "succeeded": "Succeeded",
+        "pending": "Pending",
+        "failed": "Failed"
+      },
+      "columns": {
+        "date": "Date",
+        "amount": "Amount",
+        "status": "Status"
+      }
+    },
+    "clients": {
+      "subtitle": "Clients you have driven."
+    },
+    "drivers": {
+      "subtitle": "Drivers you have ridden with."
+    },
+    "counterparties": {
+      "unavailable": "Could not load ride partners. Complete a trip to see people here.",
+      "hint": "Profiles open from ride history.",
+      "columns": {
+        "user": "User",
+        "trips": "Trips together"
+      }
+    },
+    "kyc": {
+      "subtitle": "Verification documents for your driver account.",
+      "unavailable": "Could not load KYC status. Contact support if this persists.",
+      "statusLabel": "Verification status",
+      "noDocuments": "No documents on file yet."
+    },
+    "chat": {
+      "subtitle": "Ephemeral chat during an active trip.",
+      "title": "Trip chat",
+      "description": "Messages disappear after pickup.",
+      "empty": "Open the live map when you have an active trip to chat with your match."
+    },
+    "messages": {
+      "subtitle": "Campaign messages you send to clients.",
+      "unavailable": "Message campaigns require driver permissions.",
+      "columns": {
+        "subject": "Message",
+        "status": "Status",
+        "sent": "Updated"
+      }
+    },
+    "support": {
+      "myTickets": "My tickets",
+      "newTicket": "New support ticket",
+      "subjectPlaceholder": "Subject",
+      "messagePlaceholder": "Describe your issue",
+      "replyPlaceholder": "Reply to support",
+      "send": "Send",
+      "create": "Create ticket",
+      "created": "Ticket created"
+    },
+    "liveMap": {
+      "driverSubtitle": "Go online, accept requests, and navigate to passengers.",
+      "clientSubtitle": "Search, request a ride, and track your driver.",
+      "tabs": {
+        "live": "Live",
+        "incoming": "Incoming",
+        "driving": "Driving",
+        "goTo": "Go to",
+        "requesting": "Requesting"
+      }
     }
   }
 }

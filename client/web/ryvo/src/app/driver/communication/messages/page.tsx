@@ -1,5 +1,5 @@
-import { PortalPlaceholder } from "@/components/portal/portal-placeholder";
+import { PortalMessagesView } from "@/components/portal/portal-views";
 
 export default function Page() {
-  return <PortalPlaceholder title="Messages" description="Campaign messages to clients." />;
+  return <PortalMessagesView />;
 }

@@ -1,5 +1,5 @@
-import { PortalPlaceholder } from "@/components/portal/portal-placeholder";
+import { PortalChatSupportView } from "@/components/portal/portal-views";
 
 export default function Page() {
-  return <PortalPlaceholder title="Chat support" />;
+  return <PortalChatSupportView />;
 }

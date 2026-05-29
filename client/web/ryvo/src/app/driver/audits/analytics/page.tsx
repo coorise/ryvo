@@ -1,10 +1,5 @@
-import { PortalPlaceholder } from "@/components/portal/portal-placeholder";
+import { PortalAnalyticsView } from "@/components/portal/portal-views";
 
-export default function DriverAnalyticsPage() {
-  return (
-    <PortalPlaceholder
-      title="Analytics"
-      description="Trip, earnings, and performance metrics for your driver account."
-    />
-  );
+export default function Page() {
+  return <PortalAnalyticsView area="driver" />;
 }

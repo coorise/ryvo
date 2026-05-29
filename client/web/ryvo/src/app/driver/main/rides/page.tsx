@@ -1,5 +1,5 @@
-import { PortalPlaceholder } from "@/components/portal/portal-placeholder";
+import { PortalRidesView } from "@/components/portal/portal-views";
 
 export default function Page() {
-  return <PortalPlaceholder title="Rides" description="Trip history for your account." />;
+  return <PortalRidesView area="driver" />;
 }

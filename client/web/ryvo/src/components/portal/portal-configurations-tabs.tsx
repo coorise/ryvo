@@ -2,11 +2,17 @@
 
 import { useTranslation } from "react-i18next";
 
-import { PortalPlaceholder } from "@/components/portal/portal-placeholder";
+import { PortalSettingsGeneralPanel } from "@/components/portal/portal-settings-general";
+import { PortalSettingsNotificationsPanel } from "@/components/portal/portal-settings-notifications";
+import { PortalSettingsPaymentPanel } from "@/components/portal/portal-settings-payment";
 import { PortalTabShell } from "@/components/portal/portal-tab-shell";
+import type { PortalArea } from "@/configs/portal-nav";
 
-/** User-scoped preferences (General / Payment / Notifications) — not platform admin settings. */
-export function PortalConfigurationsTabs() {
+type PortalConfigurationsTabsProps = {
+  area: PortalArea;
+};
+
+export function PortalConfigurationsTabs({ area }: PortalConfigurationsTabsProps) {
   const { t } = useTranslation();
 
   return (
@@ -16,32 +22,17 @@ export function PortalConfigurationsTabs() {
         {
           id: "general",
           label: t("portal.settings.tabs.general"),
-          content: (
-            <PortalPlaceholder
-              title={t("portal.settings.tabs.general")}
-              description={t("portal.settings.generalHint")}
-            />
-          ),
+          content: <PortalSettingsGeneralPanel />,
         },
         {
           id: "payment",
           label: t("portal.settings.tabs.payment"),
-          content: (
-            <PortalPlaceholder
-              title={t("portal.settings.tabs.payment")}
-              description={t("portal.settings.paymentHint")}
-            />
-          ),
+          content: <PortalSettingsPaymentPanel area={area} />,
         },
         {
           id: "notifications",
           label: t("portal.settings.tabs.notifications"),
-          content: (
-            <PortalPlaceholder
-              title={t("portal.settings.tabs.notifications")}
-              description={t("portal.settings.notificationsHint")}
-            />
-          ),
+          content: <PortalSettingsNotificationsPanel area={area} />,
         },
       ]}
     />

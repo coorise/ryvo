@@ -34,11 +34,18 @@ import { adminService } from "@/services/admin.service";
 type AnalyticsPeriod = "7d" | "30d" | "90d" | "1y";
 type AnalyticsAudience = "all" | "clients" | "drivers";
 
-export function AnalyticsDashboard() {
+type AnalyticsDashboardProps = {
+  /** Lock analytics to driver or client audience (portal dashboards). */
+  lockedAudience?: Extract<AnalyticsAudience, "drivers" | "clients">;
+};
+
+export function AnalyticsDashboard(props: AnalyticsDashboardProps = {}) {
+  const { lockedAudience } = props;
   const { t } = useTranslation();
   const { accessToken } = useAuth();
   const [period, setPeriod] = useState<AnalyticsPeriod>("30d");
-  const [audience, setAudience] = useState<AnalyticsAudience>("all");
+  const [audienceState, setAudience] = useState<AnalyticsAudience>("all");
+  const audience: AnalyticsAudience = lockedAudience ?? audienceState;
   const [volumeChart, setVolumeChart] = useState<ChartKind>("area");
   const [ratingChart, setRatingChart] = useState<ChartKind>("bar");
   const exportRef = useRef<HTMLDivElement>(null);
@@ -103,15 +110,17 @@ export function AnalyticsDashboard() {
               {t(`analytics.period.${p}`)}
             </button>
           ))}
-          <select
-            className="border-border bg-background rounded-xl border px-3 py-1.5 text-xs font-semibold"
-            value={audience}
-            onChange={(e) => setAudience(e.target.value as AnalyticsAudience)}
-          >
-            <option value="all">{t("analytics.audience.all")}</option>
-            <option value="clients">{t("analytics.audience.clients")}</option>
-            <option value="drivers">{t("analytics.audience.drivers")}</option>
-          </select>
+          {!lockedAudience ? (
+            <select
+              className="border-border bg-background rounded-xl border px-3 py-1.5 text-xs font-semibold"
+              value={audience}
+              onChange={(e) => setAudience(e.target.value as AnalyticsAudience)}
+            >
+              <option value="all">{t("analytics.audience.all")}</option>
+              <option value="clients">{t("analytics.audience.clients")}</option>
+              <option value="drivers">{t("analytics.audience.drivers")}</option>
+            </select>
+          ) : null}
         </div>
         <RyvoButton intent="outline" onClick={() => void exportPdf()}>
           <FileDown className="size-4" /> {t("analytics.exportPdf")}

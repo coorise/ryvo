@@ -1,6 +1,7 @@
-import { ArrowRight, BadgeDollarSign, ShieldCheck, Smartphone, Zap } from "lucide-react";
+import { BadgeDollarSign, ShieldCheck, Zap } from "lucide-react";
 import Link from "next/link";
 
+import { LandingHeroActions } from "@/components/landing/landing-hero-actions";
 import { LandingCityGrid } from "@/components/landing/landing-city-grid";
 import { SiteHeader } from "@/components/layout/site-header";
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
@@ -40,6 +41,8 @@ const SAFETY_POINTS = [
   },
 ];
 
+export const dynamic = "force-dynamic";
+
 export default function LandingPage() {
   return (
     <div className="bg-background text-foreground min-h-svh">
@@ -58,15 +61,7 @@ export default function LandingPage() {
               <span className="text-primary">reimagined.</span>
             </h1>
             <p className="text-muted-foreground max-w-xl text-lg leading-relaxed">{APP_TAGLINE}</p>
-            <div className="flex flex-wrap gap-3">
-              <RyvoButton intent="cta" size="lg" className="rounded-full" asChild>
-                <Link href={ROUTES.auth.login}>
-                  <Smartphone className="size-5" />
-                  Staff sign in
-                  <ArrowRight className="size-4" />
-                </Link>
-              </RyvoButton>
-            </div>
+            <LandingHeroActions />
           </div>
           <div className="lg:col-span-5">
             <Card className="border-primary/20 rounded-3xl shadow-xl shadow-primary/10">

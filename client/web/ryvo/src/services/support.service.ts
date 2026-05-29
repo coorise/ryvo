@@ -38,6 +38,13 @@ export class SupportService extends BaseService {
     return this.get<{ tickets: SupportTicket[] }>("/v1/tickets", token);
   }
 
+  createTicket(
+    token: string | null,
+    body: { subject: string; category?: string; trip_id?: string | null },
+  ) {
+    return this.post<{ ticket: SupportTicket }>("/v1/tickets", body, token);
+  }
+
   patchTicket(token: string | null, ticketId: string, body: PatchTicketInput) {
     return this.patch<{ ticket: SupportTicket }>(`/v1/tickets/${ticketId}`, body, token);
   }

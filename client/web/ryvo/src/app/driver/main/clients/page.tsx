@@ -1,5 +1,5 @@
-import { PortalPlaceholder } from "@/components/portal/portal-placeholder";
+import { PortalCounterpartiesView } from "@/components/portal/portal-views";
 
 export default function Page() {
-  return <PortalPlaceholder title="Clients" description="Clients you have driven." />;
+  return <PortalCounterpartiesView area="driver" />;
 }

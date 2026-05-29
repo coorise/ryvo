@@ -40,20 +40,32 @@ function actionCategory(action: string): string {
   return "other";
 }
 
-export function ActivityLogsPanel() {
+type ActivityLogsPanelProps = {
+  variant?: "admin" | "portal";
+};
+
+export function ActivityLogsPanel({ variant = "admin" }: ActivityLogsPanelProps) {
   const { t } = useTranslation();
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   const { hasPermission } = useRbac();
   const [categoryFilter, setCategoryFilter] = useState("all");
   const list = useListControls(SORT_KEYS.createdAt);
+  const isPortal = variant === "portal";
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin", "activity"],
+    queryKey: isPortal ? ["portal", "activity", user?.id] : ["admin", "activity"],
     queryFn: () => auditService.listActivityLogs(accessToken),
-    enabled: Boolean(accessToken) && hasPermission(PERMISSIONS.audit.read),
+    enabled:
+      Boolean(accessToken) && (isPortal || hasPermission(PERMISSIONS.audit.read)),
   });
 
-  const allLogs = data?.logs ?? [];
+  const allLogs = useMemo(() => {
+    const logs = data?.logs ?? [];
+    if (isPortal && user?.id) {
+      return logs.filter((l) => l.actor_id === user.id);
+    }
+    return logs;
+  }, [data?.logs, isPortal, user?.id]);
 
   const stats = useMemo(() => {
     const dayAgo = Date.now() - 24 * 60 * 60 * 1000;

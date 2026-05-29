@@ -1,5 +1,5 @@
-import { PortalPlaceholder } from "@/components/portal/portal-placeholder";
+import { PortalDriverKycView } from "@/components/portal/portal-views";
 
 export default function Page() {
-  return <PortalPlaceholder title="Driver KYC" description="Upload and manage verification documents." />;
+  return <PortalDriverKycView />;
 }
