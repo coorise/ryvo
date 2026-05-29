@@ -56,16 +56,21 @@ jobs:
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_vps
           chmod 600 ~/.ssh/id_vps
 
+          REMOTE_READ_ANON_KEY="$(cat <<'EOF'
+          set -euo pipefail
+          for p in "$HOME/Projects/Web/ryvo/server/supabase/.env" "$HOME/ryvo/server/supabase/.env" "/opt/ryvo/server/supabase/.env"; do
+            if [ -f "$p" ]; then
+              grep -E "^ANON_KEY=" "$p" | head -1 | cut -d= -f2-
+              exit 0
+            fi
+          done
+          echo "ANON_KEY_NOT_FOUND"
+          EOF
+          )"
+
           ANON_FROM_VPS="$(
             ssh -i ~/.ssh/id_vps -p "${VPS_SSH_PORT}" -o StrictHostKeyChecking=accept-new "${VPS_USER}@${VPS_HOST}" \
-              "bash -lc 'set -euo pipefail
-                for d in \"\\$HOME/Projects/Web/ryvo\" \"\\$HOME/ryvo\" /opt/ryvo; do
-                  if [ -f \"\\$d/server/supabase/.env\" ]; then
-                    grep -E \"^ANON_KEY=\" \"\\$d/server/supabase/.env\" | head -1 | cut -d= -f2-
-                    exit 0
-                  fi
-                done
-                echo \"ANON_KEY_NOT_FOUND\"'"
+              "bash -lc $(printf '%q' "$REMOTE_READ_ANON_KEY")"
           )"
 
           if [ -z "${ANON_FROM_VPS:-}" ] || [ "${ANON_FROM_VPS}" = "ANON_KEY_NOT_FOUND" ]; then
