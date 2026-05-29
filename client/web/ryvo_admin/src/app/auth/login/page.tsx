@@ -88,11 +88,8 @@ export default function LoginPage() {
         <RyvoButton intent="signIn" type="submit" className="w-full" disabled={loading}>
           {loading ? "Signing in…" : "Sign in"}
         </RyvoButton>
-        <p className="text-muted-foreground text-center text-sm">
-          No account?{" "}
-          <Link href={ROUTES.auth.register} className="text-primary font-medium hover:underline">
-            Register
-          </Link>
+        <p className="text-muted-foreground text-center text-xs">
+          Accounts are provisioned by your organization. Contact an administrator if you need access.
         </p>
       </form>
     </AuthFormShell>

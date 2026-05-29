@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 
+import { ProfileManageSection } from "@/components/admin/profile-manage-section";
 import { ProfileHeader } from "@/components/admin/profile-header";
 import { PERMISSIONS, PROFILE_VARIANT, QUERY_KEYS, ROUTES } from "@/configs/const";
 import { useAuth } from "@/hooks/use-auth";
@@ -46,6 +47,17 @@ export default function UserProfilePage() {
           updated_at: user.updated_at,
           email_verified: user.email_verified,
           roles: user.roles,
+        }}
+      />
+      <ProfileManageSection
+        userId={userId}
+        canEdit={hasPermission(PERMISSIONS.users.update)}
+        initial={{
+          full_name: user.full_name,
+          email: user.email,
+          phone: user.phone,
+          username: user.username,
+          custom_fields: user.custom_fields ?? {},
         }}
       />
     </div>

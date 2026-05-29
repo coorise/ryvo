@@ -58,7 +58,7 @@ export function SiteHeader() {
             <Link href={ROUTES.auth.login}>Sign in</Link>
           </RyvoButton>
           <RyvoButton intent="cta" size="sm" className="hidden sm:flex" asChild>
-            <Link href={ROUTES.auth.register}>Get started</Link>
+            <Link href={ROUTES.auth.login}>Staff sign in</Link>
           </RyvoButton>
           {isMobile && (
             <button
@@ -90,7 +90,7 @@ export function SiteHeader() {
               <Link href={ROUTES.auth.login}>Sign in</Link>
             </RyvoButton>
             <RyvoButton intent="cta" className="flex-1" asChild>
-              <Link href={ROUTES.auth.register}>Register</Link>
+              <Link href={ROUTES.auth.login}>Staff sign in</Link>
             </RyvoButton>
           </div>
         </nav>

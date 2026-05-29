@@ -283,7 +283,7 @@ services:
 
   ## Edge Functions routes
   - name: functions-v1
-    _comment: 'Edge Functions: /functions/v1/* -> http://functions:9000/*'
+    _comment: 'Ryvo Bun gateway (ryvo-functions-router on ryvo-net; not Supabase Deno edge-runtime)'
     url: http://functions:9000/
     read_timeout: 150000
     routes:

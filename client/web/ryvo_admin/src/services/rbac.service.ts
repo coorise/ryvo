@@ -53,6 +53,7 @@ export type AdminUserRow = {
   full_name: string | null;
   phone: string | null;
   username: string | null;
+  custom_fields: Record<string, string>;
 };
 
 export type AdminReviewRow = {
@@ -143,7 +144,13 @@ export class RbacService extends BaseService {
   updateUser(
     token: string | null,
     userId: string,
-    input: { full_name?: string; email?: string },
+    input: {
+      full_name?: string;
+      email?: string;
+      phone?: string;
+      username?: string | null;
+      custom_fields?: Record<string, string>;
+    },
   ) {
     return apiRequest<{ user: AdminUserRow }>(
       "profile-service",

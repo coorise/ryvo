@@ -219,6 +219,8 @@ export const QUERY_KEYS = {
     staff: ["admin", "users", ADMIN_USER_KIND.staff] as const,
     drivers: ["admin", "drivers"] as const,
     driverDetail: (id: string) => ["admin", "driver", id] as const,
+    driverDocumentView: (driverId: string, docType: string) =>
+      ["admin", "driver", driverId, "document", docType, "view"] as const,
     rbacMatrix: ["rbac", "matrix"] as const,
     rbacMe: ["rbac", "me"] as const,
     dashboard: ["admin", "dashboard"] as const,

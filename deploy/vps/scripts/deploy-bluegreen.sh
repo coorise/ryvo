@@ -78,6 +78,32 @@ docker pull "${DOCKER_IMAGE_PREFIX}/ryvo-functions:${RYVO_IMAGE_TAG}" || true
 echo "==> start base stack (stateful stays single)"
 compose up -d
 
+echo "==> ensure functions router (Kong upstream: http://functions:9000)"
+if [[ "$ENV_NAME" == "dev" ]]; then
+  compose up -d ryvo-functions-router_dev
+else
+  compose up -d ryvo-functions-router
+fi
+
+ensure_kong_resolves_functions() {
+  local i
+  for i in $(seq 1 40); do
+    if compose exec -T kong getent hosts functions >/dev/null 2>&1; then
+      echo "  OK  Kong resolves functions"
+      return 0
+    fi
+    if [[ "$i" -eq 8 ]]; then
+      echo "  WARN Kong cannot resolve functions — recreating kong (attach ryvo-net)"
+      compose up -d --force-recreate kong
+    fi
+    sleep 2
+  done
+  echo "FAIL: Kong still cannot resolve host functions (is ryvo-functions-router running on ryvo-net?)"
+  compose ps ryvo-functions-router_dev ryvo-functions-router kong 2>/dev/null || true
+  return 1
+}
+ensure_kong_resolves_functions
+
 echo "==> run migrations/bootstraps"
 compose --profile migrate run --rm ryvo-migrate
 
@@ -122,11 +148,15 @@ else
 EOF
 fi
 if [[ "$ENV_NAME" == "dev" ]]; then
+  compose up -d ryvo-functions-router_dev
   compose exec -T ryvo-functions-router_dev \
-    caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
+    caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || \
+    compose restart ryvo-functions-router_dev
 else
+  compose up -d ryvo-functions-router
   compose exec -T ryvo-functions-router \
-    caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
+    caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || \
+    compose restart ryvo-functions-router
 fi
 
 write_edge_caddyfile() {
@@ -171,6 +201,27 @@ reload_edge_caddy() {
 }
 
 reload_edge_caddy
+
+echo "==> warm functions services (admin-critical paths)"
+# shellcheck source=/dev/null
+[[ -f "$COMPOSE_ENV" ]] && source "$COMPOSE_ENV"
+ANON_WARM="${ANON_KEY:-}"
+[[ -z "$ANON_WARM" && -f server/supabase/.env ]] && ANON_WARM="$(grep '^ANON_KEY=' server/supabase/.env | cut -d= -f2- | tr -d '"')"
+API_PORT_WARM="${RYVO_API_PORT:-8500}"
+[[ "$ENV_NAME" == "prod" ]] && API_PORT_WARM="${RYVO_API_PORT:-8400}"
+if [[ -n "$ANON_WARM" ]]; then
+  token="$(curl -sf "http://127.0.0.1:${API_PORT_WARM}/auth/v1/token?grant_type=password" \
+    -H "apikey: $ANON_WARM" -H "Content-Type: application/json" \
+    -d '{"email":"admin@ryvo-line.com","password":"Admin@123"}' | jq -r '.access_token // empty' 2>/dev/null || true)"
+  if [[ -n "$token" ]]; then
+    for path in auth-hooks/v1/admin/rbac/me notification-service/v1/inbox audit-service/v1/admin/dashboard; do
+      code="$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 15 \
+        -H "apikey: $ANON_WARM" -H "Authorization: Bearer $token" \
+        "http://127.0.0.1:${API_PORT_WARM}/functions/v1/$path" || echo "000")"
+      echo "  warm $path → HTTP $code"
+    done
+  fi
+fi
 
 echo "==> health-check after switch (allow warm-up)"
 sleep 15

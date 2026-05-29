@@ -2,6 +2,12 @@
 services:
   kong:
     container_name: supabase-kong_dev
+    # Must share ryvo-net with ryvo-functions-router_dev (DNS alias: functions)
+    networks:
+      default:
+        aliases:
+          - api-gw
+      ryvo-net: {}
 
   db:
     container_name: supabase-db_dev

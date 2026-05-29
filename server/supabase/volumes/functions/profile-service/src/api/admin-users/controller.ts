@@ -1,5 +1,5 @@
 import type { RouteDef } from "../../../../_shared/core/router.ts";
-import { z, authLike, createClientUser, createUserSchema, deleteAdminUser, emitAudit, fail, getAdminClient, getAdminUserDetail, hasPerm, listAdminUsers, ok, requireRole, updateClientUser } from "../deps.ts";
+import { z, authLike, createClientUser, createUserSchema, deleteAdminUser, emitAudit, fail, getAdminClient, getAdminUserDetail, hasPerm, listAdminUsers, ok, requireRole, updateAdminUser } from "../deps.ts";
 
 import type { RouteHandler } from "../../../../_shared/core/router.ts";
 import * as service from "./service.ts";
@@ -50,10 +50,13 @@ export const patch_v1_admin_users_user_id: RouteHandler = async (req, ctx, param
         .object({
           full_name: z.string().max(120).optional(),
           email: z.string().email().optional(),
+          phone: z.string().max(40).optional(),
+          username: z.string().max(40).nullable().optional(),
+          custom_fields: z.record(z.string().max(500)).optional(),
         })
         .parse(await req.json());
       try {
-        const user = await updateClientUser(authLike(ctx), params.user_id, body);
+        const user = await updateAdminUser(authLike(ctx), params.user_id, body);
         return ok({ user });
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Update failed";

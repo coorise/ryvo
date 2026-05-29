@@ -8,7 +8,7 @@ export { requireRole } from "../../../_shared/middleware/auth.ts";
 export { emitAudit } from "../../../_shared/lib/events.ts";
 export { listAdminUsers } from "../../../_shared/lib/admin-users.ts";
 export { createClientUser } from "../../../_shared/lib/admin-users.ts";
-export { updateClientUser } from "../../../_shared/lib/admin-users.ts";
+export { updateAdminUser, updateClientUser } from "../../../_shared/lib/admin-users.ts";
 export { getAdminUserDetail } from "../../../_shared/lib/admin-users.ts";
 export { deleteAdminUser } from "../../../_shared/lib/admin-users.ts";
 export { hasPerm } from "../../../_shared/lib/dynamic-rbac.ts";

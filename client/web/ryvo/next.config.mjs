@@ -10,6 +10,20 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  async redirects() {
+    return [
+      {
+        source: "/driver/advanced/settings",
+        destination: "/driver/settings/configurations",
+        permanent: false,
+      },
+      {
+        source: "/client/advanced/settings",
+        destination: "/client/settings/configurations",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

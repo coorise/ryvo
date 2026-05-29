@@ -1283,5 +1283,44 @@
       "lastSeen": "Last seen",
       "status": "Status"
     }
+  },
+  "portal": {
+    "nav": {
+      "overview": "Overview",
+      "liveMap": "Live map",
+      "rides": "Rides",
+      "clients": "Clients",
+      "drivers": "Drivers",
+      "driverKyc": "Driver KYC",
+      "notifications": "Notifications",
+      "chat": "Chat",
+      "messages": "Messages",
+      "chatSupport": "Chat support",
+      "feedbacks": "Feedbacks",
+      "payments": "Payments",
+      "securityLogs": "Security logs",
+      "activityLogs": "Activity logs",
+      "analytics": "Analytics",
+      "profile": "Profile",
+      "configurations": "Configurations",
+      "groups": {
+        "main": "Main",
+        "communication": "Communication",
+        "hr": "Human resources",
+        "finances": "Finances",
+        "audits": "Audits",
+        "settings": "Settings"
+      }
+    },
+    "settings": {
+      "tabs": {
+        "general": "General",
+        "payment": "Payment",
+        "notifications": "Notifications"
+      },
+      "generalHint": "Language, timezone, and ride preferences for your account.",
+      "paymentHint": "Payout methods and billing preferences.",
+      "notificationsHint": "Choose how you receive ride and account alerts."
+    }
   }
 }

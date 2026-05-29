@@ -52,6 +52,13 @@ export class DriversService extends BaseService {
     return this.post<{ driver: DriverDetail }>("/v1/admin/drivers", input, token);
   }
 
+  getDocumentViewUrl(token: string | null, driverId: string, docType: string) {
+    return this.get<{ url: string; mime_type: string; status: string }>(
+      `/v1/admin/drivers/${driverId}/documents/${docType}/view-url`,
+      token,
+    );
+  }
+
   reviewDocument(
     token: string | null,
     driverId: string,

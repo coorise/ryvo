@@ -32,6 +32,14 @@ const serviceLoaders: Record<string, () => Promise<Handler>> = {
 
 const handlerCache = new Map<string, Handler>();
 
+/** Preload admin-critical services so first browser request does not hit a cold import timeout. */
+const WARMUP_SERVICES = [
+  "auth-hooks",
+  "profile-service",
+  "notification-service",
+  "audit-service",
+] as const;
+
 async function resolveHandler(service: string): Promise<Handler | undefined> {
   if (service === "hello") {
     return async () => Response.json("Hello from Ryvo Functions!");
@@ -49,19 +57,39 @@ async function fetch(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const parts = url.pathname.split("/").filter(Boolean);
   const service = parts[0] ?? "";
-  const handler = await resolveHandler(service);
-  if (!handler) {
+  try {
+    const handler = await resolveHandler(service);
+    if (!handler) {
+      return Response.json(
+        { error: { code: "UNKNOWN_SERVICE", message: `Unknown service: ${service}` } },
+        { status: 404 },
+      );
+    }
+    return await handler(req);
+  } catch (e) {
+    console.error(`[ryvo-gateway] ${service} error:`, e);
     return Response.json(
-      { error: { code: "UNKNOWN_SERVICE", message: `Unknown service: ${service}` } },
-      { status: 404 },
+      {
+        error: {
+          code: "SERVICE_UNAVAILABLE",
+          message: e instanceof Error ? e.message : "Service failed to load",
+        },
+      },
+      { status: 503 },
     );
   }
-  return handler(req);
+}
+
+function warmupServices() {
+  void Promise.all(WARMUP_SERVICES.map((s) => resolveHandler(s)))
+    .then(() => console.log(`[ryvo-gateway] warmed ${WARMUP_SERVICES.join(", ")}`))
+    .catch((e) => console.error("[ryvo-gateway] warmup failed", e));
 }
 
 console.log(`[ryvo-gateway] Starting on :${env.port}`);
 Bun.serve({ port: env.port, fetch });
 console.log(`[ryvo-gateway] Listening on :${env.port}`);
+warmupServices();
 
 if (process.env.RYVO_DISABLE_WORKERS !== "1") {
   setTimeout(() => {
