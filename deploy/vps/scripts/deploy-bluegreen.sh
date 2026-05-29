@@ -78,6 +78,32 @@ docker pull "${DOCKER_IMAGE_PREFIX}/ryvo-functions:${RYVO_IMAGE_TAG}" || true
 echo "==> start base stack (stateful stays single)"
 compose up -d
 
+echo "==> ensure functions router (Kong upstream: http://functions:9000)"
+if [[ "$ENV_NAME" == "dev" ]]; then
+  compose up -d ryvo-functions-router_dev
+else
+  compose up -d ryvo-functions-router
+fi
+
+ensure_kong_resolves_functions() {
+  local i
+  for i in $(seq 1 40); do
+    if compose exec -T kong getent hosts functions >/dev/null 2>&1; then
+      echo "  OK  Kong resolves functions"
+      return 0
+    fi
+    if [[ "$i" -eq 8 ]]; then
+      echo "  WARN Kong cannot resolve functions — recreating kong (attach ryvo-net)"
+      compose up -d --force-recreate kong
+    fi
+    sleep 2
+  done
+  echo "FAIL: Kong still cannot resolve host functions (is ryvo-functions-router running on ryvo-net?)"
+  compose ps ryvo-functions-router_dev ryvo-functions-router kong 2>/dev/null || true
+  return 1
+}
+ensure_kong_resolves_functions
+
 echo "==> run migrations/bootstraps"
 compose --profile migrate run --rm ryvo-migrate
 
@@ -122,11 +148,15 @@ else
 EOF
 fi
 if [[ "$ENV_NAME" == "dev" ]]; then
+  compose up -d ryvo-functions-router_dev
   compose exec -T ryvo-functions-router_dev \
-    caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
+    caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || \
+    compose restart ryvo-functions-router_dev
 else
+  compose up -d ryvo-functions-router
   compose exec -T ryvo-functions-router \
-    caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || true
+    caddy reload --config /etc/caddy/Caddyfile 2>/dev/null || \
+    compose restart ryvo-functions-router
 fi
 
 write_edge_caddyfile() {
