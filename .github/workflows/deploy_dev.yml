@@ -97,7 +97,10 @@ jobs:
           envs: DOCKER_USERNAME,DOCKER_TOKEN
           script_stop: true
           script: |
-            set -euo pipefail
-            cd ~/Projects/Web/ryvo
+            bash -lc 'set -euo pipefail
+            for d in "$HOME/Projects/Web/ryvo" "$HOME/ryvo" /opt/ryvo; do
+              [[ -d "$d/.git" ]] && cd "$d" && break
+            done
+            pwd
             git fetch origin dev && git checkout dev && git pull origin dev
-            bash deploy/vps/scripts/deploy-bluegreen.sh dev sha-${{ github.sha }}
+            bash deploy/vps/scripts/deploy-bluegreen.sh dev sha-${{ github.sha }}'
