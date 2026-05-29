@@ -56,10 +56,29 @@ jobs:
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_vps
           chmod 600 ~/.ssh/id_vps
 
+          set +e
           ANON_FROM_VPS="$(
             ssh -i ~/.ssh/id_vps -p "${VPS_SSH_PORT}" -o StrictHostKeyChecking=accept-new "${VPS_USER}@${VPS_HOST}" \
-              'bash -lc '"'"'set -euo pipefail; for p in "$HOME/Projects/Web/ryvo/server/supabase/.env" "$HOME/ryvo/server/supabase/.env" "/opt/ryvo/server/supabase/.env"; do if [ -f "$p" ]; then grep -E "^ANON_KEY=" "$p" | head -1 | cut -d= -f2-; exit 0; fi; done; echo ANON_KEY_NOT_FOUND'"'"''
+              'bash -lc '"'"'set -euo pipefail;
+                for p in "$HOME/Projects/Web/ryvo/server/supabase/.env" "$HOME/ryvo/server/supabase/.env" "/opt/ryvo/server/supabase/.env"; do
+                  if [ -f "$p" ]; then
+                    key="$(grep -E "^ANON_KEY=" "$p" | head -1 | cut -d= -f2- || true)"
+                    if [ -n "$key" ]; then
+                      echo "$key"
+                      exit 0
+                    fi
+                  fi
+                done
+                echo ANON_KEY_NOT_FOUND
+                exit 0'"'"''
           )"
+          ssh_rc=$?
+          set -e
+
+          if [ "$ssh_rc" -ne 0 ]; then
+            echo "::error::SSH to VPS failed while trying to read ANON_KEY (exit $ssh_rc)."
+            exit 1
+          fi
 
           if [ -z "${ANON_FROM_VPS:-}" ] || [ "${ANON_FROM_VPS}" = "ANON_KEY_NOT_FOUND" ]; then
             echo "::error::Could not read ANON_KEY from VPS. Ensure the repo exists on the VPS and server/supabase/.env contains ANON_KEY."
