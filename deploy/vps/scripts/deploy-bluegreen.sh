@@ -6,6 +6,23 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$ROOT"
 
+# These files are rewritten every deploy; discard local edits so git pull in CI never fails.
+reset_vps_generated_config() {
+  local f
+  for f in network/caddy/Caddyfile.dev deploy/vps/compose/functions-router.dev.Caddyfile \
+    deploy/vps/compose/functions-router.prod.Caddyfile; do
+    [[ -f "$f" ]] && git checkout -- "$f" 2>/dev/null || true
+  done
+}
+reset_vps_generated_config
+
+ensure_edge_caddy_template() {
+  if [[ ! -f network/caddy/Caddyfile.dev ]] && [[ -f network/caddy/Caddyfile.dev.example ]]; then
+    cp network/caddy/Caddyfile.dev.example network/caddy/Caddyfile.dev
+  fi
+}
+ensure_edge_caddy_template
+
 ENV_NAME="${1:-}"
 IMAGE_TAG="${2:-}"
 

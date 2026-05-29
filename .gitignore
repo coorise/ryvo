@@ -12,6 +12,11 @@ server/redis/data_dev/
 server/bunqueue/data_dev/
 deploy/vps/compose/.env.dev
 deploy/vps/compose/.env.prod
+# Written on VPS by deploy-bluegreen.sh (blue/green switch)
+network/caddy/Caddyfile.dev
+deploy/vps/compose/functions-router.dev.Caddyfile
+deploy/vps/.active_color.dev
+deploy/vps/.active_color.prod
 server/supabase/home/
 server/kafka/data/
 server/redis/data/
