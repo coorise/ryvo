@@ -6,6 +6,11 @@ on:
       - dev
   workflow_dispatch:
 
+# Avoid overlapping VPS deploys (git pull / blue-green races).
+concurrency:
+  group: deploy-dev-vps
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest

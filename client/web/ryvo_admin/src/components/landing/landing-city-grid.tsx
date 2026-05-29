@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { MapPin } from "lucide-react";
 
 import { LANDING_CITIES } from "@/configs/const";
@@ -24,21 +23,20 @@ export function LandingCityGrid() {
           {LANDING_CITIES.map((city) => (
             <article
               key={city.name}
+              data-ryvo="landing-city-photo"
               className="group border-border relative min-h-[220px] overflow-hidden rounded-3xl border transition hover:border-primary active:scale-[0.98] sm:min-h-[260px]"
             >
               <div className="relative aspect-[4/5] w-full">
-                <Image
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={city.imageUrl}
                   alt={`${city.name}, ${city.province}`}
-                  fill
-                  unoptimized
-                  sizes="(max-width: 768px) 50vw, 25vw"
-                  className="object-cover transition duration-500 group-hover:scale-105"
+                  className="absolute inset-0 size-full object-cover transition duration-500 group-hover:scale-105"
+                  loading="lazy"
                   referrerPolicy="no-referrer"
                   onError={(e) => {
-                    const img = e.currentTarget as HTMLImageElement;
-                    if (!img.src.includes(FALLBACK_CITY_IMAGE)) {
-                      img.src = FALLBACK_CITY_IMAGE;
+                    if (!e.currentTarget.src.includes(FALLBACK_CITY_IMAGE)) {
+                      e.currentTarget.src = FALLBACK_CITY_IMAGE;
                     }
                   }}
                 />

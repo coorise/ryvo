@@ -67,8 +67,13 @@ echo "  active=$active next=$next"
 
 compose config --quiet
 
-echo "==> build web images on VPS (bake NEXT_PUBLIC_* from $COMPOSE_ENV)"
-bash deploy/vps/scripts/build-web-images.sh "$ENV_NAME" "$RYVO_IMAGE_TAG"
+echo "==> web images (tag=$RYVO_IMAGE_TAG)"
+if bash deploy/vps/scripts/pull-web-images.sh "$ENV_NAME" "$RYVO_IMAGE_TAG"; then
+  echo "  using CI-built images from registry"
+else
+  echo "  registry pull failed — building on VPS from git (NEXT_PUBLIC_* from $COMPOSE_ENV)"
+  bash deploy/vps/scripts/build-web-images.sh "$ENV_NAME" "$RYVO_IMAGE_TAG"
+fi
 
 echo "==> pull functions image (tag=$RYVO_IMAGE_TAG)"
 compose pull "ryvo-functions_${next}_dev" 2>/dev/null || true
@@ -107,10 +112,10 @@ ensure_kong_resolves_functions
 echo "==> run migrations/bootstraps"
 compose --profile migrate run --rm ryvo-migrate
 
-echo "==> start next color services"
-compose up -d \
+echo "==> start next color services (force-recreate web)"
+compose up -d --force-recreate \
   "ryvo-web-admin_${next}_dev" "ryvo-web-client_${next}_dev" "ryvo-functions_${next}_dev" 2>/dev/null || true
-compose up -d \
+compose up -d --force-recreate \
   "ryvo-web-admin_${next}" "ryvo-web-client_${next}" "ryvo-functions_${next}" 2>/dev/null || true
 
 echo "==> wait for next functions to answer /hello via direct container"
@@ -225,6 +230,15 @@ if [[ -n "$ANON_WARM" ]]; then
       echo "  warm $path → HTTP $code"
     done
   fi
+fi
+
+echo "==> verify landing bundle (city photo grid)"
+CLIENT_PORT_CHECK="${RYVO_CLIENT_PORT:-3500}"
+[[ "$ENV_NAME" == "prod" ]] && CLIENT_PORT_CHECK="${RYVO_CLIENT_PORT:-3300}"
+if curl -sf "http://127.0.0.1:${CLIENT_PORT_CHECK}/landing" | grep -q 'data-ryvo="landing-city-photo"'; then
+  echo "  OK  landing includes photo city grid"
+else
+  echo "  WARN landing missing photo city grid — web image may be stale (tag=$RYVO_IMAGE_TAG)"
 fi
 
 echo "==> health-check after switch (allow warm-up)"
