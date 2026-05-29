@@ -209,6 +209,10 @@ ANON_WARM="${ANON_KEY:-}"
 [[ -z "$ANON_WARM" && -f server/supabase/.env ]] && ANON_WARM="$(grep '^ANON_KEY=' server/supabase/.env | cut -d= -f2- | tr -d '"')"
 API_PORT_WARM="${RYVO_API_PORT:-8500}"
 [[ "$ENV_NAME" == "prod" ]] && API_PORT_WARM="${RYVO_API_PORT:-8400}"
+pub_code="$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 15 \
+  "http://127.0.0.1:${API_PORT_WARM}/functions/v1/profile-service/v1/settings/public" || echo "000")"
+echo "  warm profile-service/v1/settings/public → HTTP $pub_code"
+
 if [[ -n "$ANON_WARM" ]]; then
   token="$(curl -sf "http://127.0.0.1:${API_PORT_WARM}/auth/v1/token?grant_type=password" \
     -H "apikey: $ANON_WARM" -H "Content-Type: application/json" \

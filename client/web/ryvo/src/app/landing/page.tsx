@@ -1,17 +1,10 @@
-import {
-  ArrowRight,
-  BadgeDollarSign,
-  MapPin,
-  ShieldCheck,
-  Smartphone,
-  Zap,
-} from "lucide-react";
+import { ArrowRight, BadgeDollarSign, ShieldCheck, Smartphone, Zap } from "lucide-react";
 import Link from "next/link";
 
+import { LandingCityGrid } from "@/components/landing/landing-city-grid";
 import { SiteHeader } from "@/components/layout/site-header";
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
 import { APP_TAGLINE, ROUTES } from "@/configs";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const FEATURES = [
@@ -32,15 +25,19 @@ const FEATURES = [
   },
 ];
 
-const CITIES = [
-  { name: "Montréal", drivers: 2840, status: "live" as const },
-  { name: "Toronto", drivers: 4120, status: "live" as const },
-  { name: "Vancouver", drivers: 1980, status: "live" as const },
-  { name: "Québec", drivers: 740, status: "live" as const },
-  { name: "Ottawa", drivers: 880, status: "live" as const },
-  { name: "Calgary", drivers: 1240, status: "live" as const },
-  { name: "Halifax", drivers: 410, status: "live" as const },
-  { name: "Sherbrooke", drivers: 220, status: "soon" as const },
+const SAFETY_POINTS = [
+  {
+    title: "Verified drivers",
+    description: "KYC and document checks before anyone can accept rides on the platform.",
+  },
+  {
+    title: "Live trip tracking",
+    description: "Share your route in real time with trusted contacts when you travel.",
+  },
+  {
+    title: "24/7 support",
+    description: "In-app chat with our team for billing, safety, or account issues.",
+  },
 ];
 
 export default function LandingPage() {
@@ -109,27 +106,19 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="cities" className="bg-muted/30 border-border border-t py-16">
+      <LandingCityGrid />
+
+      <section id="safety" className="border-border border-t py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <p className="text-primary text-xs font-bold tracking-[0.2em] uppercase">Canadian presence</p>
-          <h2 className="mt-2 text-3xl font-bold tracking-tight">12 cities · 14,000+ drivers</h2>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {CITIES.map((c) => (
-              <Card key={c.name} className="overflow-hidden rounded-2xl">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="font-semibold">{c.name}</p>
-                      <p className="text-muted-foreground flex items-center gap-1 text-xs">
-                        <MapPin className="size-3" />
-                        {c.drivers.toLocaleString()} drivers
-                      </p>
-                    </div>
-                    <Badge variant={c.status === "live" ? "default" : "secondary"}>
-                      {c.status === "live" ? "Live" : "Soon"}
-                    </Badge>
-                  </div>
-                </CardContent>
+          <p className="text-primary text-xs font-bold tracking-[0.2em] uppercase">Safety</p>
+          <h2 className="mt-2 text-3xl font-bold tracking-tight">Built for peace of mind</h2>
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
+            {SAFETY_POINTS.map((item) => (
+              <Card key={item.title} className="border-border/80 rounded-3xl">
+                <CardHeader>
+                  <CardTitle className="text-lg">{item.title}</CardTitle>
+                  <CardDescription>{item.description}</CardDescription>
+                </CardHeader>
               </Card>
             ))}
           </div>

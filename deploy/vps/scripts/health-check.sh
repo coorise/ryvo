@@ -56,6 +56,7 @@ check "admin web" "$ADMIN_URL/" "200"
 check "client web" "$CLIENT_URL/" "200"
 check "auth health" "$API_BASE/auth/v1/health" "401"
 check "functions gateway" "$API_BASE/functions/v1/hello" "200"
+check "settings public" "$API_BASE/functions/v1/profile-service/v1/settings/public" "200"
 
 if [[ -z "$ANON" ]]; then
   echo "  SKIP login (ANON_KEY missing)"

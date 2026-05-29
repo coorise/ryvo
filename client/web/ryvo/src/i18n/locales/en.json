@@ -1,4 +1,13 @@
 {
+  "landing": {
+    "nav": {
+      "features": "Features",
+      "cities": "Cities",
+      "drivers": "Drivers",
+      "safety": "Safety"
+    },
+    "goToDashboard": "Go to dashboard"
+  },
   "common": {
     "appName": "Ryvo-Line",
     "tagline": "Ride smarter",

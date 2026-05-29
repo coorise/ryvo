@@ -7,8 +7,8 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { BrandLogo } from "@/components/ryvo/brand-logo";
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
+import { PortalSidebarBrand } from "@/components/layout/portal-sidebar-brand";
 import { PortalSidebarNav } from "@/components/layout/portal-sidebar-nav";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { ROUTES } from "@/configs";
@@ -62,7 +62,7 @@ export function DashboardShell({ children, title, subtitle, nav = [], portal, ar
   const navBody = (
     <>
       <div className="border-border shrink-0 border-b px-5 py-5">
-        <BrandLogo subtitle={`${area} console`} href={ROUTES[area].home} onNavigate={closeNav} />
+        <PortalSidebarBrand area={portal ?? (area === "driver" ? "driver" : "client")} onNavigate={closeNav} />
       </div>
       {usePortalNav ? (
         <PortalSidebarNav area={portal} onNavigate={closeNav} />

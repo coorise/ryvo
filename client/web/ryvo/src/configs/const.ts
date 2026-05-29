@@ -403,6 +403,109 @@ export const DATE_LOCALE_MAP: Record<string, string> = {
   zh: "zh-CN",
 };
 
+export type LandingCity = {
+  name: string;
+  province: string;
+  imageUrl: string;
+  drivers: number;
+  status: "live" | "soon";
+};
+
+/** Landing page city cards (from product template). */
+export const LANDING_CITIES: LandingCity[] = [
+  {
+    name: "Montréal",
+    province: "Québec",
+    imageUrl: "https://images.unsplash.com/photo-1519178614-68673b201f36?w=600&q=80",
+    drivers: 2840,
+    status: "live",
+  },
+  {
+    name: "Toronto",
+    province: "Ontario",
+    imageUrl: "https://images.unsplash.com/photo-1517090504586-fde19ea6066f?w=600&q=80",
+    drivers: 4120,
+    status: "live",
+  },
+  {
+    name: "Vancouver",
+    province: "B.C.",
+    imageUrl: "https://images.unsplash.com/photo-1559511260-66a654ae982a?w=600&q=80",
+    drivers: 1980,
+    status: "live",
+  },
+  {
+    name: "Québec",
+    province: "Québec",
+    imageUrl: "https://images.unsplash.com/photo-1519832979-6fa011b87667?w=600&q=80",
+    drivers: 740,
+    status: "live",
+  },
+  {
+    name: "Ottawa",
+    province: "Ontario",
+    imageUrl: "https://images.unsplash.com/photo-1565876427310-71a4500ea814?w=600&q=80",
+    drivers: 880,
+    status: "live",
+  },
+  {
+    name: "Calgary",
+    province: "Alberta",
+    imageUrl: "https://images.unsplash.com/photo-1558584673-c834fb1cc3ca?w=600&q=80",
+    drivers: 1240,
+    status: "live",
+  },
+  {
+    name: "Edmonton",
+    province: "Alberta",
+    imageUrl: "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=600&q=80",
+    drivers: 920,
+    status: "live",
+  },
+  {
+    name: "Winnipeg",
+    province: "Manitoba",
+    imageUrl: "https://images.unsplash.com/photo-1593691509543-c55fb32e3b1b?w=600&q=80",
+    drivers: 540,
+    status: "live",
+  },
+  {
+    name: "Halifax",
+    province: "N.S.",
+    imageUrl: "https://images.unsplash.com/photo-1569696251872-5dcf39dcc60e?w=600&q=80",
+    drivers: 410,
+    status: "live",
+  },
+  {
+    name: "Gatineau",
+    province: "Québec",
+    imageUrl: "https://images.unsplash.com/photo-1606298855672-3efb63017be8?w=600&q=80",
+    drivers: 320,
+    status: "live",
+  },
+  {
+    name: "Sherbrooke",
+    province: "Québec",
+    imageUrl: "https://images.unsplash.com/photo-1565717893783-32932d82e11e?w=600&q=80",
+    drivers: 220,
+    status: "soon",
+  },
+  {
+    name: "Trois-Rivières",
+    province: "Québec",
+    imageUrl: "https://images.unsplash.com/photo-1514905552197-0610a4d8fd73?w=600&q=80",
+    drivers: 180,
+    status: "soon",
+  },
+];
+
+export const LANDING_NAV_LINKS = [
+  { labelKey: "landing.nav.features", href: "#features" },
+  { labelKey: "landing.nav.cities", href: "#cities" },
+  { labelKey: "landing.nav.drivers", href: "#drivers" },
+  { labelKey: "landing.nav.safety", href: "#safety" },
+] as const;
+
 export const DATE_FORMAT = {
   locale: "en-CA",
   options: {
