@@ -29,19 +29,62 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Validate web build env
+      - name: Resolve DEV_SUPABASE_ANON_KEY (secret or VPS fallback)
         env:
-          ANON: ${{ secrets.DEV_SUPABASE_ANON_KEY }}
+          ANON_FROM_SECRET: ${{ secrets.DEV_SUPABASE_ANON_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT || 22 }}
         run: |
-          if [ -z "$ANON" ]; then
-            echo "::error::GitHub secret DEV_SUPABASE_ANON_KEY is not set. Add it in repo Settings → Secrets (value = ANON_KEY from server/supabase/.env). VPS deploy builds web images locally; CI still needs this for registry images."
+          set -euo pipefail
+
+          if [ -n "${ANON_FROM_SECRET:-}" ]; then
+            echo "::notice::Using DEV_SUPABASE_ANON_KEY from GitHub secrets."
+            echo "DEV_SUPABASE_ANON_KEY=${ANON_FROM_SECRET}" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          echo "::warning::DEV_SUPABASE_ANON_KEY secret is not set. Falling back to reading ANON_KEY from the VPS over SSH."
+
+          if [ -z "${VPS_HOST:-}" ] || [ -z "${VPS_USER:-}" ] || [ -z "${VPS_SSH_KEY:-}" ]; then
+            echo "::error::VPS fallback requires VPS_HOST, VPS_USER, and VPS_SSH_KEY secrets to be set."
             exit 1
           fi
 
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_vps
+          chmod 600 ~/.ssh/id_vps
+
+          ANON_FROM_VPS="$(
+            ssh -i ~/.ssh/id_vps -p "${VPS_SSH_PORT}" -o StrictHostKeyChecking=accept-new "${VPS_USER}@${VPS_HOST}" \
+              'set -euo pipefail
+               for d in "$HOME/Projects/Web/ryvo" "$HOME/ryvo" /opt/ryvo; do
+                 if [[ -f "$d/server/supabase/.env" ]]; then
+                   grep -E "^ANON_KEY=" "$d/server/supabase/.env" | head -1 | cut -d= -f2-
+                   exit 0
+                 fi
+               done
+               echo "ANON_KEY_NOT_FOUND"'
+          )"
+
+          if [ -z "${ANON_FROM_VPS:-}" ] || [ "${ANON_FROM_VPS}" = "ANON_KEY_NOT_FOUND" ]; then
+            echo "::error::Could not read ANON_KEY from VPS. Ensure the repo exists on the VPS and server/supabase/.env contains ANON_KEY."
+            exit 1
+          fi
+
+          echo "::add-mask::${ANON_FROM_VPS}"
+          echo "DEV_SUPABASE_ANON_KEY=${ANON_FROM_VPS}" >> "$GITHUB_ENV"
+          echo "::notice::Resolved DEV_SUPABASE_ANON_KEY from VPS."
+
       - name: Write .env.production for Next.js Docker build
-        env:
-          ANON: ${{ secrets.DEV_SUPABASE_ANON_KEY }}
         run: |
+          set -euo pipefail
+          ANON="${DEV_SUPABASE_ANON_KEY:-}"
+          if [ -z "$ANON" ]; then
+            echo "::error::DEV_SUPABASE_ANON_KEY not resolved (secret missing + VPS fallback failed)."
+            exit 1
+          fi
           for app in client/web/ryvo_admin client/web/ryvo; do
             {
               echo "NEXT_PUBLIC_SUPABASE_URL=https://ryvo-line-server.dev.agglomy.com"
@@ -59,7 +102,7 @@ jobs:
           push: true
           build-args: |
             NEXT_PUBLIC_SUPABASE_URL=https://ryvo-line-server.dev.agglomy.com
-            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.DEV_SUPABASE_ANON_KEY }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ env.DEV_SUPABASE_ANON_KEY }}
             NEXT_PUBLIC_FUNCTIONS_URL=https://ryvo-line-server.dev.agglomy.com/functions/v1
             NEXT_PUBLIC_APP_ENV=development
           tags: |
@@ -76,7 +119,7 @@ jobs:
           push: true
           build-args: |
             NEXT_PUBLIC_SUPABASE_URL=https://ryvo-line-server.dev.agglomy.com
-            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.DEV_SUPABASE_ANON_KEY }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ env.DEV_SUPABASE_ANON_KEY }}
             NEXT_PUBLIC_FUNCTIONS_URL=https://ryvo-line-server.dev.agglomy.com/functions/v1
             NEXT_PUBLIC_APP_ENV=development
           tags: |
