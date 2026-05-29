@@ -202,6 +202,27 @@ reload_edge_caddy() {
 
 reload_edge_caddy
 
+echo "==> warm functions services (admin-critical paths)"
+# shellcheck source=/dev/null
+[[ -f "$COMPOSE_ENV" ]] && source "$COMPOSE_ENV"
+ANON_WARM="${ANON_KEY:-}"
+[[ -z "$ANON_WARM" && -f server/supabase/.env ]] && ANON_WARM="$(grep '^ANON_KEY=' server/supabase/.env | cut -d= -f2- | tr -d '"')"
+API_PORT_WARM="${RYVO_API_PORT:-8500}"
+[[ "$ENV_NAME" == "prod" ]] && API_PORT_WARM="${RYVO_API_PORT:-8400}"
+if [[ -n "$ANON_WARM" ]]; then
+  token="$(curl -sf "http://127.0.0.1:${API_PORT_WARM}/auth/v1/token?grant_type=password" \
+    -H "apikey: $ANON_WARM" -H "Content-Type: application/json" \
+    -d '{"email":"admin@ryvo-line.com","password":"Admin@123"}' | jq -r '.access_token // empty' 2>/dev/null || true)"
+  if [[ -n "$token" ]]; then
+    for path in auth-hooks/v1/admin/rbac/me notification-service/v1/inbox audit-service/v1/admin/dashboard; do
+      code="$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 15 \
+        -H "apikey: $ANON_WARM" -H "Authorization: Bearer $token" \
+        "http://127.0.0.1:${API_PORT_WARM}/functions/v1/$path" || echo "000")"
+      echo "  warm $path → HTTP $code"
+    done
+  fi
+fi
+
 echo "==> health-check after switch (allow warm-up)"
 sleep 15
 if ! bash deploy/vps/scripts/health-check.sh "$ENV_NAME"; then

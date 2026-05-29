@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
+import { gatewayRetryDelay, retryGatewayUnavailable } from "@/lib/query-retry";
 import { rbacService } from "@/services/rbac.service";
 import { useAuth } from "./use-auth";
 
@@ -13,6 +14,8 @@ export function useRbac() {
     queryFn: () => rbacService.getMe(accessToken),
     enabled: isReady && Boolean(accessToken),
     staleTime: 60_000,
+    retry: retryGatewayUnavailable,
+    retryDelay: gatewayRetryDelay,
   });
 
   const permissions = me.data?.permissions ?? user?.permissions ?? [];

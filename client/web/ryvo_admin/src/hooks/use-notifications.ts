@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { gatewayRetryDelay, retryGatewayUnavailable } from "@/lib/query-retry";
 import { notificationService } from "@/services/notification.service";
 import { useAuth } from "./use-auth";
 
@@ -14,6 +15,8 @@ export function useNotifications() {
     queryFn: () => notificationService.getInbox(accessToken),
     enabled: isReady && Boolean(accessToken),
     refetchInterval: 45_000,
+    retry: retryGatewayUnavailable,
+    retryDelay: gatewayRetryDelay,
   });
 
   const markRead = useMutation({
