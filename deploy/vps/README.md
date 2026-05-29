@@ -66,4 +66,21 @@ Each Next.js container listens on **3000 inside its own network namespace** (adm
 
 After pulling, clear stale Next cache: `rm -rf client/web/ryvo/.next client/web/ryvo_admin/.next`.
 
+## Next.js env for Docker builds
+
+`next build` runs with `NODE_ENV=production`, so Next.js loads **`client/web/*/.env.production`**, not `.env`, `.env.dev`, or `.env.local`. `NEXT_PUBLIC_*` values are **inlined at build time** into the JS bundle ([docs](https://nextjs.org/docs/pages/guides/environment-variables)).
+
+Before any web image build on the VPS or locally:
+
+```bash
+bash deploy/vps/scripts/apply-env.sh dev    # fills compose/.env.dev from server/supabase/.env
+bash deploy/vps/scripts/write-web-env-production.sh dev
+```
+
+`deploy-bluegreen.sh` calls `build-web-images.sh`, which runs `write-web-env-production.sh` automatically.
+
+For CI, set GitHub secret **`DEV_SUPABASE_ANON_KEY`** to the `ANON_KEY` from `server/supabase/.env`.
+
+Local only: `bash scripts/ensure-env.sh` writes `.env.local` and `.env.production` for localhost URLs.
+
 Test account: `admin@ryvo-line.com` / `Admin@123`

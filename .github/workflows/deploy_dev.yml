@@ -34,8 +34,22 @@ jobs:
           ANON: ${{ secrets.DEV_SUPABASE_ANON_KEY }}
         run: |
           if [ -z "$ANON" ]; then
-            echo "::warning::DEV_SUPABASE_ANON_KEY not set — CI web images will lack the anon key; VPS deploy rebuilds web images from server/supabase/.env"
+            echo "::error::GitHub secret DEV_SUPABASE_ANON_KEY is not set. Add it in repo Settings → Secrets (value = ANON_KEY from server/supabase/.env). VPS deploy builds web images locally; CI still needs this for registry images."
+            exit 1
           fi
+
+      - name: Write .env.production for Next.js Docker build
+        env:
+          ANON: ${{ secrets.DEV_SUPABASE_ANON_KEY }}
+        run: |
+          for app in client/web/ryvo_admin client/web/ryvo; do
+            {
+              echo "NEXT_PUBLIC_SUPABASE_URL=https://ryvo-line-server.dev.agglomy.com"
+              echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON}"
+              echo "NEXT_PUBLIC_FUNCTIONS_URL=https://ryvo-line-server.dev.agglomy.com/functions/v1"
+              echo "NEXT_PUBLIC_APP_ENV=development"
+            } > "$app/.env.production"
+          done
 
       - name: Build + push web admin image
         uses: docker/build-push-action@v6

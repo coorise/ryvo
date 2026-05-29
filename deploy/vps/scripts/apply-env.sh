@@ -111,4 +111,8 @@ for app in ryvo ryvo_admin; do
   fi
 done
 
+if [[ -f server/supabase/.env ]]; then
+  bash deploy/vps/scripts/write-web-env-production.sh "$ENV_NAME"
+fi
+
 echo "==> done"

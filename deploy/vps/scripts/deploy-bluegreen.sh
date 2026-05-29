@@ -85,12 +85,9 @@ echo "  active=$active next=$next"
 compose config --quiet
 
 echo "==> web images (tag=$RYVO_IMAGE_TAG)"
-if bash deploy/vps/scripts/pull-web-images.sh "$ENV_NAME" "$RYVO_IMAGE_TAG"; then
-  echo "  using CI-built images from registry"
-else
-  echo "  registry pull failed — building on VPS from git (NEXT_PUBLIC_* from $COMPOSE_ENV)"
-  bash deploy/vps/scripts/build-web-images.sh "$ENV_NAME" "$RYVO_IMAGE_TAG"
-fi
+# Always build on VPS: Next.js inlines NEXT_PUBLIC_* at build time from .env.production.
+# CI images are skipped when DEV_SUPABASE_ANON_KEY is unset on GitHub (empty anon in bundle).
+bash deploy/vps/scripts/build-web-images.sh "$ENV_NAME" "$RYVO_IMAGE_TAG"
 
 echo "==> pull functions image (tag=$RYVO_IMAGE_TAG)"
 compose pull "ryvo-functions_${next}_dev" 2>/dev/null || true

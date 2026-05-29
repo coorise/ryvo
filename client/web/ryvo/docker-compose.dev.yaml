@@ -1,4 +1,5 @@
 # Ryvo customer web (dev VPS) — service suffix _dev
+# Before build: bash deploy/vps/scripts/write-web-env-production.sh dev
 services:
   ryvo-web-client_dev:
     build:

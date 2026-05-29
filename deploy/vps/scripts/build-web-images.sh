@@ -14,31 +14,16 @@ if [[ "$ENV_NAME" != "dev" && "$ENV_NAME" != "prod" ]]; then
   exit 1
 fi
 
-COMPOSE_ENV="deploy/vps/compose/.env.${ENV_NAME}"
-[[ -f "$COMPOSE_ENV" ]] || { echo "Missing $COMPOSE_ENV — run apply-env.sh first"; exit 1; }
+bash deploy/vps/scripts/write-web-env-production.sh "$ENV_NAME"
 
 # shellcheck source=/dev/null
-set -a
-source "$COMPOSE_ENV"
-set +a
+source "deploy/vps/compose/.env.${ENV_NAME}"
 
 PREFIX="${DOCKER_IMAGE_PREFIX:-coorise}"
 URL="${NEXT_PUBLIC_SUPABASE_URL:-}"
 FUN="${NEXT_PUBLIC_FUNCTIONS_URL:-}"
-ANON="${NEXT_PUBLIC_SUPABASE_ANON_KEY:-${ANON_KEY:-}}"
+ANON="${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}"
 APP_ENV="${NEXT_PUBLIC_APP_ENV:-development}"
-
-if [[ -z "$URL" ]]; then
-  echo "NEXT_PUBLIC_SUPABASE_URL missing in $COMPOSE_ENV"
-  exit 1
-fi
-if [[ -z "$FUN" ]]; then
-  FUN="${URL%/}/functions/v1"
-fi
-if [[ -z "$ANON" || "$ANON" == REPLACE_* ]]; then
-  echo "NEXT_PUBLIC_SUPABASE_ANON_KEY missing in $COMPOSE_ENV (run apply-env.sh after server/supabase/.env has ANON_KEY)"
-  exit 1
-fi
 
 build_one() {
   local app_dir="$1" image_name="$2"
