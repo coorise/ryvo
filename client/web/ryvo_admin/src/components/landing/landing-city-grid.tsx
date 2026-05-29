@@ -55,7 +55,7 @@ export function LandingCityGrid() {
                     {city.status === "live" ? "Live" : "Soon"}
                   </Badge>
                 </div>
-                <div className="absolute right-4 bottom-4 left-4 z-10 text-white">
+                <div className="absolute inset-x-0 bottom-0 z-10 p-4 pt-16 text-white">
                   <p className="text-lg font-bold drop-shadow-sm">{city.name}</p>
                   <p className="text-xs opacity-90">{city.province}</p>
                   <p className="mt-1 flex items-center gap-1 text-xs opacity-90">

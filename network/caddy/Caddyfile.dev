@@ -3,11 +3,11 @@
 # Upstreams are switched by deploy/vps/scripts/deploy-bluegreen.sh (blue | green).
 
 :3400 {
-	reverse_proxy ryvo-web-admin_green_dev:3000
+	reverse_proxy ryvo-web-admin_blue_dev:3000
 }
 
 :3500 {
-	reverse_proxy ryvo-web-client_green_dev:3000
+	reverse_proxy ryvo-web-client_blue_dev:3000
 }
 
 :8500 {
