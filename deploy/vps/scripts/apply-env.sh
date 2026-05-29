@@ -106,8 +106,14 @@ echo "  wrote $COMPOSE_OUT"
 for app in ryvo ryvo_admin; do
   ctpl="${VPS}/client/web/${app}/env.${ENV_NAME}.example"
   if [[ -f "$ctpl" ]]; then
-    apply_template "$ctpl" "client/web/${app}/.env.local"
-    patch_env "$COMPOSE_OUT" "NEXT_PUBLIC_SUPABASE_URL" "$(grep '^NEXT_PUBLIC_SUPABASE_URL=' "client/web/${app}/.env.local" | cut -d= -f2-)"
+    local_env="client/web/${app}/.env.local"
+    apply_template "$ctpl" "$local_env"
+    patch_env "$COMPOSE_OUT" "NEXT_PUBLIC_SUPABASE_URL" "$(grep '^NEXT_PUBLIC_SUPABASE_URL=' "$local_env" | cut -d= -f2-)"
+    if [[ -f server/supabase/.env ]]; then
+      ANON_KEY="$(grep '^ANON_KEY=' server/supabase/.env | cut -d= -f2- | tr -d "'\"")"
+      patch_env "$local_env" "NEXT_PUBLIC_SUPABASE_ANON_KEY" "$ANON_KEY"
+      patch_env "$local_env" "NEXT_PUBLIC_FUNCTIONS_URL" "$(grep '^NEXT_PUBLIC_FUNCTIONS_URL=' "$COMPOSE_OUT" | cut -d= -f2-)"
+    fi
   fi
 done
 
