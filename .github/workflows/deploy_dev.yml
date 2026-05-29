@@ -58,14 +58,14 @@ jobs:
 
           ANON_FROM_VPS="$(
             ssh -i ~/.ssh/id_vps -p "${VPS_SSH_PORT}" -o StrictHostKeyChecking=accept-new "${VPS_USER}@${VPS_HOST}" \
-              'set -euo pipefail
-               for d in "$HOME/Projects/Web/ryvo" "$HOME/ryvo" /opt/ryvo; do
-                 if [[ -f "$d/server/supabase/.env" ]]; then
-                   grep -E "^ANON_KEY=" "$d/server/supabase/.env" | head -1 | cut -d= -f2-
-                   exit 0
-                 fi
-               done
-               echo "ANON_KEY_NOT_FOUND"'
+              "bash -lc 'set -euo pipefail
+                for d in \"\\$HOME/Projects/Web/ryvo\" \"\\$HOME/ryvo\" /opt/ryvo; do
+                  if [ -f \"\\$d/server/supabase/.env\" ]; then
+                    grep -E \"^ANON_KEY=\" \"\\$d/server/supabase/.env\" | head -1 | cut -d= -f2-
+                    exit 0
+                  fi
+                done
+                echo \"ANON_KEY_NOT_FOUND\"'"
           )"
 
           if [ -z "${ANON_FROM_VPS:-}" ] || [ "${ANON_FROM_VPS}" = "ANON_KEY_NOT_FOUND" ]; then
