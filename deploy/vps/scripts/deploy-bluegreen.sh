@@ -84,19 +84,17 @@ echo "  active=$active next=$next"
 
 compose config --quiet
 
-echo "==> web images (tag=$RYVO_IMAGE_TAG)"
-# Prefer CI-built images (full context on GitHub). Fall back to VPS build if pull fails.
-if bash deploy/vps/scripts/pull-web-images.sh "$ENV_NAME" "$RYVO_IMAGE_TAG"; then
-  echo "  using CI-built web images from Docker Hub"
+echo "==> deploy images (tag=$RYVO_IMAGE_TAG)"
+# Pull CI-built images (web + functions with SQL seeds). Fall back to VPS web build if pull fails.
+if bash deploy/vps/scripts/pull-deploy-images.sh "$ENV_NAME" "$RYVO_IMAGE_TAG"; then
+  echo "  using CI-built images from Docker Hub"
 else
-  echo "  WARN pull failed — building web images on VPS (tag=$RYVO_IMAGE_TAG)"
+  echo "  WARN CI image pull incomplete — building web images on VPS (tag=$RYVO_IMAGE_TAG)"
   bash deploy/vps/scripts/build-web-images.sh "$ENV_NAME" "$RYVO_IMAGE_TAG"
+  # Functions image is required for migrations and API — must come from CI.
+  echo "  pulling ryvo-functions from Docker Hub (required for migrations)..."
+  docker pull "${DOCKER_IMAGE_PREFIX}/ryvo-functions:${RYVO_IMAGE_TAG}"
 fi
-
-echo "==> pull functions image (tag=$RYVO_IMAGE_TAG)"
-compose pull "ryvo-functions_${next}_dev" 2>/dev/null || true
-compose pull "ryvo-functions_${next}" 2>/dev/null || true
-docker pull "${DOCKER_IMAGE_PREFIX}/ryvo-functions:${RYVO_IMAGE_TAG}" || true
 
 echo "==> start base stack (stateful stays single)"
 compose up -d
@@ -127,8 +125,8 @@ ensure_kong_resolves_functions() {
 }
 ensure_kong_resolves_functions
 
-echo "==> run migrations/bootstraps"
-compose --profile migrate run --rm ryvo-migrate
+echo "==> run migrations/bootstraps (automatic on every deploy)"
+bash deploy/vps/scripts/run-migrations.sh "$ENV_NAME" "$RYVO_IMAGE_TAG"
 
 echo "==> start next color services (force-recreate web)"
 compose up -d --force-recreate \

@@ -30,7 +30,10 @@ deploy/vps/
     bootstrap.sh          # fresh install: ensure-env + apply-env
     apply-env.sh          # regenerate VPS env from templates + supabase secrets
     write-web-env-production.sh
-    deploy-bluegreen.sh   # CI/CD + manual redeploy
+    deploy-bluegreen.sh   # CI/CD + manual redeploy (pull images, auto migrations, blue/green)
+    pull-deploy-images.sh # pull admin + client + functions CI images
+    run-migrations.sh     # idempotent SQL seeds (every deploy)
+    pull-web-images.sh    # legacy: admin + client only (prefer pull-deploy-images.sh)
     setup-dev.sh | setup-prod.sh
 ```
 
@@ -75,5 +78,15 @@ Caddy routes to blue/green web containers on internal `:3000`.
 ## CI/CD secrets
 
 See root [README.md](../README.md#cicd-github-actions). Optional `DEV_*` / `PROD_*` keys fall back to reading `server/supabase/.env` on the VPS over SSH.
+
+## Database migrations (automatic)
+
+Every push to `dev` or `main` runs migrations via GitHub Actions — **no manual VPS commands needed**.
+
+1. CI builds `ryvo-functions:sha-<gitsha>` with `server/supabase/scripts/seeds/` baked into the image.
+2. `deploy-bluegreen.sh` pulls that image, then runs `run-migrations.sh`.
+3. `migrate-idempotent.sh` applies only **new or changed** `NNN_*.sql` files (tracked in `ryvo.schema_migrations`).
+
+Add a migration: create `server/supabase/scripts/seeds/049_your_change.sql`, push to `dev` or `main`. CI deploy applies it automatically.
 
 Test account: `admin@ryvo-line.com` / `Admin@123`
