@@ -2,7 +2,16 @@
 
 Portable bootstrap: **one secrets file** (`server/supabase/.env`) + generated env everywhere else.
 
-Full reference: [docs/env-guide.md](../docs/env-guide.md)
+Full reference: [docs/env-guide.md](../docs/env-guide.md) · release flow & dev/prod isolation: [README.md](../README.md#branches--release-flow)
+
+## Dev and prod on one VPS
+
+Dev and prod are **separate Docker Compose projects** with isolated data and services:
+
+- **Dev:** project `ryvo-dev`, network `ryvo-net-dev`, volumes `*_dev`, containers `*_dev`, images tagged from `dev` CI.
+- **Prod:** project `ryvo`, network `ryvo-net`, volumes under `data/`, containers `*_prod`, images tagged from `main` CI.
+
+Only **secrets** (`server/supabase/.env`) and **git templates** (`deploy/vps/**`) are shared. Deploying dev never replaces prod data; each `deploy-bluegreen.sh dev|prod` runs `apply-env.sh` for that stack only.
 
 ## Layout (committed templates only)
 
@@ -53,16 +62,15 @@ bash deploy/vps/scripts/deploy-bluegreen.sh dev sha-$(git rev-parse HEAD)
 | `DOCKER_*` in compose `.env.*` or GitHub secrets | `client/web/*/.env.local` |
 | | `client/web/*/.env.production` (Next.js Docker build) |
 
-## Ports (dev VPS)
+## Ports
 
-| Service | Host port |
-|---------|-----------|
-| Admin | 3400 |
-| Client | 3500 |
-| API (Caddy) | 8500 |
+| Stack | Admin | Client | API (Caddy) |
+|-------|-------|--------|-------------|
+| Dev | 3400 | 3500 | 8500 |
+| Prod | 3200 | 3300 | 8400 |
 
 Caddy routes to blue/green web containers on internal `:3000`.  
-`network/caddy/Caddyfile.dev` is generated on deploy (gitignored).
+`network/caddy/Caddyfile.dev` / `Caddyfile.prod` are generated on deploy (gitignored).
 
 ## CI/CD secrets
 

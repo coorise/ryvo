@@ -48,3 +48,30 @@ include:
     project_directory: ./network/caddy
   - path: ./deploy/vps/compose/app.bluegreen.dev.yaml
     project_directory: ./deploy/vps/compose
+
+# Root-level overrides (include merge does not honor nested dev overlays reliably)
+services:
+  studio:
+    container_name: supabase-studio_dev
+  kong:
+    container_name: supabase-kong_dev
+  auth:
+    container_name: supabase-auth_dev
+  rest:
+    container_name: supabase-rest_dev
+  realtime:
+    container_name: supabase-realtime_dev
+  storage:
+    container_name: supabase-storage_dev
+  imgproxy:
+    container_name: supabase-imgproxy_dev
+  meta:
+    container_name: supabase-meta_dev
+  analytics:
+    container_name: supabase-analytics_dev
+  vector:
+    container_name: supabase-vector_dev
+  supavisor:
+    container_name: supabase-pooler_dev
+  db:
+    container_name: supabase-db_dev
