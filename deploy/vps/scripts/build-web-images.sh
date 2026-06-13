@@ -38,9 +38,8 @@ build_one() {
   if [[ -n "$MAPS" && "$MAPS" != REPLACE_* ]]; then
     build_args+=(--build-arg "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$MAPS")
   fi
-  if [[ -f "$app_dir/.env.production" ]]; then
-    build_args+=(--build-arg "CACHEBUST=$(md5sum "$app_dir/.env.production" | awk '{print $1}')")
-  fi
+  # Bust Next.js builder cache on every deploy tag (git sha), not only when .env.production changes.
+  build_args+=(--build-arg "CACHEBUST=${IMAGE_TAG}")
   docker build \
     -f "$app_dir/Dockerfile" \
     "${build_args[@]}" \
