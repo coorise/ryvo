@@ -77,7 +77,11 @@ services:
     ports: !reset []
   minio:
     healthcheck:
-      disable: true
+      test: ["CMD-SHELL", "exit 0"]
+      interval: 10s
+      timeout: 3s
+      retries: 1
+      start_period: 5s
   ryvo_kafka_broker:
     ports: !reset []
   ryvo_bunqueue:
