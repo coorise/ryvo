@@ -42,10 +42,26 @@ patch_kv() {
 
 if [[ -f "$SUPABASE_ENV" ]]; then
   mkdir -p "${ROOT}/compose"
+  if [[ ! -f "${ROOT}/compose/local.env" && -f "${ROOT}/compose/local.env.example" ]]; then
+    cp "${ROOT}/compose/local.env.example" "${ROOT}/compose/local.env"
+    echo "Created compose/local.env from compose/local.env.example"
+  fi
   if [[ -f "${ROOT}/.env" && ! -f "${ROOT}/compose/local.env" ]]; then
     cp "${ROOT}/.env" "${ROOT}/compose/local.env"
     echo "Migrated root .env -> compose/local.env (root .env is deprecated)"
   fi
+  if [[ -f "${ROOT}/.env" && -f "${ROOT}/compose/local.env" ]]; then
+    rm -f "${ROOT}/.env"
+    echo "Removed deprecated root .env (use compose/local.env — see docs/env-guide.md)"
+  fi
+
+  for app in ryvo ryvo_admin; do
+    local_env="${ROOT}/client/web/${app}/.env.local"
+    if [[ ! -f "$local_env" && -f "${ROOT}/client/web/${app}/.env.example" ]]; then
+      cp "${ROOT}/client/web/${app}/.env.example" "$local_env"
+      echo "Created client/web/${app}/.env.local from .env.example"
+    fi
+  done
 
   anon="$(read_kv "$SUPABASE_ENV" "ANON_KEY")"
   maps="$(read_kv "$SUPABASE_ENV" "GOOGLE_MAPS_API_KEY")"

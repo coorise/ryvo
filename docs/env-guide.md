@@ -126,6 +126,25 @@ If optional secrets are missing, CI SSHs to the VPS and reads `ANON_KEY` / `GOOG
 1. **Build job:** resolve secrets → write `client/web/*/.env.production` → build & push images
 2. **Deploy job:** SSH → `git pull` → `deploy-bluegreen.sh` (rebuilds web images on VPS with local `.env.production` anyway)
 
+## Local: port 3200 / 3300 — Docker vs `bun run dev`
+
+| URL | What serves it | Env that matters |
+|-----|----------------|------------------|
+| `localhost:3200` via `./scripts/ryvo-up.sh` | Caddy → **Docker** admin container | `compose/local.env` + `client/web/ryvo_admin/.env.production` at **image build** |
+| `localhost:3200` via `bun run dev` in `ryvo_admin` | Next.js dev server | `client/web/ryvo_admin/.env.local` |
+
+After changing `GOOGLE_MAPS_API_KEY` in `server/supabase/.env`:
+
+```bash
+bash scripts/ensure-env.sh
+# Docker stack:
+./scripts/ryvo-up.sh --build ryvo-web-admin
+# OR hot-reload dev server:
+cd client/web/ryvo_admin && bun run dev   # restart after ensure-env
+```
+
+Root `.env` is **not used** — `ensure-env.sh` removes it after migrating to `compose/local.env`.
+
 ## Deprecated / ignore
 
 | Path | Note |
