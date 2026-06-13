@@ -77,11 +77,17 @@ services:
     ports: !reset []
   minio:
     healthcheck:
-      test: ["CMD-SHELL", "exit 0"]
-      interval: 10s
-      timeout: 3s
-      retries: 1
-      start_period: 5s
+      disable: true
+  minio-createbucket:
+    depends_on:
+      minio:
+        condition: service_started
+  storage:
+    depends_on:
+      minio-createbucket:
+        condition: service_completed_successfully
+      minio:
+        condition: service_started
   ryvo_kafka_broker:
     ports: !reset []
   ryvo_bunqueue:
