@@ -78,6 +78,16 @@ services:
   minio:
     healthcheck:
       disable: true
+  minio-createbucket:
+    depends_on:
+      minio:
+        condition: service_started
+  storage:
+    depends_on:
+      minio-createbucket:
+        condition: service_completed_successfully
+      minio:
+        condition: service_started
   ryvo_kafka_broker:
     ports: !reset []
   ryvo_bunqueue:
