@@ -20,9 +20,6 @@ include:
   - path: ./server/supabase/docker-compose.ryvo-functions.yaml
     project_directory: ./server/supabase
     env_file: ${SUPABASE_ENV_FILE:-./server/supabase/.env}
-  - path: ./server/supabase/docker-compose.s3.yml
-    project_directory: ./server/supabase
-    env_file: ${SUPABASE_ENV_FILE:-./server/supabase/.env}
 
   - path: ./server/kafka/docker-compose.yml
     project_directory: ./server/kafka
@@ -64,13 +61,12 @@ services:
     container_name: supabase-realtime_prod
   storage:
     container_name: supabase-storage_prod
-    depends_on:
-      minio-createbucket:
-        condition: service_completed_successfully
-      minio:
-        condition: service_started
+    volumes:
+      - ./server/supabase/volumes/storage:/var/lib/storage:z
   imgproxy:
     container_name: supabase-imgproxy_prod
+    volumes:
+      - ./server/supabase/volumes/storage:/var/lib/storage:z
   meta:
     container_name: supabase-meta_prod
   analytics:
@@ -80,13 +76,6 @@ services:
   supavisor:
     container_name: supabase-pooler_prod
     ports: !reset []
-  minio:
-    healthcheck:
-      disable: true
-  minio-createbucket:
-    depends_on:
-      minio:
-        condition: service_started
   ryvo_kafka_broker:
     ports: !reset []
   ryvo_bunqueue:
