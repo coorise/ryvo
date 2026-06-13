@@ -35,6 +35,10 @@ export type PortalNavItemConfig = {
   href: string;
   labelKey: string;
   icon: LucideIcon;
+  /** Optional ABAC — hide item when user lacks any listed role. */
+  roles?: readonly string[];
+  permissions?: readonly string[];
+  permPrefixes?: readonly string[];
 };
 
 export type PortalNavGroupConfig = {

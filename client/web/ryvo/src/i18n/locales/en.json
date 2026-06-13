@@ -1295,6 +1295,14 @@
     }
   },
   "portal": {
+    "shell": {
+      "driver": "Driver",
+      "client": "Client",
+      "toggleTheme": "Toggle theme",
+      "userMenu": "User menu",
+      "signOutTitle": "Sign out?",
+      "signOutDescription": "You will be signed out and need to sign in again to access your dashboard."
+    },
     "nav": {
       "overview": "Overview",
       "liveMap": "Live map",
