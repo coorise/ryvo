@@ -64,7 +64,11 @@ services:
     container_name: supabase-realtime_prod
   storage:
     container_name: supabase-storage_prod
-  imgproxy:
+    depends_on:
+      minio-createbucket:
+        condition: service_completed_successfully
+      minio:
+        condition: service_started
     container_name: supabase-imgproxy_prod
   meta:
     container_name: supabase-meta_prod
@@ -82,13 +86,7 @@ services:
     depends_on:
       minio:
         condition: service_started
-  storage:
-    depends_on:
-      minio-createbucket:
-        condition: service_completed_successfully
-      minio:
-        condition: service_started
-  ryvo_kafka_broker:
+  imgproxy:
     ports: !reset []
   ryvo_bunqueue:
     ports: !reset []
