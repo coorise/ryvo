@@ -74,6 +74,10 @@ services:
     container_name: supabase-vector_prod
   supavisor:
     container_name: supabase-pooler_prod
+    ports: !reset []
+  minio:
+    healthcheck:
+      disable: true
   ryvo_kafka_broker:
     ports: !reset []
   ryvo_bunqueue:
