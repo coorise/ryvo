@@ -40,6 +40,7 @@ patch_kv() {
 
 if [[ -f "$SUPABASE_ENV" ]]; then
   anon="$(read_kv "$SUPABASE_ENV" "ANON_KEY")"
+  maps="$(read_kv "$SUPABASE_ENV" "GOOGLE_MAPS_API_KEY")"
   pub_url="$(read_kv "$SUPABASE_ENV" "SUPABASE_PUBLIC_URL")"
   # Local defaults: hit Caddy -> Kong on 8400
   local_url="http://localhost:8400"
@@ -53,6 +54,7 @@ if [[ -f "$SUPABASE_ENV" ]]; then
     patch_kv "$f" "NEXT_PUBLIC_SUPABASE_URL" "${local_url}"
     patch_kv "$f" "NEXT_PUBLIC_FUNCTIONS_URL" "${functions_url}"
     [[ -n "${anon:-}" ]] && patch_kv "$f" "NEXT_PUBLIC_SUPABASE_ANON_KEY" "${anon}"
+    [[ -n "${maps:-}" ]] && patch_kv "$f" "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY" "${maps}"
     patch_kv "$f" "NEXT_PUBLIC_APP_ENV" "development"
   done
 
@@ -65,6 +67,7 @@ if [[ -f "$SUPABASE_ENV" ]]; then
       echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${anon}"
       echo "NEXT_PUBLIC_FUNCTIONS_URL=${functions_url}"
       echo "NEXT_PUBLIC_APP_ENV=development"
+      [[ "$app" == "ryvo_admin" && -n "${maps:-}" ]] && echo "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${maps}"
     } >"$prod"
     echo "Wrote ${prod}"
   done

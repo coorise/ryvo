@@ -29,9 +29,10 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Resolve DEV_SUPABASE_ANON_KEY (secret or VPS fallback)
+      - name: Resolve DEV web build secrets (GitHub secrets or VPS fallback)
         env:
           ANON_FROM_SECRET: ${{ secrets.DEV_SUPABASE_ANON_KEY }}
+          MAPS_FROM_SECRET: ${{ secrets.DEV_GOOGLE_MAPS_API_KEY }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
@@ -39,72 +40,86 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ -n "${ANON_FROM_SECRET:-}" ]; then
-            echo "::notice::Using DEV_SUPABASE_ANON_KEY from GitHub secrets."
-            echo "DEV_SUPABASE_ANON_KEY=${ANON_FROM_SECRET}" >> "$GITHUB_ENV"
-            exit 0
-          fi
+          ANON="${ANON_FROM_SECRET:-}"
+          MAPS="${MAPS_FROM_SECRET:-}"
 
-          echo "::warning::DEV_SUPABASE_ANON_KEY secret is not set. Falling back to reading ANON_KEY from the VPS over SSH."
-
-          if [ -z "${VPS_HOST:-}" ] || [ -z "${VPS_USER:-}" ] || [ -z "${VPS_SSH_KEY:-}" ]; then
-            echo "::error::VPS fallback requires VPS_HOST, VPS_USER, and VPS_SSH_KEY secrets to be set."
-            exit 1
-          fi
-
-          install -m 700 -d ~/.ssh
-          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_vps
-          chmod 600 ~/.ssh/id_vps
-
-          set +e
-          ANON_FROM_VPS="$(
-            ssh -i ~/.ssh/id_vps -p "${VPS_SSH_PORT}" -o StrictHostKeyChecking=accept-new "${VPS_USER}@${VPS_HOST}" \
-              'bash -c '"'"'set -euo pipefail;
-                for p in "$HOME/Projects/Web/ryvo/server/supabase/.env" "$HOME/ryvo/server/supabase/.env" "/opt/ryvo/server/supabase/.env"; do
-                  if [ -f "$p" ]; then
-                    key="$(grep -E "^ANON_KEY=" "$p" | head -1 | cut -d= -f2- || true)"
-                    if [ -n "$key" ]; then
-                      echo "$key"
+          if [[ -n "$ANON" && -n "$MAPS" ]]; then
+            echo "::notice::Using DEV_SUPABASE_ANON_KEY and DEV_GOOGLE_MAPS_API_KEY from GitHub secrets."
+          else
+            echo "::warning::Missing DEV_SUPABASE_ANON_KEY and/or DEV_GOOGLE_MAPS_API_KEY — reading from VPS over SSH where needed."
+            if [[ -z "${VPS_HOST:-}" || -z "${VPS_USER:-}" || -z "${VPS_SSH_KEY:-}" ]]; then
+              echo "::error::VPS fallback requires VPS_HOST, VPS_USER, and VPS_SSH_KEY secrets to be set."
+              exit 1
+            fi
+            install -m 700 -d ~/.ssh
+            printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_vps
+            chmod 600 ~/.ssh/id_vps
+            set +e
+            VPS_SECRETS="$(
+              ssh -i ~/.ssh/id_vps -p "${VPS_SSH_PORT}" -o StrictHostKeyChecking=accept-new "${VPS_USER}@${VPS_HOST}" \
+                'bash -c '"'"'set -euo pipefail;
+                  for p in "$HOME/Projects/Web/ryvo/server/supabase/.env" "$HOME/ryvo/server/supabase/.env" "/opt/ryvo/server/supabase/.env"; do
+                    if [ -f "$p" ]; then
+                      grep -E "^ANON_KEY=" "$p" | head -1 | cut -d= -f2- | sed "s/^/ANON_KEY=/" || true
+                      grep -E "^GOOGLE_MAPS_API_KEY=" "$p" | head -1 | cut -d= -f2- | sed "s/^/GOOGLE_MAPS_API_KEY=/" || true
                       exit 0
                     fi
-                  fi
-                done
-                echo ANON_KEY_NOT_FOUND
-                exit 0'"'"''
-          )"
-          ssh_rc=$?
-          set -e
+                  done
+                  echo ANON_KEY=
+                  echo GOOGLE_MAPS_API_KEY='"'"''
+            )"
+            ssh_rc=$?
+            set -e
+            if [[ "$ssh_rc" -ne 0 ]]; then
+              echo "::error::SSH to VPS failed while trying to read build secrets (exit $ssh_rc)."
+              exit 1
+            fi
+            if [[ -z "$ANON" ]]; then
+              ANON="$(printf '%s\n' "$VPS_SECRETS" | grep '^ANON_KEY=' | head -1 | cut -d= -f2- || true)"
+            fi
+            if [[ -z "$MAPS" ]]; then
+              MAPS="$(printf '%s\n' "$VPS_SECRETS" | grep '^GOOGLE_MAPS_API_KEY=' | head -1 | cut -d= -f2- || true)"
+            fi
+          fi
 
-          if [ "$ssh_rc" -ne 0 ]; then
-            echo "::error::SSH to VPS failed while trying to read ANON_KEY (exit $ssh_rc)."
+          if [[ -z "$ANON" ]]; then
+            echo "::error::DEV_SUPABASE_ANON_KEY not resolved (secret missing + VPS fallback failed)."
             exit 1
           fi
 
-          if [ -z "${ANON_FROM_VPS:-}" ] || [ "${ANON_FROM_VPS}" = "ANON_KEY_NOT_FOUND" ]; then
-            echo "::error::Could not read ANON_KEY from VPS. Ensure the repo exists on the VPS and server/supabase/.env contains ANON_KEY."
-            exit 1
+          echo "::add-mask::${ANON}"
+          echo "DEV_SUPABASE_ANON_KEY=${ANON}" >> "$GITHUB_ENV"
+          if [[ -n "$MAPS" ]]; then
+            echo "::add-mask::${MAPS}"
+            echo "DEV_GOOGLE_MAPS_API_KEY=${MAPS}" >> "$GITHUB_ENV"
+            echo "::notice::Resolved DEV_GOOGLE_MAPS_API_KEY."
+          else
+            echo "::warning::DEV_GOOGLE_MAPS_API_KEY not set — admin live map will not work until server/supabase/.env has GOOGLE_MAPS_API_KEY on VPS."
           fi
-
-          echo "::add-mask::${ANON_FROM_VPS}"
-          echo "DEV_SUPABASE_ANON_KEY=${ANON_FROM_VPS}" >> "$GITHUB_ENV"
-          echo "::notice::Resolved DEV_SUPABASE_ANON_KEY from VPS."
+          echo "::notice::Resolved DEV_SUPABASE_ANON_KEY."
 
       - name: Write .env.production for Next.js Docker build
         run: |
           set -euo pipefail
           ANON="${DEV_SUPABASE_ANON_KEY:-}"
-          if [ -z "$ANON" ]; then
-            echo "::error::DEV_SUPABASE_ANON_KEY not resolved (secret missing + VPS fallback failed)."
+          MAPS="${DEV_GOOGLE_MAPS_API_KEY:-}"
+          if [[ -z "$ANON" ]]; then
+            echo "::error::DEV_SUPABASE_ANON_KEY not resolved."
             exit 1
           fi
-          for app in client/web/ryvo_admin client/web/ryvo; do
-            {
-              echo "NEXT_PUBLIC_SUPABASE_URL=https://ryvo-line-server.dev.agglomy.com"
-              echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON}"
-              echo "NEXT_PUBLIC_FUNCTIONS_URL=https://ryvo-line-server.dev.agglomy.com/functions/v1"
-              echo "NEXT_PUBLIC_APP_ENV=development"
-            } > "$app/.env.production"
-          done
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=https://ryvo-line-server.dev.agglomy.com"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON}"
+            echo "NEXT_PUBLIC_FUNCTIONS_URL=https://ryvo-line-server.dev.agglomy.com/functions/v1"
+            echo "NEXT_PUBLIC_APP_ENV=development"
+            [[ -n "$MAPS" ]] && echo "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${MAPS}"
+          } > client/web/ryvo_admin/.env.production
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=https://ryvo-line-server.dev.agglomy.com"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON}"
+            echo "NEXT_PUBLIC_FUNCTIONS_URL=https://ryvo-line-server.dev.agglomy.com/functions/v1"
+            echo "NEXT_PUBLIC_APP_ENV=development"
+          } > client/web/ryvo/.env.production
 
       - name: Build + push web admin image
         uses: docker/build-push-action@v6
@@ -117,6 +132,7 @@ jobs:
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ env.DEV_SUPABASE_ANON_KEY }}
             NEXT_PUBLIC_FUNCTIONS_URL=https://ryvo-line-server.dev.agglomy.com/functions/v1
             NEXT_PUBLIC_APP_ENV=development
+            NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ env.DEV_GOOGLE_MAPS_API_KEY }}
           tags: |
             ${{ env.IMAGE_PREFIX }}/ryvo-web-admin:sha-${{ github.sha }}
             ${{ env.IMAGE_PREFIX }}/ryvo-web-admin:dev

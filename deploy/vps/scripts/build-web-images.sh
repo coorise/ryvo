@@ -23,17 +23,24 @@ PREFIX="${DOCKER_IMAGE_PREFIX:-coorise}"
 URL="${NEXT_PUBLIC_SUPABASE_URL:-}"
 FUN="${NEXT_PUBLIC_FUNCTIONS_URL:-}"
 ANON="${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}"
+MAPS="${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-${GOOGLE_MAPS_API_KEY:-}}"
 APP_ENV="${NEXT_PUBLIC_APP_ENV:-development}"
 
 build_one() {
   local app_dir="$1" image_name="$2"
   echo "==> docker build $image_name:$IMAGE_TAG ($app_dir)"
+  local -a build_args=(
+    --build-arg "NEXT_PUBLIC_SUPABASE_URL=$URL"
+    --build-arg "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON"
+    --build-arg "NEXT_PUBLIC_FUNCTIONS_URL=$FUN"
+    --build-arg "NEXT_PUBLIC_APP_ENV=$APP_ENV"
+  )
+  if [[ "$app_dir" == *ryvo_admin* && -n "$MAPS" ]]; then
+    build_args+=(--build-arg "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$MAPS")
+  fi
   docker build \
     -f "$app_dir/Dockerfile" \
-    --build-arg "NEXT_PUBLIC_SUPABASE_URL=$URL" \
-    --build-arg "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON" \
-    --build-arg "NEXT_PUBLIC_FUNCTIONS_URL=$FUN" \
-    --build-arg "NEXT_PUBLIC_APP_ENV=$APP_ENV" \
+    "${build_args[@]}" \
     -t "${PREFIX}/${image_name}:${IMAGE_TAG}" \
     "$app_dir"
 }
