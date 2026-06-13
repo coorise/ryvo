@@ -1,4 +1,6 @@
 # Ryvo admin web (dev VPS) — service suffix _dev
+# Before build: bash deploy/vps/scripts/write-web-env-production.sh dev
+# (Next.js inlines NEXT_PUBLIC_* from .env.production during `next build`, not .env.local)
 services:
   ryvo-web-admin_dev:
     build:

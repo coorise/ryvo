@@ -1,5 +1,5 @@
-import { PortalPlaceholder } from "@/components/portal/portal-placeholder";
+import { PortalNotificationsView } from "@/components/portal/portal-views";
 
 export default function Page() {
-  return <PortalPlaceholder title="Notifications" />;
+  return <PortalNotificationsView />;
 }

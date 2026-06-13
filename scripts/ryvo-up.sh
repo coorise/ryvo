@@ -14,7 +14,12 @@ ENV="${1:-local}"
 case "$ENV" in
   local)
     bash scripts/ensure-env.sh
-    exec docker compose up -d --build "${@:2}"
+    COMPOSE_ENV="${RYVO_COMPOSE_ENV:-compose/local.env}"
+    if [[ ! -f "$COMPOSE_ENV" ]]; then
+      echo "Missing $COMPOSE_ENV — run: bash scripts/ensure-env.sh"
+      exit 1
+    fi
+    exec docker compose --env-file "$COMPOSE_ENV" up -d --build "${@:2}"
     ;;
   dev)
     ENV_FILE="${RYVO_ENV_FILE:-deploy/vps/compose/.env.dev}"

@@ -14,41 +14,36 @@ if [[ "$ENV_NAME" != "dev" && "$ENV_NAME" != "prod" ]]; then
   exit 1
 fi
 
-COMPOSE_ENV="deploy/vps/compose/.env.${ENV_NAME}"
-[[ -f "$COMPOSE_ENV" ]] || { echo "Missing $COMPOSE_ENV — run apply-env.sh first"; exit 1; }
+bash deploy/vps/scripts/write-web-env-production.sh "$ENV_NAME"
 
 # shellcheck source=/dev/null
-set -a
-source "$COMPOSE_ENV"
-set +a
+source "deploy/vps/compose/.env.${ENV_NAME}"
 
 PREFIX="${DOCKER_IMAGE_PREFIX:-coorise}"
 URL="${NEXT_PUBLIC_SUPABASE_URL:-}"
 FUN="${NEXT_PUBLIC_FUNCTIONS_URL:-}"
-ANON="${NEXT_PUBLIC_SUPABASE_ANON_KEY:-${ANON_KEY:-}}"
+ANON="${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}"
+MAPS="${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-${GOOGLE_MAPS_API_KEY:-}}"
 APP_ENV="${NEXT_PUBLIC_APP_ENV:-development}"
-
-if [[ -z "$URL" ]]; then
-  echo "NEXT_PUBLIC_SUPABASE_URL missing in $COMPOSE_ENV"
-  exit 1
-fi
-if [[ -z "$FUN" ]]; then
-  FUN="${URL%/}/functions/v1"
-fi
-if [[ -z "$ANON" || "$ANON" == REPLACE_* ]]; then
-  echo "NEXT_PUBLIC_SUPABASE_ANON_KEY missing in $COMPOSE_ENV (run apply-env.sh after server/supabase/.env has ANON_KEY)"
-  exit 1
-fi
 
 build_one() {
   local app_dir="$1" image_name="$2"
   echo "==> docker build $image_name:$IMAGE_TAG ($app_dir)"
+  local -a build_args=(
+    --build-arg "NEXT_PUBLIC_SUPABASE_URL=$URL"
+    --build-arg "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON"
+    --build-arg "NEXT_PUBLIC_FUNCTIONS_URL=$FUN"
+    --build-arg "NEXT_PUBLIC_APP_ENV=$APP_ENV"
+  )
+  if [[ -n "$MAPS" && "$MAPS" != REPLACE_* ]]; then
+    build_args+=(--build-arg "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$MAPS")
+  fi
+  if [[ -f "$app_dir/.env.production" ]]; then
+    build_args+=(--build-arg "CACHEBUST=$(md5sum "$app_dir/.env.production" | awk '{print $1}')")
+  fi
   docker build \
     -f "$app_dir/Dockerfile" \
-    --build-arg "NEXT_PUBLIC_SUPABASE_URL=$URL" \
-    --build-arg "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON" \
-    --build-arg "NEXT_PUBLIC_FUNCTIONS_URL=$FUN" \
-    --build-arg "NEXT_PUBLIC_APP_ENV=$APP_ENV" \
+    "${build_args[@]}" \
     -t "${PREFIX}/${image_name}:${IMAGE_TAG}" \
     "$app_dir"
 }

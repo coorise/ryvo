@@ -6,6 +6,23 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$ROOT"
 
+# These files are rewritten every deploy; discard local edits so git pull in CI never fails.
+reset_vps_generated_config() {
+  local f
+  for f in network/caddy/Caddyfile.dev deploy/vps/compose/functions-router.dev.Caddyfile \
+    deploy/vps/compose/functions-router.prod.Caddyfile; do
+    [[ -f "$f" ]] && git checkout -- "$f" 2>/dev/null || true
+  done
+}
+reset_vps_generated_config
+
+ensure_edge_caddy_template() {
+  if [[ ! -f network/caddy/Caddyfile.dev ]] && [[ -f network/caddy/Caddyfile.dev.example ]]; then
+    cp network/caddy/Caddyfile.dev.example network/caddy/Caddyfile.dev
+  fi
+}
+ensure_edge_caddy_template
+
 ENV_NAME="${1:-}"
 IMAGE_TAG="${2:-}"
 
@@ -67,7 +84,9 @@ echo "  active=$active next=$next"
 
 compose config --quiet
 
-echo "==> build web images on VPS (bake NEXT_PUBLIC_* from $COMPOSE_ENV)"
+echo "==> web images (tag=$RYVO_IMAGE_TAG)"
+# Always build on VPS: Next.js inlines NEXT_PUBLIC_* at build time from .env.production.
+# CI images are skipped when DEV_SUPABASE_ANON_KEY is unset on GitHub (empty anon in bundle).
 bash deploy/vps/scripts/build-web-images.sh "$ENV_NAME" "$RYVO_IMAGE_TAG"
 
 echo "==> pull functions image (tag=$RYVO_IMAGE_TAG)"
@@ -107,10 +126,10 @@ ensure_kong_resolves_functions
 echo "==> run migrations/bootstraps"
 compose --profile migrate run --rm ryvo-migrate
 
-echo "==> start next color services"
-compose up -d \
+echo "==> start next color services (force-recreate web)"
+compose up -d --force-recreate \
   "ryvo-web-admin_${next}_dev" "ryvo-web-client_${next}_dev" "ryvo-functions_${next}_dev" 2>/dev/null || true
-compose up -d \
+compose up -d --force-recreate \
   "ryvo-web-admin_${next}" "ryvo-web-client_${next}" "ryvo-functions_${next}" 2>/dev/null || true
 
 echo "==> wait for next functions to answer /hello via direct container"
@@ -209,6 +228,10 @@ ANON_WARM="${ANON_KEY:-}"
 [[ -z "$ANON_WARM" && -f server/supabase/.env ]] && ANON_WARM="$(grep '^ANON_KEY=' server/supabase/.env | cut -d= -f2- | tr -d '"')"
 API_PORT_WARM="${RYVO_API_PORT:-8500}"
 [[ "$ENV_NAME" == "prod" ]] && API_PORT_WARM="${RYVO_API_PORT:-8400}"
+pub_code="$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 15 \
+  "http://127.0.0.1:${API_PORT_WARM}/functions/v1/profile-service/v1/settings/public" || echo "000")"
+echo "  warm profile-service/v1/settings/public → HTTP $pub_code"
+
 if [[ -n "$ANON_WARM" ]]; then
   token="$(curl -sf "http://127.0.0.1:${API_PORT_WARM}/auth/v1/token?grant_type=password" \
     -H "apikey: $ANON_WARM" -H "Content-Type: application/json" \
@@ -221,6 +244,15 @@ if [[ -n "$ANON_WARM" ]]; then
       echo "  warm $path → HTTP $code"
     done
   fi
+fi
+
+echo "==> verify landing bundle (city photo grid)"
+CLIENT_PORT_CHECK="${RYVO_CLIENT_PORT:-3500}"
+[[ "$ENV_NAME" == "prod" ]] && CLIENT_PORT_CHECK="${RYVO_CLIENT_PORT:-3300}"
+if curl -sf "http://127.0.0.1:${CLIENT_PORT_CHECK}/landing" | grep -q 'data-ryvo="landing-city-photo"'; then
+  echo "  OK  landing includes photo city grid"
+else
+  echo "  WARN landing missing photo city grid — web image may be stale (tag=$RYVO_IMAGE_TAG)"
 fi
 
 echo "==> health-check after switch (allow warm-up)"

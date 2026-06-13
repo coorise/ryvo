@@ -1,0 +1,15 @@
+# Dev VPS edge routing — COPY to Caddyfile.dev on first boot, then deploy-bluegreen.sh rewrites this file.
+# Host ports: 3400 admin · 3500 client · 8500 API (see network/caddy/docker-compose.dev.yaml)
+# Do not commit Caddyfile.dev (VPS deploy mutates it for blue/green).
+
+:3400 {
+	reverse_proxy ryvo-web-admin_blue_dev:3000
+}
+
+:3500 {
+	reverse_proxy ryvo-web-client_blue_dev:3000
+}
+
+:8500 {
+	reverse_proxy kong:8000
+}

@@ -3,10 +3,9 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import { BrandLogo } from "@/components/ryvo/brand-logo";
+import { AdminSidebarBrand } from "@/components/layout/admin-sidebar-brand";
 import { AdminSidebarNav } from "@/components/layout/admin-sidebar-nav";
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
-import { ROUTES } from "@/configs/const";
 import { LogOut } from "lucide-react";
 
 type AdminSidebarContentProps = {
@@ -30,7 +29,7 @@ export function AdminSidebarContent({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="border-border shrink-0 border-b px-5 py-5">
-        <BrandLogo subtitle="Admin console" href={ROUTES.admin.home} onNavigate={onNavigate} />
+        <AdminSidebarBrand onNavigate={onNavigate} />
       </div>
       <AdminSidebarNav
         hasPermission={hasPermission}

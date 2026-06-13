@@ -1,5 +1,5 @@
-import { PortalPlaceholder } from "@/components/portal/portal-placeholder";
+import { PortalActivityLogsView } from "@/components/portal/portal-views";
 
 export default function Page() {
-  return <PortalPlaceholder title="Activity logs" />;
+  return <PortalActivityLogsView />;
 }

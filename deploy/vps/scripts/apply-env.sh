@@ -32,7 +32,11 @@ apply_template() {
     line="${line//$'\r'/}"
     [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
     if [[ "$line" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
-      patch_env "$target" "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
+      local tpl_key="${BASH_REMATCH[1]}"
+      local tpl_val="${BASH_REMATCH[2]}"
+      # Never wipe runtime secrets with empty/placeholder template values.
+      [[ -z "$tpl_val" || "$tpl_val" == REPLACE_* ]] && continue
+      patch_env "$target" "$tpl_key" "$tpl_val"
     fi
   done <"$template"
   echo "  applied $(basename "$template") -> $target"
@@ -94,6 +98,11 @@ if [[ -f server/supabase/.env ]]; then
   done
   ANON_KEY="$(grep '^ANON_KEY=' server/supabase/.env | cut -d= -f2- | tr -d "'\"")"
   patch_env "$COMPOSE_OUT" NEXT_PUBLIC_SUPABASE_ANON_KEY "$ANON_KEY"
+  maps_key="$(grep '^GOOGLE_MAPS_API_KEY=' server/supabase/.env | cut -d= -f2- | tr -d "'\"" | head -1)"
+  if [[ -n "$maps_key" && "$maps_key" != REPLACE_* ]]; then
+    patch_env "$COMPOSE_OUT" GOOGLE_MAPS_API_KEY "$maps_key"
+    patch_env "$COMPOSE_OUT" NEXT_PUBLIC_GOOGLE_MAPS_API_KEY "$maps_key"
+  fi
 fi
 if [[ -n "${DOCKER_USERNAME:-}" ]]; then
   patch_env "$COMPOSE_OUT" DOCKER_USERNAME "$DOCKER_USERNAME"
@@ -106,9 +115,23 @@ echo "  wrote $COMPOSE_OUT"
 for app in ryvo ryvo_admin; do
   ctpl="${VPS}/client/web/${app}/env.${ENV_NAME}.example"
   if [[ -f "$ctpl" ]]; then
-    apply_template "$ctpl" "client/web/${app}/.env.local"
-    patch_env "$COMPOSE_OUT" "NEXT_PUBLIC_SUPABASE_URL" "$(grep '^NEXT_PUBLIC_SUPABASE_URL=' "client/web/${app}/.env.local" | cut -d= -f2-)"
+    local_env="client/web/${app}/.env.local"
+    apply_template "$ctpl" "$local_env"
+    patch_env "$COMPOSE_OUT" "NEXT_PUBLIC_SUPABASE_URL" "$(grep '^NEXT_PUBLIC_SUPABASE_URL=' "$local_env" | cut -d= -f2-)"
+    if [[ -f server/supabase/.env ]]; then
+      ANON_KEY="$(grep '^ANON_KEY=' server/supabase/.env | cut -d= -f2- | tr -d "'\"")"
+      patch_env "$local_env" "NEXT_PUBLIC_SUPABASE_ANON_KEY" "$ANON_KEY"
+      patch_env "$local_env" "NEXT_PUBLIC_FUNCTIONS_URL" "$(grep '^NEXT_PUBLIC_FUNCTIONS_URL=' "$COMPOSE_OUT" | cut -d= -f2-)"
+      maps_key="$(grep '^GOOGLE_MAPS_API_KEY=' server/supabase/.env | cut -d= -f2- | tr -d "'\"" | head -1)"
+      if [[ -n "$maps_key" && "$maps_key" != REPLACE_* ]]; then
+        patch_env "$local_env" "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY" "$maps_key"
+      fi
+    fi
   fi
 done
+
+if [[ -f server/supabase/.env ]]; then
+  bash deploy/vps/scripts/write-web-env-production.sh "$ENV_NAME"
+fi
 
 echo "==> done"

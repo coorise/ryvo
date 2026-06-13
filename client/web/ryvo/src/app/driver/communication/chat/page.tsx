@@ -1,5 +1,5 @@
-import { PortalPlaceholder } from "@/components/portal/portal-placeholder";
+import { PortalChatView } from "@/components/portal/portal-views";
 
 export default function Page() {
-  return <PortalPlaceholder title="Chat" description="Instant messages until pickup." />;
+  return <PortalChatView />;
 }

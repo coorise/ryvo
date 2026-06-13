@@ -1,5 +1,5 @@
-import { SettingsProfileTab } from "@/components/admin/settings/settings-profile-tab";
+import { PortalProfileSettingsView } from "@/components/portal/portal-views";
 
-export default function ClientProfileSettingsPage() {
-  return <SettingsProfileTab />;
+export default function Page() {
+  return <PortalProfileSettingsView />;
 }

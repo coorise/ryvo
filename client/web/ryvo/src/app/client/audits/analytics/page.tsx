@@ -1,10 +1,5 @@
-import { PortalPlaceholder } from "@/components/portal/portal-placeholder";
+import { PortalAnalyticsView } from "@/components/portal/portal-views";
 
-export default function ClientAnalyticsPage() {
-  return (
-    <PortalPlaceholder
-      title="Analytics"
-      description="Ride usage and spending insights for your client account."
-    />
-  );
+export default function Page() {
+  return <PortalAnalyticsView area="client" />;
 }

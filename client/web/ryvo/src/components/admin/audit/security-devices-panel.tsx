@@ -47,20 +47,26 @@ function platformIcon(platform: string) {
   return Smartphone;
 }
 
-export function SecurityDevicesPanel() {
+type SecurityDevicesPanelProps = {
+  variant?: "admin" | "portal";
+};
+
+export function SecurityDevicesPanel({ variant = "admin" }: SecurityDevicesPanelProps) {
   const { t } = useTranslation();
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   const { hasPermission } = useRbac();
   const qc = useQueryClient();
-  const canUpdate = hasPermission(PERMISSIONS.audit.update);
+  const isPortal = variant === "portal";
+  const canUpdate = !isPortal && hasPermission(PERMISSIONS.audit.update);
   const [statusFilter, setStatusFilter] = useState("all");
   const [revokeTarget, setRevokeTarget] = useState<UserDeviceRow | null>(null);
   const list = useListControls(SORT_KEYS.updatedAt);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin", "security", "devices"],
+    queryKey: isPortal ? ["portal", "security", "devices", user?.id] : ["admin", "security", "devices"],
     queryFn: () => auditService.listDevices(accessToken, true),
-    enabled: Boolean(accessToken) && hasPermission(PERMISSIONS.audit.read),
+    enabled:
+      Boolean(accessToken) && (isPortal || hasPermission(PERMISSIONS.audit.read)),
   });
 
   const revoke = useMutation({
@@ -74,7 +80,13 @@ export function SecurityDevicesPanel() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const allDevices = data?.devices ?? [];
+  const allDevices = useMemo(() => {
+    const devices = data?.devices ?? [];
+    if (isPortal && user?.id) {
+      return devices.filter((d) => d.user_id === user.id);
+    }
+    return devices;
+  }, [data?.devices, isPortal, user?.id]);
 
   const stats = useMemo(() => {
     const active = allDevices.filter((d) => !d.revoked_at).length;

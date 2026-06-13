@@ -1,5 +1,5 @@
-import { PortalConfigurationsTabs } from "@/components/portal/portal-configurations-tabs";
+import { PortalConfigurationsView } from "@/components/portal/portal-views";
 
-export default function DriverConfigurationsPage() {
-  return <PortalConfigurationsTabs />;
+export default function Page() {
+  return <PortalConfigurationsView area="driver" />;
 }

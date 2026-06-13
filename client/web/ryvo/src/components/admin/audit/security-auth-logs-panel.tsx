@@ -40,24 +40,38 @@ function formatEventTime(value: string) {
   });
 }
 
-export function SecurityAuthLogsPanel() {
+type SecurityAuthLogsPanelProps = {
+  variant?: "admin" | "portal";
+};
+
+export function SecurityAuthLogsPanel({ variant = "admin" }: SecurityAuthLogsPanelProps) {
   const { t } = useTranslation();
-  const { accessToken } = useAuth();
+  const { accessToken, user } = useAuth();
   const { hasPermission } = useRbac();
   const [severityFilter, setSeverityFilter] = useState("all");
   const list = useListControls(SORT_KEYS.createdAt);
+  const isPortal = variant === "portal";
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin", "security", "auth", severityFilter],
+    queryKey: isPortal
+      ? ["portal", "security", "auth", user?.id, severityFilter]
+      : ["admin", "security", "auth", severityFilter],
     queryFn: () =>
       auditService.listSecurityAuthEvents(
         accessToken,
         severityFilter === "all" ? undefined : severityFilter,
       ),
-    enabled: Boolean(accessToken) && hasPermission(PERMISSIONS.audit.read),
+    enabled:
+      Boolean(accessToken) && (isPortal || hasPermission(PERMISSIONS.audit.read)),
   });
 
-  const allEvents = data?.events ?? [];
+  const allEvents = useMemo(() => {
+    const events = data?.events ?? [];
+    if (isPortal && user?.id) {
+      return events.filter((e) => e.actor_id === user.id);
+    }
+    return events;
+  }, [data?.events, isPortal, user?.id]);
 
   const stats = useMemo(() => {
     const dayAgo = Date.now() - 24 * 60 * 60 * 1000;

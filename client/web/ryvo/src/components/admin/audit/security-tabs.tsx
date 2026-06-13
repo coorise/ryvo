@@ -14,9 +14,10 @@ export const SECURITY_TABS = {
 type SecurityTabsProps = {
   tab: string;
   onTabChange: (v: string) => void;
+  variant?: "admin" | "portal";
 };
 
-export function SecurityTabs({ tab, onTabChange }: SecurityTabsProps) {
+export function SecurityTabs({ tab, onTabChange, variant = "admin" }: SecurityTabsProps) {
   const { t } = useTranslation();
 
   return (
@@ -26,10 +27,10 @@ export function SecurityTabs({ tab, onTabChange }: SecurityTabsProps) {
         <TabsTrigger value={SECURITY_TABS.devices}>{t("security.tabs.devicesLogs")}</TabsTrigger>
       </TabsList>
       <TabsContent value={SECURITY_TABS.auth} className="mt-6">
-        <SecurityAuthLogsPanel />
+        <SecurityAuthLogsPanel variant={variant} />
       </TabsContent>
       <TabsContent value={SECURITY_TABS.devices} className="mt-6">
-        <SecurityDevicesPanel />
+        <SecurityDevicesPanel variant={variant} />
       </TabsContent>
     </Tabs>
   );
