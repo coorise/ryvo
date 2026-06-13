@@ -56,6 +56,9 @@ export default function DriverProfilePage() {
   if (isLoading) return <p className="text-muted-foreground text-sm">{t("common.loading")}</p>;
   if (!driver) return <p className="text-muted-foreground text-sm">{t("common.noData")}</p>;
 
+  const vehicleCount = driver.vehicles?.length ?? 0;
+  const pendingDocs = driver.documents.filter((d) => d.status === "pending").length;
+
   return (
     <div className="space-y-6">
       <Link href={ROUTES.admin.drivers.list} className="text-muted-foreground text-sm hover:underline">
@@ -79,41 +82,59 @@ export default function DriverProfilePage() {
         }}
       />
 
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="h-auto flex-wrap">
-          <TabsTrigger value={TAB_DRIVER}>{t("drivers.tabs.driver")}</TabsTrigger>
-          <TabsTrigger value={TAB_CARS}>
-            {t("drivers.tabs.cars")}
-            {(driver.vehicles?.length ?? 0) > 0 ? (
-              <span className="bg-muted ml-2 rounded-full px-2 py-0.5 text-[10px]">
-                {driver.vehicles!.length}
-              </span>
+      <Tabs value={tab} onValueChange={setTab} className="space-y-0">
+        <div className="border-border bg-card overflow-hidden rounded-3xl border shadow-sm">
+          <div className="border-border bg-muted/20 border-b px-4 py-3 sm:px-6">
+            <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wide uppercase">
+              {t("drivers.profileSections")}
+            </p>
+            <TabsList className="bg-background flex h-auto w-full flex-wrap justify-start gap-2 rounded-xl border p-1.5 shadow-inner">
+              <TabsTrigger
+                value={TAB_DRIVER}
+                className="min-w-[9rem] flex-1 px-4 py-2.5 text-sm font-semibold sm:flex-none"
+              >
+                {t("drivers.tabs.driver")}
+                {pendingDocs > 0 ? (
+                  <span className="bg-amber-500/20 text-amber-800 dark:text-amber-300 ml-2 rounded-full px-2 py-0.5 text-[10px]">
+                    {pendingDocs}
+                  </span>
+                ) : null}
+              </TabsTrigger>
+              <TabsTrigger
+                value={TAB_CARS}
+                className="min-w-[9rem] flex-1 px-4 py-2.5 text-sm font-semibold sm:flex-none"
+              >
+                {t("drivers.tabs.cars")}
+                {vehicleCount > 0 ? (
+                  <span className="bg-muted ml-2 rounded-full px-2 py-0.5 text-[10px]">{vehicleCount}</span>
+                ) : null}
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value={TAB_DRIVER} className="mt-0 space-y-6 p-4 sm:p-6">
+            <DriverDocumentsSection driverId={driver.id} documents={driver.documents} />
+            {userDetail?.user ? (
+              <ProfileManageSection
+                userId={driverId}
+                canEdit={canEditDriver}
+                invalidateDriverDetail
+                initial={{
+                  full_name: userDetail.user.full_name,
+                  email: userDetail.user.email,
+                  phone: userDetail.user.phone,
+                  username: userDetail.user.username,
+                  custom_fields: userDetail.user.custom_fields ?? {},
+                }}
+              />
             ) : null}
-          </TabsTrigger>
-        </TabsList>
+            <ReviewsSection reviews={driver.reviews} />
+          </TabsContent>
 
-        <TabsContent value={TAB_DRIVER} className="mt-6 space-y-6">
-          {userDetail?.user ? (
-            <ProfileManageSection
-              userId={driverId}
-              canEdit={canEditDriver}
-              invalidateDriverDetail
-              initial={{
-                full_name: userDetail.user.full_name,
-                email: userDetail.user.email,
-                phone: userDetail.user.phone,
-                username: userDetail.user.username,
-                custom_fields: userDetail.user.custom_fields ?? {},
-              }}
-            />
-          ) : null}
-          <DriverDocumentsSection driverId={driver.id} documents={driver.documents} />
-          <ReviewsSection reviews={driver.reviews} />
-        </TabsContent>
-
-        <TabsContent value={TAB_CARS} className="mt-6">
-          <AdminDriverVehiclesSection driverId={driver.id} vehicles={driver.vehicles ?? []} />
-        </TabsContent>
+          <TabsContent value={TAB_CARS} className="mt-0 p-4 sm:p-6">
+            <AdminDriverVehiclesSection driverId={driver.id} vehicles={driver.vehicles ?? []} />
+          </TabsContent>
+        </div>
       </Tabs>
     </div>
   );

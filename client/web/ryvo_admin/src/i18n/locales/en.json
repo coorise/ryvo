@@ -857,6 +857,7 @@
     "docSelfie": "Selfie with ID",
     "docBank": "Bank statement",
     "reviewsFromClients": "Reviews from clients",
+    "profileSections": "Driver verification",
     "tabs": {
       "driver": "Driver",
       "cars": "Driver's cars"
