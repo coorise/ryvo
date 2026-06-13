@@ -69,6 +69,7 @@ services:
         condition: service_completed_successfully
       minio:
         condition: service_started
+  imgproxy:
     container_name: supabase-imgproxy_prod
   meta:
     container_name: supabase-meta_prod
@@ -86,7 +87,7 @@ services:
     depends_on:
       minio:
         condition: service_started
-  imgproxy:
+  ryvo_kafka_broker:
     ports: !reset []
   ryvo_bunqueue:
     ports: !reset []
