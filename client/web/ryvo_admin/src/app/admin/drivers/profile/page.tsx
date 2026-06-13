@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 
 import { AdminDriverVehiclesSection } from "@/components/admin/admin-driver-vehicles-section";
@@ -18,10 +17,16 @@ import { useRbac } from "@/hooks/use-rbac";
 import { driversService } from "@/services/drivers.service";
 import { rbacService } from "@/services/rbac.service";
 
+const TAB_DRIVER = "driver";
+const TAB_CARS = "cars";
+
 export default function DriverProfilePage() {
   const { t } = useTranslation();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const driverId = searchParams.get("id") ?? "";
+  const tabParam = searchParams.get("tab");
+  const tab = tabParam === TAB_CARS ? TAB_CARS : TAB_DRIVER;
   const { accessToken } = useAuth();
   const { hasPermission } = useRbac();
 
@@ -40,7 +45,12 @@ export default function DriverProfilePage() {
   const driver = data?.driver;
   const canEditDriver =
     hasPermission(PERMISSIONS.drivers.update) || hasPermission(PERMISSIONS.users.update);
-  const [tab, setTab] = useState("driver");
+
+  function setTab(next: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", next);
+    router.replace(`${ROUTES.admin.drivers.profile}?${params.toString()}`, { scroll: false });
+  }
 
   if (!driverId) return <p className="text-muted-foreground text-sm">{t("common.noData")}</p>;
   if (isLoading) return <p className="text-muted-foreground text-sm">{t("common.loading")}</p>;
@@ -68,30 +78,40 @@ export default function DriverProfilePage() {
           roles: driver.roles,
         }}
       />
-      {userDetail?.user && (
-        <ProfileManageSection
-          userId={driverId}
-          canEdit={canEditDriver}
-          invalidateDriverDetail
-          initial={{
-            full_name: userDetail.user.full_name,
-            email: userDetail.user.email,
-            phone: userDetail.user.phone,
-            username: userDetail.user.username,
-            custom_fields: userDetail.user.custom_fields ?? {},
-          }}
-        />
-      )}
+
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="driver">{t("drivers.tabs.driver")}</TabsTrigger>
-          <TabsTrigger value="cars">{t("drivers.tabs.cars")}</TabsTrigger>
+        <TabsList className="h-auto flex-wrap">
+          <TabsTrigger value={TAB_DRIVER}>{t("drivers.tabs.driver")}</TabsTrigger>
+          <TabsTrigger value={TAB_CARS}>
+            {t("drivers.tabs.cars")}
+            {(driver.vehicles?.length ?? 0) > 0 ? (
+              <span className="bg-muted ml-2 rounded-full px-2 py-0.5 text-[10px]">
+                {driver.vehicles!.length}
+              </span>
+            ) : null}
+          </TabsTrigger>
         </TabsList>
-        <TabsContent value="driver" className="mt-6 space-y-6">
+
+        <TabsContent value={TAB_DRIVER} className="mt-6 space-y-6">
+          {userDetail?.user ? (
+            <ProfileManageSection
+              userId={driverId}
+              canEdit={canEditDriver}
+              invalidateDriverDetail
+              initial={{
+                full_name: userDetail.user.full_name,
+                email: userDetail.user.email,
+                phone: userDetail.user.phone,
+                username: userDetail.user.username,
+                custom_fields: userDetail.user.custom_fields ?? {},
+              }}
+            />
+          ) : null}
           <DriverDocumentsSection driverId={driver.id} documents={driver.documents} />
           <ReviewsSection reviews={driver.reviews} />
         </TabsContent>
-        <TabsContent value="cars" className="mt-6">
+
+        <TabsContent value={TAB_CARS} className="mt-6">
           <AdminDriverVehiclesSection driverId={driver.id} vehicles={driver.vehicles ?? []} />
         </TabsContent>
       </Tabs>

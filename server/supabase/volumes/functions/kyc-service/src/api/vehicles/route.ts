@@ -234,4 +234,35 @@ export const routes: RouteDef[] = [
       }
     },
   },
+  {
+    method: "GET",
+    path: "/v1/admin/vehicles/:vehicle_id/media/view-url",
+    auth: true,
+    permissions: ["drivers:read"],
+    handler: async (req, _ctx, params) => {
+      const url = new URL(req.url);
+      const key = url.searchParams.get("key");
+      if (!key) return fail("VALIDATION", "key required", 422);
+      try {
+        const db = (await import("../../../../_shared/lib/supabase.ts")).getAdminClient();
+        const { data: vehicle } = await db
+          .from("vehicles")
+          .select("banner_key, video_key, photo_key, image_keys")
+          .eq("id", params.vehicle_id)
+          .maybeSingle();
+        if (!vehicle) return fail("NOT_FOUND", "Not found", 404);
+        const keys = [
+          vehicle.banner_key,
+          vehicle.video_key,
+          vehicle.photo_key,
+          ...(Array.isArray(vehicle.image_keys) ? vehicle.image_keys : []),
+        ].filter(Boolean);
+        if (!keys.includes(key)) return fail("FORBIDDEN", "Invalid media key", 403);
+        const view = await getVehicleMediaViewUrl(key);
+        return ok(view);
+      } catch (e) {
+        return fail("VIEW_FAILED", (e as Error).message, 400);
+      }
+    },
+  },
 ];
