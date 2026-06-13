@@ -8,10 +8,10 @@ networks:
     name: ryvo-net
 
 include:
-  - path: ./server/supabase/docker-compose.yml
+  - path: ./server/supabase/docker-compose.prod.yaml
     project_directory: ./server/supabase
     env_file: ${SUPABASE_ENV_FILE:-./server/supabase/.env}
-  - path: ./server/supabase/docker-compose.prod.yaml
+  - path: ./server/supabase/docker-compose.yml
     project_directory: ./server/supabase
     env_file: ${SUPABASE_ENV_FILE:-./server/supabase/.env}
   - path: ./server/supabase/docker-compose.edge.yaml
@@ -50,8 +50,30 @@ include:
   - path: ./deploy/vps/compose/app.bluegreen.prod.yaml
     project_directory: ./deploy/vps/compose
 
-# Root-level overrides (include merge does not honor !reset in nested prod overlays)
+# Root-level overrides (include merge does not honor nested prod overlays reliably)
 services:
+  studio:
+    container_name: supabase-studio_prod
+  kong:
+    container_name: supabase-kong_prod
+  auth:
+    container_name: supabase-auth_prod
+  rest:
+    container_name: supabase-rest_prod
+  realtime:
+    container_name: supabase-realtime_prod
+  storage:
+    container_name: supabase-storage_prod
+  imgproxy:
+    container_name: supabase-imgproxy_prod
+  meta:
+    container_name: supabase-meta_prod
+  analytics:
+    container_name: supabase-analytics_prod
+  vector:
+    container_name: supabase-vector_prod
+  supavisor:
+    container_name: supabase-pooler_prod
   ryvo_kafka_broker:
     ports: !reset []
   ryvo_bunqueue:
