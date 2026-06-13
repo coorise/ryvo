@@ -8,10 +8,10 @@ networks:
     name: ryvo-net
 
 include:
-  - path: ./server/supabase/docker-compose.prod.yaml
+  - path: ./server/supabase/docker-compose.yml
     project_directory: ./server/supabase
     env_file: ${SUPABASE_ENV_FILE:-./server/supabase/.env}
-  - path: ./server/supabase/docker-compose.yml
+  - path: ./server/supabase/docker-compose.prod.yaml
     project_directory: ./server/supabase
     env_file: ${SUPABASE_ENV_FILE:-./server/supabase/.env}
   - path: ./server/supabase/docker-compose.edge.yaml
@@ -24,24 +24,24 @@ include:
     project_directory: ./server/supabase
     env_file: ${SUPABASE_ENV_FILE:-./server/supabase/.env}
 
-  - path: ./server/kafka/docker-compose.prod.yaml
-    project_directory: ./server/kafka
-    env_file: ${KAFKA_ENV_FILE:-./server/kafka/.env}
   - path: ./server/kafka/docker-compose.yml
     project_directory: ./server/kafka
     env_file: ${KAFKA_ENV_FILE:-./server/kafka/.env}
+  - path: ./server/kafka/docker-compose.prod.yaml
+    project_directory: ./server/kafka
+    env_file: ${KAFKA_ENV_FILE:-./server/kafka/.env}
 
-  - path: ./server/redis/docker-compose.prod.yaml
-    project_directory: ./server/redis
-    env_file: ${REDIS_ENV_FILE:-./server/redis/.env}
   - path: ./server/redis/docker-compose.yaml
     project_directory: ./server/redis
     env_file: ${REDIS_ENV_FILE:-./server/redis/.env}
+  - path: ./server/redis/docker-compose.prod.yaml
+    project_directory: ./server/redis
+    env_file: ${REDIS_ENV_FILE:-./server/redis/.env}
 
-  - path: ./server/bunqueue/docker-compose.prod.yaml
+  - path: ./server/bunqueue/docker-compose.yaml
     project_directory: ./server/bunqueue
     env_file: ${BUNQUEUE_ENV_FILE:-./server/bunqueue/.env}
-  - path: ./server/bunqueue/docker-compose.yaml
+  - path: ./server/bunqueue/docker-compose.prod.yaml
     project_directory: ./server/bunqueue
     env_file: ${BUNQUEUE_ENV_FILE:-./server/bunqueue/.env}
 
@@ -49,3 +49,12 @@ include:
     project_directory: ./network/caddy
   - path: ./deploy/vps/compose/app.bluegreen.prod.yaml
     project_directory: ./deploy/vps/compose
+
+# Root-level overrides (include merge does not honor !reset in nested prod overlays)
+services:
+  ryvo_kafka_broker:
+    ports: !reset []
+  ryvo_bunqueue:
+    ports: !reset []
+  ryvo_redis:
+    ports: !reset []
