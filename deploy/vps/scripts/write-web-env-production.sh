@@ -46,7 +46,7 @@ if [[ -z "$MAPS_KEY" || "$MAPS_KEY" == REPLACE_* ]]; then
   MAPS_KEY="${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-}"
 fi
 if [[ -z "$MAPS_KEY" || "$MAPS_KEY" == REPLACE_* ]]; then
-  for f in client/web/ryvo_admin/.env.local deploy/vps/client/web/ryvo_admin/env.${ENV_NAME}.example; do
+  for f in client/web/ryvo_admin/.env.local client/web/ryvo/.env.local deploy/vps/client/web/ryvo_admin/env.${ENV_NAME}.example deploy/vps/client/web/ryvo/env.${ENV_NAME}.example; do
     if [[ -f "$f" ]]; then
       val="$(grep '^NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=' "$f" 2>/dev/null | cut -d= -f2- | tr -d "'\"" | head -1 || true)"
       [[ -n "$val" && "$val" != REPLACE_* ]] && MAPS_KEY="$val" && break
@@ -65,7 +65,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON}
 NEXT_PUBLIC_FUNCTIONS_URL=${FUN}
 NEXT_PUBLIC_APP_ENV=${APP_ENV}
 EOF
-  if [[ "$app_dir" == *ryvo_admin* ]]; then
+  if [[ -n "$MAPS_KEY" && "$MAPS_KEY" != REPLACE_* ]]; then
     echo "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${MAPS_KEY}" >>"$outfile"
   fi
   echo "  wrote $outfile"

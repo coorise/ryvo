@@ -107,6 +107,7 @@ jobs:
             echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON}"
             echo "NEXT_PUBLIC_FUNCTIONS_URL=https://ryvo-line-server.agglomy.com/functions/v1"
             echo "NEXT_PUBLIC_APP_ENV=production"
+            [[ -n "$MAPS" ]] && echo "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${MAPS}"
           } > client/web/ryvo/.env.production
 
       - name: Build + push web admin image
@@ -138,6 +139,7 @@ jobs:
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ env.PROD_SUPABASE_ANON_KEY }}
             NEXT_PUBLIC_FUNCTIONS_URL=https://ryvo-line-server.agglomy.com/functions/v1
             NEXT_PUBLIC_APP_ENV=production
+            NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ env.PROD_GOOGLE_MAPS_API_KEY }}
           tags: |
             ${{ env.IMAGE_PREFIX }}/ryvo-web-client:sha-${{ github.sha }}
             ${{ env.IMAGE_PREFIX }}/ryvo-web-client:prod

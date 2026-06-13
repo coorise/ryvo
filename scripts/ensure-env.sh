@@ -92,6 +92,7 @@ if [[ -f "$SUPABASE_ENV" ]]; then
       echo "NEXT_PUBLIC_FUNCTIONS_URL=${functions_url}"
       echo "NEXT_PUBLIC_APP_ENV=development"
       [[ "$app" == "ryvo_admin" && -n "${maps:-}" ]] && echo "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${maps}"
+      [[ "$app" == "ryvo" && -n "${maps:-}" ]] && echo "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${maps}"
     } >"$prod"
     echo "Wrote ${prod}"
   done

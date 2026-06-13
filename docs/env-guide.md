@@ -138,9 +138,10 @@ After changing `GOOGLE_MAPS_API_KEY` in `server/supabase/.env`:
 ```bash
 bash scripts/ensure-env.sh
 # Docker stack:
-./scripts/ryvo-up.sh --build ryvo-web-admin
+bash scripts/rebuild-web-local.sh both
 # OR hot-reload dev server:
 cd client/web/ryvo_admin && bun run dev   # restart after ensure-env
+cd client/web/ryvo && bun run dev
 ```
 
 Root `.env` is **not used** — `ensure-env.sh` removes it after migrating to `compose/local.env`.

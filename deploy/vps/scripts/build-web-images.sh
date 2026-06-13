@@ -35,7 +35,7 @@ build_one() {
     --build-arg "NEXT_PUBLIC_FUNCTIONS_URL=$FUN"
     --build-arg "NEXT_PUBLIC_APP_ENV=$APP_ENV"
   )
-  if [[ "$app_dir" == *ryvo_admin* && -n "$MAPS" ]]; then
+  if [[ -n "$MAPS" && "$MAPS" != REPLACE_* ]]; then
     build_args+=(--build-arg "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$MAPS")
   fi
   if [[ -f "$app_dir/.env.production" ]]; then
