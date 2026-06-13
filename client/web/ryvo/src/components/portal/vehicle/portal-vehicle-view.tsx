@@ -1,13 +1,14 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Car, Pencil } from "lucide-react";
+import { Car, Eye, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
 import { KYC_STATUS } from "@/configs/const";
 import { useAuth } from "@/hooks/use-auth";
+import { MIN_GALLERY_IMAGES } from "@/lib/vehicle-profile";
 import { vehiclesService } from "@/services/vehicles.service";
 import { cn } from "@/lib/utils";
 
@@ -31,17 +32,21 @@ export function PortalVehicleView({ vehicleId }: PortalVehicleViewProps) {
   if (!v) return <p className="text-muted-foreground text-sm">{t("common.noData")}</p>;
 
   const specs: { label: string; value: string }[] = [
-    { label: t("portal.kyc.fields.brand"), value: v.brand ?? v.make ?? "—" },
-    { label: t("portal.kyc.fields.name"), value: v.name ?? v.model ?? "—" },
+    { label: t("portal.kyc.fields.brand"), value: v.brand ?? "—" },
+    { label: t("portal.kyc.fields.name"), value: v.name ?? "—" },
     { label: t("portal.kyc.fields.plate"), value: v.plate ?? "—" },
-    { label: t("portal.kyc.fields.year"), value: String(v.year) },
-    { label: t("portal.kyc.fields.color"), value: v.color ?? "—" },
-    { label: t("portal.kyc.fields.category"), value: v.category ?? "—" },
     {
       label: t("portal.kyc.fields.energy"),
       value: v.energy_type ? t(`portal.kyc.energy.${v.energy_type}`) : "—",
     },
-    { label: t("portal.kyc.fields.tyres"), value: v.tyres_type ?? "—" },
+    {
+      label: t("portal.kyc.fields.tyres"),
+      value: v.tyres_type
+        ? (t(`portal.kyc.tyres.${v.tyres_type}`) !== `portal.kyc.tyres.${v.tyres_type}`
+            ? t(`portal.kyc.tyres.${v.tyres_type}`)
+            : v.tyres_type)
+        : "—",
+    },
     {
       label: t("portal.kyc.fields.speed"),
       value: v.max_speed_kmh != null ? `${v.max_speed_kmh} km/h` : "—",
@@ -52,7 +57,7 @@ export function PortalVehicleView({ vehicleId }: PortalVehicleViewProps) {
     },
     {
       label: t("portal.kyc.fields.carbon"),
-      value: v.carbon_print != null ? String(v.carbon_print) : "—",
+      value: v.carbon_print != null ? `${v.carbon_print} g/km` : "—",
     },
   ];
 
@@ -63,7 +68,7 @@ export function PortalVehicleView({ vehicleId }: PortalVehicleViewProps) {
           <Car className="text-primary size-8" />
           <div>
             <h2 className="text-xl font-bold">
-              {v.brand || v.make} {v.name || v.model}
+              {v.brand} {v.name}
             </h2>
             <p className="text-muted-foreground text-sm">{v.plate ?? "—"}</p>
           </div>
@@ -95,30 +100,39 @@ export function PortalVehicleView({ vehicleId }: PortalVehicleViewProps) {
         ))}
       </div>
 
-      <section className="space-y-2">
+      <section className="border-border space-y-2 rounded-xl border p-4">
         <p className="font-semibold">{t("portal.kyc.mediaSection")}</p>
-        <ul className="text-muted-foreground space-y-1 text-sm">
+        <ul className="text-sm space-y-1">
           <li>
             {t("portal.kyc.banner")}: {v.banner_key ? "✓" : "—"}
           </li>
           <li>
-            {t("portal.kyc.galleryImage")}: {v.image_keys?.length ?? 0}
+            {t("portal.kyc.galleryImages")}: {v.image_keys?.length ?? 0} / {MIN_GALLERY_IMAGES}+
           </li>
           <li>
-            {t("portal.kyc.video")}: {v.video_key ? "✓" : "—"}
+            {t("portal.kyc.videoOptional")}: {v.video_key ? "✓" : "—"}
           </li>
         </ul>
       </section>
 
-      <section className="space-y-2">
+      <section className="border-border space-y-2 rounded-xl border p-4">
         <p className="font-semibold">{t("portal.kyc.documentsSection")}</p>
         {v.documents.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t("portal.kyc.noDocs")}</p>
         ) : (
           <ul className="space-y-1 text-sm">
             {v.documents.map((d) => (
-              <li key={d.id}>
-                {d.doc_type === "other" && d.label ? d.label : d.doc_type} · {d.status}
+              <li key={d.id} className="flex justify-between gap-2">
+                <span>
+                  {d.doc_type === "other" && d.label
+                    ? d.label
+                    : d.doc_type === "registration"
+                      ? t("portal.kyc.registration")
+                      : d.doc_type === "insurance"
+                        ? t("portal.kyc.insurance")
+                        : d.doc_type}{" "}
+                  · {d.status}
+                </span>
               </li>
             ))}
           </ul>

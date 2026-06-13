@@ -1,10 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Plus, Trash2, Upload } from "lucide-react";
+import { CheckCircle2, Circle, Eye, Plus, Upload, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -20,71 +20,38 @@ import {
 } from "@/components/ui/dialog";
 import { KYC_STATUS } from "@/configs/const";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  buildVehicleChecklist,
+  emptyVehicleForm,
+  ENERGY_TYPES,
+  formToBody,
+  MIN_GALLERY_IMAGES,
+  TYRES_TYPES,
+  validateVideoFile,
+  vehicleToForm,
+  type VehicleFormState,
+} from "@/lib/vehicle-profile";
 import { storageService } from "@/services/storage.service";
-import { vehiclesService, type DriverVehicle } from "@/services/vehicles.service";
+import { vehiclesService } from "@/services/vehicles.service";
 import { cn } from "@/lib/utils";
-
-const MAX_VIDEO_BYTES = 30 * 1024 * 1024;
-const MIN_GALLERY_IMAGES = 2;
-
-export const emptyVehicleForm = {
-  make: "",
-  model: "",
-  year: new Date().getFullYear(),
-  plate: "",
-  color: "",
-  category: "economy",
-  brand: "",
-  name: "",
-  energy_type: "fuel",
-  tyres_type: "",
-  carbon_print: "",
-  max_speed_kmh: "",
-  age_years: "",
-};
-
-export type VehicleFormState = typeof emptyVehicleForm;
-
-function vehicleToForm(v: DriverVehicle): VehicleFormState {
-  return {
-    make: v.make,
-    model: v.model,
-    year: v.year,
-    plate: v.plate ?? "",
-    color: v.color ?? "",
-    category: v.category ?? "economy",
-    brand: v.brand ?? "",
-    name: v.name ?? "",
-    energy_type: v.energy_type ?? "fuel",
-    tyres_type: v.tyres_type ?? "",
-    carbon_print: v.carbon_print != null ? String(v.carbon_print) : "",
-    max_speed_kmh: v.max_speed_kmh != null ? String(v.max_speed_kmh) : "",
-    age_years: v.age_years != null ? String(v.age_years) : "",
-  };
-}
-
-function formToBody(form: VehicleFormState): Record<string, unknown> {
-  return {
-    make: form.make.trim() || "Unknown",
-    model: form.model.trim() || "Unknown",
-    year: Number(form.year) || new Date().getFullYear(),
-    plate: form.plate.trim() || null,
-    color: form.color.trim() || null,
-    category: form.category.trim() || "economy",
-    brand: form.brand.trim() || null,
-    name: form.name.trim() || null,
-    energy_type: form.energy_type,
-    tyres_type: form.tyres_type.trim() || null,
-    carbon_print: form.carbon_print ? Number(form.carbon_print) : null,
-    max_speed_kmh: form.max_speed_kmh ? Number(form.max_speed_kmh) : null,
-    age_years: form.age_years ? Number(form.age_years) : null,
-  };
-}
 
 type PortalVehicleFormProps = {
   mode: "create" | "edit";
   vehicleId?: string;
 };
+
+function CheckItem({ done, label }: { done: boolean; label: string }) {
+  return (
+    <li className="flex items-start gap-2 text-sm">
+      {done ? (
+        <CheckCircle2 className="text-primary mt-0.5 size-4 shrink-0" />
+      ) : (
+        <Circle className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+      )}
+      <span className={done ? "text-foreground" : "text-muted-foreground"}>{label}</span>
+    </li>
+  );
+}
 
 export function PortalVehicleForm({ mode, vehicleId }: PortalVehicleFormProps) {
   const { t } = useTranslation();
@@ -92,9 +59,14 @@ export function PortalVehicleForm({ mode, vehicleId }: PortalVehicleFormProps) {
   const { accessToken, user } = useAuth();
   const qc = useQueryClient();
   const [form, setForm] = useState<VehicleFormState>(emptyVehicleForm);
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [formLoaded, setFormLoaded] = useState(false);
   const [otherLabel, setOtherLabel] = useState("");
-  const [viewDoc, setViewDoc] = useState<{ docId: string } | null>(null);
+  const [viewDocId, setViewDocId] = useState<string | null>(null);
   const [viewMediaKey, setViewMediaKey] = useState<string | null>(null);
+
+  const effectiveId = vehicleId ?? savedId;
+  const isPersisted = Boolean(effectiveId);
 
   const bannerRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
@@ -103,58 +75,58 @@ export function PortalVehicleForm({ mode, vehicleId }: PortalVehicleFormProps) {
   const insRef = useRef<HTMLInputElement>(null);
   const otherRef = useRef<HTMLInputElement>(null);
 
-  const [formLoaded, setFormLoaded] = useState(false);
-
   const vehicleQ = useQuery({
-    queryKey: ["portal", "vehicle", vehicleId],
-    queryFn: () => vehiclesService.getVehicle(accessToken, vehicleId!),
-    enabled: mode === "edit" && Boolean(accessToken && vehicleId),
+    queryKey: ["portal", "vehicle", effectiveId],
+    queryFn: () => vehiclesService.getVehicle(accessToken, effectiveId!),
+    enabled: Boolean(accessToken && effectiveId),
   });
 
   const vehicle = vehicleQ.data?.vehicle;
 
   useEffect(() => {
-    if (mode === "edit" && vehicle && !formLoaded) {
+    if (vehicle && !formLoaded) {
       setForm(vehicleToForm(vehicle));
       setFormLoaded(true);
     }
-  }, [mode, vehicle, formLoaded]);
+  }, [vehicle, formLoaded]);
+
+  const checklist = buildVehicleChecklist(form, vehicle);
 
   const viewDocQ = useQuery({
-    queryKey: ["portal", "vehicle-doc-view", vehicleId, viewDoc?.docId],
-    queryFn: () => vehiclesService.getDocumentViewUrl(accessToken, vehicleId!, viewDoc!.docId),
-    enabled: Boolean(accessToken && vehicleId && viewDoc),
+    queryKey: ["portal", "vehicle-doc-view", effectiveId, viewDocId],
+    queryFn: () => vehiclesService.getDocumentViewUrl(accessToken, effectiveId!, viewDocId!),
+    enabled: Boolean(accessToken && effectiveId && viewDocId),
   });
 
   const viewMediaQ = useQuery({
-    queryKey: ["portal", "vehicle-media-view", vehicleId, viewMediaKey],
-    queryFn: () => vehiclesService.getMediaViewUrl(accessToken, vehicleId!, viewMediaKey!),
-    enabled: Boolean(accessToken && vehicleId && viewMediaKey),
+    queryKey: ["portal", "vehicle-media-view", effectiveId, viewMediaKey],
+    queryFn: () => vehiclesService.getMediaViewUrl(accessToken, effectiveId!, viewMediaKey!),
+    enabled: Boolean(accessToken && effectiveId && viewMediaKey),
   });
 
   const saveM = useMutation({
-    mutationFn: async () => {
-      const body = formToBody(form);
-      if (mode === "create") return vehiclesService.create(accessToken, body);
-      if (mode === "edit" && vehicle) {
-        const galleryCount = vehicle.image_keys?.length ?? 0;
-        if (galleryCount < MIN_GALLERY_IMAGES) {
-          throw new Error(t("portal.kyc.minGalleryImages", { count: MIN_GALLERY_IMAGES }));
-        }
-        if (!vehicle.banner_key) throw new Error(t("portal.kyc.bannerRequired"));
-        const hasReg = vehicle.documents.some((d) => d.doc_type === "registration");
-        const hasIns = vehicle.documents.some((d) => d.doc_type === "insurance");
-        if (!hasReg || !hasIns) throw new Error(t("portal.kyc.docsRequired"));
+    mutationFn: async (strict?: boolean) => {
+      if (!form.brand.trim() || !form.name.trim()) {
+        throw new Error(t("portal.kyc.requiredBrandName"));
       }
-      return vehiclesService.update(accessToken, vehicleId!, body);
+      if (!form.plate.trim()) throw new Error(t("portal.kyc.requiredPlate"));
+      const body = formToBody(form);
+      if (!effectiveId) return vehiclesService.create(accessToken, body);
+      if (strict && vehicle) {
+        const c = buildVehicleChecklist(form, vehicle);
+        if (!c.readyForReview) throw new Error(t("portal.kyc.profileIncomplete"));
+      }
+      return vehiclesService.update(accessToken, effectiveId, body);
     },
     onSuccess: (data) => {
       toast.success(t("portal.kyc.carSaved"));
       void qc.invalidateQueries({ queryKey: ["portal", "vehicles"] });
-      if (mode === "create" && data.vehicle?.id) {
-        router.push(`/driver/main/kyc/cars/${data.vehicle.id}/edit`);
+      const id = data.vehicle?.id ?? effectiveId;
+      if (!effectiveId && id) {
+        setSavedId(id);
+        router.replace(`/driver/main/kyc/cars/${id}/edit`, { scroll: false });
       } else {
-        void qc.invalidateQueries({ queryKey: ["portal", "vehicle", vehicleId] });
+        void qc.invalidateQueries({ queryKey: ["portal", "vehicle", effectiveId] });
       }
     },
     onError: (e: Error) => toast.error(e.message),
@@ -171,9 +143,9 @@ export function PortalVehicleForm({ mode, vehicleId }: PortalVehicleFormProps) {
       label?: string;
     }) => {
       const ext = file.name.split(".").pop() ?? "bin";
-      const path = `drivers/${user!.id}/vehicles/${vehicleId}/${docType}/${Date.now()}.${ext}`;
+      const path = `drivers/${user!.id}/vehicles/${effectiveId}/${docType}/${Date.now()}.${ext}`;
       const s3Key = await storageService.uploadFile(accessToken, file, path);
-      return vehiclesService.submitDocument(accessToken, vehicleId!, {
+      return vehiclesService.submitDocument(accessToken, effectiveId!, {
         doc_type: docType,
         s3_key: s3Key,
         label,
@@ -181,7 +153,7 @@ export function PortalVehicleForm({ mode, vehicleId }: PortalVehicleFormProps) {
     },
     onSuccess: () => {
       toast.success(t("portal.kyc.uploaded"));
-      void qc.invalidateQueries({ queryKey: ["portal", "vehicle", vehicleId] });
+      void qc.invalidateQueries({ queryKey: ["portal", "vehicle", effectiveId] });
       void qc.invalidateQueries({ queryKey: ["portal", "vehicles"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -189,136 +161,270 @@ export function PortalVehicleForm({ mode, vehicleId }: PortalVehicleFormProps) {
 
   const patchMediaM = useMutation({
     mutationFn: async (patch: Record<string, unknown>) =>
-      vehiclesService.update(accessToken, vehicleId!, patch),
+      vehiclesService.update(accessToken, effectiveId!, patch),
     onSuccess: () => {
       toast.success(t("portal.kyc.uploaded"));
-      void qc.invalidateQueries({ queryKey: ["portal", "vehicle", vehicleId] });
+      void qc.invalidateQueries({ queryKey: ["portal", "vehicle", effectiveId] });
       void qc.invalidateQueries({ queryKey: ["portal", "vehicles"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   async function uploadGalleryFiles(files: FileList | null) {
-    if (!files?.length || !vehicleId || !vehicle) return;
+    if (!files?.length || !effectiveId || !vehicle) return;
     const keys = [...(vehicle.image_keys ?? [])];
     for (const file of Array.from(files)) {
-      const path = `drivers/${user!.id}/vehicles/${vehicleId}/gallery/${Date.now()}-${file.name}`;
-      const key = await storageService.uploadFile(accessToken, file, path);
-      keys.push(key);
+      const path = `drivers/${user!.id}/vehicles/${effectiveId}/gallery/${Date.now()}-${file.name}`;
+      keys.push(await storageService.uploadFile(accessToken, file, path));
     }
     await patchMediaM.mutateAsync({ image_keys: keys });
   }
 
+  async function removeGalleryKey(key: string) {
+    if (!vehicle) return;
+    const keys = (vehicle.image_keys ?? []).filter((k) => k !== key);
+    await patchMediaM.mutateAsync({ image_keys: keys });
+  }
+
   async function uploadVideo(file: File) {
-    if (file.size > MAX_VIDEO_BYTES) {
-      toast.error(t("portal.kyc.videoTooLarge"));
+    const check = await validateVideoFile(file);
+    if (!check.ok) {
+      if (check.reason === "size") toast.error(t("portal.kyc.videoTooLarge"));
+      else if (check.reason === "duration") toast.error(t("portal.kyc.videoTooLong"));
+      else toast.error(t("portal.kyc.videoInvalid"));
       return;
     }
-    const path = `drivers/${user!.id}/vehicles/${vehicleId}/video/${Date.now()}.mp4`;
+    const path = `drivers/${user!.id}/vehicles/${effectiveId}/video/${Date.now()}.mp4`;
     const key = await storageService.uploadFile(accessToken, file, path);
     await patchMediaM.mutateAsync({ video_key: key });
   }
 
-  const fieldRows: { key: keyof VehicleFormState; label: string; type?: string }[] = [
-    { key: "brand", label: t("portal.kyc.fields.brand") },
-    { key: "name", label: t("portal.kyc.fields.name") },
-    { key: "make", label: t("portal.kyc.fields.make") },
-    { key: "model", label: t("portal.kyc.fields.model") },
-    { key: "plate", label: t("portal.kyc.fields.plate") },
-    { key: "year", label: t("portal.kyc.fields.year"), type: "number" },
-    { key: "color", label: t("portal.kyc.fields.color") },
-    { key: "category", label: t("portal.kyc.fields.category") },
-    { key: "tyres_type", label: t("portal.kyc.fields.tyres") },
-    { key: "max_speed_kmh", label: t("portal.kyc.fields.speed"), type: "number" },
-    { key: "age_years", label: t("portal.kyc.fields.age"), type: "number" },
-    { key: "carbon_print", label: t("portal.kyc.fields.carbon"), type: "number" },
-  ];
+  function docForType(docType: string) {
+    return vehicle?.documents.find((d) => d.doc_type === docType);
+  }
+
+  const otherDocs = vehicle?.documents.filter((d) => d.doc_type === "other") ?? [];
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {fieldRows.map(({ key, label, type }) => (
-          <div key={key} className="space-y-1">
-            <Label>{label}</Label>
+      {isPersisted && vehicle ? (
+        <section className="border-border bg-muted/20 rounded-2xl border p-4">
+          <p className="mb-3 font-semibold">{t("portal.kyc.profileChecklist")}</p>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            <CheckItem done={checklist.profileComplete} label={t("portal.kyc.checkProfileFields")} />
+            <CheckItem done={checklist.hasBanner} label={t("portal.kyc.banner")} />
+            <CheckItem
+              done={checklist.galleryCount >= MIN_GALLERY_IMAGES}
+              label={t("portal.kyc.checkGallery", { count: MIN_GALLERY_IMAGES })}
+            />
+            <CheckItem done={checklist.hasRegistration} label={t("portal.kyc.registration")} />
+            <CheckItem done={checklist.hasInsurance} label={t("portal.kyc.insurance")} />
+            <CheckItem done={Boolean(vehicle.video_key)} label={t("portal.kyc.videoOptional")} />
+          </ul>
+        </section>
+      ) : null}
+
+      <section className="space-y-4">
+        <div>
+          <p className="text-lg font-bold">{t("portal.kyc.carProfileSection")}</p>
+          <p className="text-muted-foreground text-sm">{t("portal.kyc.carProfileHint")}</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-1">
+            <Label>{t("portal.kyc.fields.brand")} *</Label>
             <Input
-              type={type ?? "text"}
-              value={String(form[key])}
-              onChange={(e) =>
-                setForm((f) => ({
-                  ...f,
-                  [key]: type === "number" ? e.target.value : e.target.value,
-                }))
-              }
+              value={form.brand}
+              onChange={(e) => setForm((f) => ({ ...f, brand: e.target.value, make: e.target.value }))}
             />
           </div>
-        ))}
-        <div className="space-y-1">
-          <Label>{t("portal.kyc.fields.energy")}</Label>
-          <select
-            className="border-input bg-background h-10 w-full rounded-md border px-3 text-sm"
-            value={form.energy_type}
-            onChange={(e) => setForm((f) => ({ ...f, energy_type: e.target.value }))}
-          >
-            <option value="fuel">{t("portal.kyc.energy.fuel")}</option>
-            <option value="electric">{t("portal.kyc.energy.electric")}</option>
-            <option value="hybrid">{t("portal.kyc.energy.hybrid")}</option>
-          </select>
-        </div>
-      </div>
-
-      {mode === "edit" && vehicle ? (
-        <>
-          <section className="border-border space-y-3 rounded-2xl border p-4">
-            <p className="font-semibold">{t("portal.kyc.mediaSection")}</p>
-            <p className="text-muted-foreground text-xs">{t("portal.kyc.mediaHint")}</p>
-            <div className="flex flex-wrap gap-2">
-              <RyvoButton intent="outline" size="sm" onClick={() => bannerRef.current?.click()}>
-                <Upload className="size-3.5" /> {t("portal.kyc.banner")}
-                {vehicle.banner_key ? " ✓" : ""}
-              </RyvoButton>
-              <RyvoButton intent="outline" size="sm" onClick={() => galleryRef.current?.click()}>
-                <Upload className="size-3.5" /> {t("portal.kyc.addGalleryImages")} (
-                {vehicle.image_keys?.length ?? 0}/{MIN_GALLERY_IMAGES}+)
-              </RyvoButton>
-              <RyvoButton intent="outline" size="sm" onClick={() => videoRef.current?.click()}>
-                <Upload className="size-3.5" /> {t("portal.kyc.video")}
-                {vehicle.video_key ? " ✓" : ""}
-              </RyvoButton>
-              {vehicle.banner_key ? (
-                <RyvoButton
-                  intent="outline"
-                  size="sm"
-                  onClick={() => setViewMediaKey(vehicle.banner_key!)}
-                >
-                  <Eye className="size-3.5" /> {t("portal.kyc.viewBanner")}
-                </RyvoButton>
-              ) : null}
-              {(vehicle.image_keys ?? []).map((key, i) => (
-                <RyvoButton key={key} intent="outline" size="sm" onClick={() => setViewMediaKey(key)}>
-                  <Eye className="size-3.5" /> {t("portal.kyc.galleryImage")} {i + 1}
-                </RyvoButton>
+          <div className="space-y-1">
+            <Label>{t("portal.kyc.fields.name")} *</Label>
+            <Input
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value, model: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>{t("portal.kyc.fields.plate")} *</Label>
+            <Input value={form.plate} onChange={(e) => setForm((f) => ({ ...f, plate: e.target.value }))} />
+          </div>
+          <div className="space-y-1">
+            <Label>{t("portal.kyc.fields.speed")} *</Label>
+            <Input
+              type="number"
+              min={0}
+              value={form.max_speed_kmh}
+              onChange={(e) => setForm((f) => ({ ...f, max_speed_kmh: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>{t("portal.kyc.fields.age")} *</Label>
+            <Input
+              type="number"
+              min={0}
+              value={form.age_years}
+              onChange={(e) => setForm((f) => ({ ...f, age_years: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>{t("portal.kyc.fields.tyres")} *</Label>
+            <select
+              className="border-input bg-background h-10 w-full rounded-md border px-3 text-sm"
+              value={form.tyres_type}
+              onChange={(e) => setForm((f) => ({ ...f, tyres_type: e.target.value }))}
+            >
+              <option value="">{t("portal.kyc.selectTyres")}</option>
+              {TYRES_TYPES.map((tyre) => (
+                <option key={tyre} value={tyre}>
+                  {t(`portal.kyc.tyres.${tyre}`)}
+                </option>
               ))}
-              {vehicle.video_key ? (
-                <RyvoButton
-                  intent="outline"
-                  size="sm"
-                  onClick={() => setViewMediaKey(vehicle.video_key!)}
-                >
-                  <Eye className="size-3.5" /> {t("portal.kyc.viewVideo")}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <Label>{t("portal.kyc.fields.carbon")} *</Label>
+            <Input
+              type="number"
+              min={0}
+              step="0.01"
+              value={form.carbon_print}
+              onChange={(e) => setForm((f) => ({ ...f, carbon_print: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>{t("portal.kyc.fields.energy")} *</Label>
+            <select
+              className="border-input bg-background h-10 w-full rounded-md border px-3 text-sm"
+              value={form.energy_type}
+              onChange={(e) => setForm((f) => ({ ...f, energy_type: e.target.value }))}
+            >
+              {ENERGY_TYPES.map((energy) => (
+                <option key={energy} value={energy}>
+                  {t(`portal.kyc.energy.${energy}`)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </section>
+
+      {isPersisted && vehicle ? (
+        <>
+          <section className="border-border space-y-4 rounded-2xl border p-4">
+            <div>
+              <p className="font-semibold">{t("portal.kyc.mediaSection")}</p>
+              <p className="text-muted-foreground text-xs">{t("portal.kyc.mediaHint")}</p>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-sm font-medium">{t("portal.kyc.banner")} *</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <RyvoButton intent="outline" size="sm" onClick={() => bannerRef.current?.click()}>
+                  <Upload className="size-3.5" /> {t("portal.kyc.uploadBanner")}
                 </RyvoButton>
+                {vehicle.banner_key ? (
+                  <RyvoButton intent="outline" size="sm" onClick={() => setViewMediaKey(vehicle.banner_key!)}>
+                    <Eye className="size-3.5" /> {t("portal.kyc.viewBanner")}
+                  </RyvoButton>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-sm font-medium">
+                {t("portal.kyc.galleryImages")} * ({vehicle.image_keys?.length ?? 0}/{MIN_GALLERY_IMAGES}+)
+              </p>
+              <RyvoButton intent="outline" size="sm" onClick={() => galleryRef.current?.click()}>
+                <Upload className="size-3.5" /> {t("portal.kyc.addGalleryImages")}
+              </RyvoButton>
+              {(vehicle.image_keys ?? []).length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {(vehicle.image_keys ?? []).map((key, i) => (
+                    <div key={key} className="border-border flex items-center gap-1 rounded-lg border px-2 py-1 text-xs">
+                      <button type="button" className="text-primary" onClick={() => setViewMediaKey(key)}>
+                        {t("portal.kyc.galleryImage")} {i + 1}
+                      </button>
+                      <button type="button" className="text-destructive" onClick={() => void removeGalleryKey(key)}>
+                        <X className="size-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               ) : null}
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-sm font-medium">{t("portal.kyc.video")}</p>
+              <div className="flex flex-wrap gap-2">
+                <RyvoButton intent="outline" size="sm" onClick={() => videoRef.current?.click()}>
+                  <Upload className="size-3.5" /> {t("portal.kyc.uploadVideo")}
+                </RyvoButton>
+                {vehicle.video_key ? (
+                  <RyvoButton intent="outline" size="sm" onClick={() => setViewMediaKey(vehicle.video_key!)}>
+                    <Eye className="size-3.5" /> {t("portal.kyc.viewVideo")}
+                  </RyvoButton>
+                ) : null}
+              </div>
             </div>
           </section>
 
-          <section className="border-border space-y-3 rounded-2xl border p-4">
-            <p className="font-semibold">{t("portal.kyc.documentsSection")}</p>
-            <div className="flex flex-wrap gap-2">
-              <RyvoButton intent="outline" size="sm" onClick={() => regRef.current?.click()}>
-                <Upload className="size-3.5" /> {t("portal.kyc.registration")}
-              </RyvoButton>
-              <RyvoButton intent="outline" size="sm" onClick={() => insRef.current?.click()}>
-                <Upload className="size-3.5" /> {t("portal.kyc.insurance")}
-              </RyvoButton>
+          <section className="border-border space-y-4 rounded-2xl border p-4">
+            <div>
+              <p className="font-semibold">{t("portal.kyc.documentsSection")}</p>
+              <p className="text-muted-foreground text-xs">{t("portal.kyc.documentsHint")}</p>
+            </div>
+
+            {(["registration", "insurance"] as const).map((docType) => {
+              const doc = docForType(docType);
+              return (
+                <div
+                  key={docType}
+                  className="border-border flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3"
+                >
+                  <div>
+                    <p className="font-medium">
+                      {docType === "registration"
+                        ? t("portal.kyc.registration")
+                        : t("portal.kyc.insurance")}
+                      {" *"}
+                    </p>
+                    <span
+                      className={cn(
+                        "mt-1 inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase",
+                        doc?.status === KYC_STATUS.approved
+                          ? "bg-primary/15 text-primary"
+                          : doc
+                            ? "bg-amber-500/15 text-amber-700"
+                            : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {doc?.status ?? t("portal.kyc.docMissing")}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <RyvoButton
+                      intent="outline"
+                      size="sm"
+                      onClick={() =>
+                        docType === "registration"
+                          ? regRef.current?.click()
+                          : insRef.current?.click()
+                      }
+                    >
+                      <Upload className="size-3.5" /> {doc ? t("portal.kyc.update") : t("portal.kyc.upload")}
+                    </RyvoButton>
+                    {doc ? (
+                      <RyvoButton intent="outline" size="sm" onClick={() => setViewDocId(doc.id)}>
+                        <Eye className="size-3.5" /> {t("portal.kyc.viewDocument")}
+                      </RyvoButton>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium">{t("portal.kyc.otherDocsTitle")}</p>
               <div className="flex flex-wrap items-end gap-2">
                 <div className="space-y-1">
                   <Label className="text-xs">{t("portal.kyc.otherDocLabel")}</Label>
@@ -326,48 +432,56 @@ export function PortalVehicleForm({ mode, vehicleId }: PortalVehicleFormProps) {
                     value={otherLabel}
                     onChange={(e) => setOtherLabel(e.target.value)}
                     placeholder={t("portal.kyc.otherDocPlaceholder")}
-                    className="h-9 w-40"
+                    className="h-9 w-48"
                   />
                 </div>
                 <RyvoButton intent="outline" size="sm" onClick={() => otherRef.current?.click()}>
                   <Plus className="size-3.5" /> {t("portal.kyc.addOtherDoc")}
                 </RyvoButton>
               </div>
-            </div>
-            <ul className="space-y-1 text-xs">
-              {vehicle.documents.map((d) => (
-                <li key={d.id} className="flex items-center justify-between gap-2">
-                  <span>
-                    {d.doc_type === "other" && d.label ? d.label : d.doc_type} · {d.status}
-                  </span>
-                  <button
-                    type="button"
-                    className="text-primary inline-flex items-center gap-1"
-                    onClick={() => setViewDoc({ docId: d.id })}
+              <ul className="space-y-2">
+                {otherDocs.map((d) => (
+                  <li
+                    key={d.id}
+                    className="border-border flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm"
                   >
-                    <Eye className="size-3" /> {t("portal.kyc.viewDocument")}
-                  </button>
-                </li>
-              ))}
-            </ul>
+                    <span>
+                      {d.label ?? t("portal.kyc.otherDocDefault")} · {d.status}
+                    </span>
+                    <RyvoButton intent="outline" size="sm" onClick={() => setViewDocId(d.id)}>
+                      <Eye className="size-3.5" /> {t("portal.kyc.viewDocument")}
+                    </RyvoButton>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </section>
 
           {vehicle.status === KYC_STATUS.rejected && vehicle.rejection_reason ? (
             <p className="text-destructive text-sm">{vehicle.rejection_reason}</p>
           ) : null}
         </>
-      ) : mode === "create" ? (
+      ) : (
         <p className="text-muted-foreground rounded-xl border border-dashed p-4 text-sm">
-          {t("portal.kyc.createThenUploadHint")}
+          {t("portal.kyc.saveProfileFirstHint")}
         </p>
-      ) : null}
+      )}
 
       <div className="flex flex-wrap gap-3">
-        <RyvoButton intent="cta" disabled={saveM.isPending} onClick={() => saveM.mutate()}>
-          {mode === "create" ? t("portal.kyc.createCar") : t("common.save")}
+        <RyvoButton intent="cta" disabled={saveM.isPending} onClick={() => saveM.mutate(false)}>
+          {isPersisted ? t("portal.kyc.saveProfile") : t("portal.kyc.createCar")}
         </RyvoButton>
-        {vehicleId ? (
-          <Link href={`/driver/main/kyc/cars/${vehicleId}`}>
+        {isPersisted ? (
+          <RyvoButton
+            intent="outline"
+            disabled={saveM.isPending || !checklist.readyForReview}
+            onClick={() => saveM.mutate(true)}
+          >
+            {t("portal.kyc.submitForReview")}
+          </RyvoButton>
+        ) : null}
+        {effectiveId ? (
+          <Link href={`/driver/main/kyc/cars/${effectiveId}`}>
             <RyvoButton intent="outline">{t("portal.kyc.viewCar")}</RyvoButton>
           </Link>
         ) : null}
@@ -376,84 +490,49 @@ export function PortalVehicleForm({ mode, vehicleId }: PortalVehicleFormProps) {
         </Link>
       </div>
 
-      <input
-        ref={bannerRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={async (e) => {
-          const file = e.target.files?.[0];
-          if (file && vehicleId) {
-            const path = `drivers/${user!.id}/vehicles/${vehicleId}/banner/${Date.now()}.jpg`;
-            const key = await storageService.uploadFile(accessToken, file, path);
-            await patchMediaM.mutateAsync({ banner_key: key });
-          }
-          e.target.value = "";
-        }}
-      />
-      <input
-        ref={galleryRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={(e) => {
-          void uploadGalleryFiles(e.target.files);
-          e.target.value = "";
-        }}
-      />
-      <input
-        ref={videoRef}
-        type="file"
-        accept="video/mp4,video/webm"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) void uploadVideo(file);
-          e.target.value = "";
-        }}
-      />
-      <input
-        ref={regRef}
-        type="file"
-        accept="image/*,application/pdf"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) uploadDocM.mutate({ docType: "registration", file });
-          e.target.value = "";
-        }}
-      />
-      <input
-        ref={insRef}
-        type="file"
-        accept="image/*,application/pdf"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) uploadDocM.mutate({ docType: "insurance", file });
-          e.target.value = "";
-        }}
-      />
-      <input
-        ref={otherRef}
-        type="file"
-        accept="image/*,application/pdf"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file)
-            uploadDocM.mutate({
-              docType: "other",
-              file,
-              label: otherLabel.trim() || t("portal.kyc.otherDocDefault"),
-            });
-          e.target.value = "";
-        }}
-      />
+      <input ref={bannerRef} type="file" accept="image/*" className="hidden" onChange={async (e) => {
+        const file = e.target.files?.[0];
+        if (file && effectiveId) {
+          const path = `drivers/${user!.id}/vehicles/${effectiveId}/banner/${Date.now()}.jpg`;
+          await patchMediaM.mutateAsync({ banner_key: await storageService.uploadFile(accessToken, file, path) });
+        }
+        e.target.value = "";
+      }} />
+      <input ref={galleryRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
+        void uploadGalleryFiles(e.target.files);
+        e.target.value = "";
+      }} />
+      <input ref={videoRef} type="file" accept="video/mp4,video/webm" className="hidden" onChange={(e) => {
+        const file = e.target.files?.[0];
+        if (file) void uploadVideo(file);
+        e.target.value = "";
+      }} />
+      <input ref={regRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => {
+        const file = e.target.files?.[0];
+        if (file) uploadDocM.mutate({ docType: "registration", file });
+        e.target.value = "";
+      }} />
+      <input ref={insRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => {
+        const file = e.target.files?.[0];
+        if (file) uploadDocM.mutate({ docType: "insurance", file });
+        e.target.value = "";
+      }} />
+      <input ref={otherRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => {
+        const file = e.target.files?.[0];
+        if (file)
+          uploadDocM.mutate({
+            docType: "other",
+            file,
+            label: otherLabel.trim() || t("portal.kyc.otherDocDefault"),
+          });
+        e.target.value = "";
+      }} />
 
-      <Dialog open={Boolean(viewDoc)} onOpenChange={(open) => !open && setViewDoc(null)}>
+      <Dialog open={Boolean(viewDocId)} onOpenChange={(open) => !open && setViewDocId(null)}>
         <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{t("portal.kyc.viewDocument")}</DialogTitle>
+          </DialogHeader>
           <div className="bg-muted/30 min-h-[240px] rounded-xl border p-2">
             {viewDocQ.data?.url && viewDocQ.data.mime_type.startsWith("image/") ? (
               // eslint-disable-next-line @next/next/no-img-element
