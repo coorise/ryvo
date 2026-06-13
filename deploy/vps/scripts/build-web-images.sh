@@ -38,6 +38,9 @@ build_one() {
   if [[ "$app_dir" == *ryvo_admin* && -n "$MAPS" ]]; then
     build_args+=(--build-arg "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$MAPS")
   fi
+  if [[ -f "$app_dir/.env.production" ]]; then
+    build_args+=(--build-arg "CACHEBUST=$(md5sum "$app_dir/.env.production" | awk '{print $1}')")
+  fi
   docker build \
     -f "$app_dir/Dockerfile" \
     "${build_args[@]}" \

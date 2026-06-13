@@ -79,7 +79,12 @@ bash deploy/vps/scripts/write-web-env-production.sh dev
 
 `deploy-bluegreen.sh` calls `build-web-images.sh`, which runs `write-web-env-production.sh` automatically.
 
-For CI, set GitHub secret **`DEV_SUPABASE_ANON_KEY`** to the `ANON_KEY` from `server/supabase/.env`.
+For CI, set GitHub secrets:
+
+- **`DEV_SUPABASE_ANON_KEY`** = `ANON_KEY` from `server/supabase/.env`
+- **`DEV_GOOGLE_MAPS_API_KEY`** = `GOOGLE_MAPS_API_KEY` from `server/supabase/.env` (admin live map)
+
+On the VPS, set provider keys once in **`server/supabase/.env`** (they are not committed). `apply-env.sh` copies them into compose/client env and `write-web-env-production.sh` bakes `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` into the admin Docker build.
 
 Local only: `bash scripts/ensure-env.sh` writes `.env.local` and `.env.production` for localhost URLs.
 
