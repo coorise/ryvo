@@ -13,7 +13,7 @@ RETURNS TABLE (
 )
 LANGUAGE sql
 SECURITY DEFINER
-SET search_path = public, auth
+SET search_path = public, auth, extensions
 AS $$
   WITH active AS (
     SELECT DISTINCT t.driver_id
