@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { AdminDriverVehiclesSection } from "@/components/admin/admin-driver-vehicles-section";
 import { DriverDocumentsSection } from "@/components/admin/driver-documents-section";
 import { ProfileManageSection } from "@/components/admin/profile-manage-section";
 import { ProfileHeader } from "@/components/admin/profile-header";
 import { ReviewsSection } from "@/components/admin/reviews-section";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PERMISSIONS, PROFILE_VARIANT, QUERY_KEYS, ROUTES } from "@/configs/const";
 import { useAuth } from "@/hooks/use-auth";
 import { useRbac } from "@/hooks/use-rbac";
@@ -37,6 +40,7 @@ export default function DriverProfilePage() {
   const driver = data?.driver;
   const canEditDriver =
     hasPermission(PERMISSIONS.drivers.update) || hasPermission(PERMISSIONS.users.update);
+  const [tab, setTab] = useState("driver");
 
   if (!driverId) return <p className="text-muted-foreground text-sm">{t("common.noData")}</p>;
   if (isLoading) return <p className="text-muted-foreground text-sm">{t("common.loading")}</p>;
@@ -78,8 +82,19 @@ export default function DriverProfilePage() {
           }}
         />
       )}
-      <DriverDocumentsSection driverId={driver.id} documents={driver.documents} />
-      <ReviewsSection reviews={driver.reviews} />
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="driver">{t("drivers.tabs.driver")}</TabsTrigger>
+          <TabsTrigger value="cars">{t("drivers.tabs.cars")}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="driver" className="mt-6 space-y-6">
+          <DriverDocumentsSection driverId={driver.id} documents={driver.documents} />
+          <ReviewsSection reviews={driver.reviews} />
+        </TabsContent>
+        <TabsContent value="cars" className="mt-6">
+          <AdminDriverVehiclesSection driverId={driver.id} vehicles={driver.vehicles ?? []} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

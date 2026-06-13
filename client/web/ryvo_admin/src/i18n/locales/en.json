@@ -856,7 +856,12 @@
     "docPassport": "Passport",
     "docSelfie": "Selfie with ID",
     "docBank": "Bank statement",
-    "reviewsFromClients": "Reviews from clients"
+    "reviewsFromClients": "Reviews from clients",
+    "tabs": {
+      "driver": "Driver",
+      "cars": "Driver's cars"
+    },
+    "carsTitle": "Know your car — vehicles"
   },
   "tickets": {
     "subtitle": "Support inbox — reply to clients and drivers.",

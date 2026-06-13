@@ -5,15 +5,13 @@ import { publishEvent, TOPICS } from "../../../../_shared/lib/kafka.ts";
 import { requirePermission, requireRole } from "../../../../_shared/middleware/auth.ts";
 import { queueNotification } from "../../../../_shared/lib/events.ts";
 import { REQUIRED_KYC_DOCS } from "../../../../_shared/lib/trip-flow.ts";
+import {
+  getPersonalKycDocumentViewUrl,
+  PERSONAL_KYC_DOC_TYPES,
+} from "../../../../_shared/lib/driver-vehicles.ts";
 import { z } from "zod";
 
-const docTypeSchema = z.enum([
-  "national_id",
-  "passport",
-  "selfie_with_id",
-  "driver_license",
-  "bank_statement",
-]);
+const docTypeSchema = z.enum(PERSONAL_KYC_DOC_TYPES);
 
 async function syncDriverKycStatus(driverId: string): Promise<void> {
   const db = getAdminClient();
@@ -64,7 +62,28 @@ export const routes: RouteDef[] = [{
         kyc_status: profile?.kyc_status ?? "pending",
         required: REQUIRED_KYC_DOCS,
         documents: byType,
+        items: (docs ?? []).filter((d) =>
+          (PERSONAL_KYC_DOC_TYPES as readonly string[]).includes(d.doc_type),
+        ),
       });
+    },
+  },
+{
+    method: "GET",
+    path: "/v1/documents/:doc_type/view-url",
+    auth: true,
+    handler: async (_req, ctx, params) => {
+      const denied = requireRole(ctx.auth!, "driver");
+      if (denied) return denied;
+      try {
+        const view = await getPersonalKycDocumentViewUrl(ctx.auth!.userId, params.doc_type);
+        return ok(view);
+      } catch (e) {
+        const msg = (e as Error).message;
+        if (msg === "NOT_FOUND") return fail("NOT_FOUND", "Document not found", 404);
+        if (msg === "NO_FILE") return fail("NO_FILE", "No file uploaded yet", 404);
+        return fail("VIEW_FAILED", msg, 400);
+      }
     },
   },
 {

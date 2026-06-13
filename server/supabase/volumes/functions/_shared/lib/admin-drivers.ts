@@ -4,6 +4,7 @@ import { queueNotification, emitAudit } from "./events.ts";
 import type { AuthLike } from "./dynamic-rbac.ts";
 import { hasPerm } from "./dynamic-rbac.ts";
 import { loadReviewsForUser, type AdminReviewRow } from "./admin-users.ts";
+import { listDriverVehicles } from "./driver-vehicles.ts";
 
 export async function listDrivers(limit = 150) {
   const db = getAdminClient();
@@ -57,6 +58,7 @@ export async function getDriverDetail(driverId: string) {
   );
 
   const reviews: AdminReviewRow[] = await loadReviewsForUser(driverId);
+  const vehicles = await listDriverVehicles(driverId);
 
   return {
     id: driverId,
@@ -75,6 +77,8 @@ export async function getDriverDetail(driverId: string) {
     documents: docs ?? [],
     roles: (roles ?? []).map((r) => (r.roles as { name: string })?.name).filter(Boolean),
     reviews,
+    vehicles,
+    active_vehicle_id: profile?.active_vehicle_id ?? null,
   };
 }
 
@@ -219,9 +223,10 @@ async function syncDriverKycStatus(driverId: string) {
   const db = getAdminClient();
   const { data: docs } = await db.from("kyc_documents").select("doc_type,status").eq("driver_id", driverId);
 
-  const required = ["driver_license", "vehicle_insurance", "vehicle_registration", "profile_photo"];
+  const required = ["national_id", "selfie_with_id", "driver_license", "bank_statement"];
   const approved = new Set((docs ?? []).filter((d) => d.status === "approved").map((d) => d.doc_type));
-  const allApproved = required.every((t) => approved.has(t));
+  const hasId = approved.has("national_id") || approved.has("passport");
+  const allApproved = hasId && required.filter((t) => t !== "national_id").every((t) => approved.has(t));
   const anyRejected = (docs ?? []).some((d) => d.status === "rejected");
 
   let status = "pending";

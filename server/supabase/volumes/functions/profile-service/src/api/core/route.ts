@@ -45,7 +45,7 @@ export const routes: RouteDef[] = [{
       const db = getAdminClient();
       const { data: profile } = await db
         .from("driver_profiles")
-        .select("user_id,avatar_url,rating_avg,trip_count,kyc_status")
+        .select("user_id,avatar_url,rating_avg,trip_count,kyc_status,active_vehicle_id")
         .eq("user_id", params.user_id)
         .single();
       const { data: reviews } = await db
@@ -55,7 +55,27 @@ export const routes: RouteDef[] = [{
         .eq("role", "driver")
         .order("created_at", { ascending: false })
         .limit(20);
-      return ok({ profile, reviews });
+      let active_vehicle = null;
+      if (profile?.active_vehicle_id) {
+        const { data: vehicle } = await db
+          .from("vehicles")
+          .select(
+            "id,make,model,year,plate,brand,name,category,energy_type,tyres_type,carbon_print,max_speed_kmh,age_years,banner_key,image_keys,status",
+          )
+          .eq("id", profile.active_vehicle_id)
+          .eq("status", "approved")
+          .maybeSingle();
+        active_vehicle = vehicle;
+      }
+      const { data: authUser } = await db.auth.admin.getUserById(params.user_id);
+      return ok({
+        profile: {
+          ...profile,
+          full_name: authUser.user?.user_metadata?.full_name ?? null,
+        },
+        reviews,
+        active_vehicle,
+      });
     },
   },
 {

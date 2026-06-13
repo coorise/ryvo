@@ -1,4 +1,5 @@
 import { BaseService } from "@/lib/base-service";
+import type { KycChecklist } from "@/services/vehicles.service";
 
 export type KycQueueItem = {
   id: string;
@@ -19,11 +20,14 @@ export class KycService extends BaseService {
   }
 
   getChecklist(token: string | null) {
-    return this.get<{
-      kyc_status: string;
-      required: string[];
-      documents: Record<string, { doc_type: string; status: string; rejection_reason?: string | null }>;
-    }>("/v1/checklist", token);
+    return this.get<KycChecklist>("/v1/checklist", token);
+  }
+
+  getDocumentViewUrl(token: string | null, docType: string) {
+    return this.get<{ url: string; mime_type: string; status: string }>(
+      `/v1/documents/${docType}/view-url`,
+      token,
+    );
   }
 
   submitDocument(token: string | null, docType: string, s3Key: string) {

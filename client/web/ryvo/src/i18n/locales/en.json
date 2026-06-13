@@ -605,7 +605,12 @@
       "region": "Province / state",
       "postalCode": "Postal code",
       "country": "Country (ISO)",
-      "bio": "Bio"
+      "bio": "Bio",
+      "uploadAvatar": "Upload photo",
+      "avatarUploaded": "Photo uploaded — save profile to apply.",
+      "activeVehicle": "Current active car",
+      "noActiveVehicle": "No active car",
+      "activeVehicleHint": "Only approved cars from Driver KYC → Your cars appear here."
     },
     "general": {
       "title": "General platform",
@@ -833,7 +838,20 @@
     "docPassport": "Passport",
     "docSelfie": "Selfie with ID",
     "docBank": "Bank statement",
-    "reviewsFromClients": "Reviews from clients"
+    "reviewsFromClients": "Reviews from clients",
+    "viewDocument": "View",
+    "viewDocumentHint": "Preview from secure storage.",
+    "viewDocumentError": "Could not load this file. It may not have been uploaded yet.",
+    "openInNewTab": "Open in new tab",
+    "newUpload": "New upload",
+    "rejectDocumentTitle": "Reject document",
+    "rejectDocumentHint": "The driver will be notified.",
+    "confirmReject": "Confirm rejection",
+    "tabs": {
+      "driver": "Driver",
+      "cars": "Driver's cars"
+    },
+    "carsTitle": "Know your car — vehicles"
   },
   "tickets": {
     "subtitle": "Support inbox — reply to clients and drivers.",
@@ -1396,6 +1414,10 @@
     "counterparties": {
       "unavailable": "Could not load ride partners. Complete a trip to see people here.",
       "hint": "Profiles open from ride history.",
+      "viewProfile": "View profile",
+      "profileTitle": "Driver profile",
+      "activeCar": "Active car",
+      "trips": "trips",
       "columns": {
         "user": "User",
         "trips": "Trips together"
@@ -1406,7 +1428,35 @@
       "unavailable": "Could not load KYC status. Contact support if this persists.",
       "statusLabel": "Verification status",
       "noDocuments": "No documents on file yet.",
-      "uploadHint": "Document upload uses secure storage — submit files from the mobile app or contact support to complete verification."
+      "uploadHint": "Upload or update documents below. Each update returns to pending until staff approves.",
+      "uploaded": "Document uploaded — pending staff review.",
+      "update": "Update",
+      "tabs": {
+        "you": "You",
+        "cars": "Your cars"
+      },
+      "carsHint": "Register each car you drive. Staff must approve the vehicle and its documents.",
+      "addCar": "Add car",
+      "editCar": "Edit car",
+      "noCars": "No cars registered yet.",
+      "carSaved": "Car saved — pending review.",
+      "carDeleted": "Car removed.",
+      "registration": "Registration doc",
+      "insurance": "Insurance doc",
+      "banner": "Banner image",
+      "fields": {
+        "make": "Make",
+        "model": "Model",
+        "brand": "Brand",
+        "name": "Name",
+        "plate": "Plate",
+        "year": "Year",
+        "energy": "Energy type",
+        "tyres": "Tyres type",
+        "speed": "Max speed (km/h)",
+        "age": "Age (years)",
+        "carbon": "Carbon print"
+      }
     },
     "chat": {
       "subtitle": "Ephemeral chat during an active trip.",
