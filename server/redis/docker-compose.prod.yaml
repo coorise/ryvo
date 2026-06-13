@@ -1,6 +1,7 @@
-# Redis (production VPS)
+# Redis (production VPS) — no host ports; dev stack may already bind 6380→6379
 services:
   ryvo_redis:
     container_name: ryvo_redis
+    ports: !reset []
     volumes:
       - ./data:/data

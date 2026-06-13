@@ -1,6 +1,7 @@
-# Kafka (production VPS)
+# Kafka (production VPS) — no host ports; dev stack may already bind 9092
 services:
   ryvo_kafka_broker:
     container_name: ryvo_kafka_broker
+    ports: !reset []
     volumes:
       - ./data:/var/lib/kafka/data

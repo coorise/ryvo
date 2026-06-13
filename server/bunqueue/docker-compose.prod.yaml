@@ -1,6 +1,7 @@
-# Bunqueue (production VPS)
+# Bunqueue (production VPS) — no host ports; dev stack may already bind 6789/6790
 services:
   ryvo_bunqueue:
     container_name: ryvo_bunqueue
+    ports: !reset []
     volumes:
       - ./data:/app/data
