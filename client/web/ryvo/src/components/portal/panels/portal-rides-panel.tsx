@@ -17,7 +17,6 @@ import { PORTAL_ROUTES } from "@/configs/portal-nav";
 import { useAuth } from "@/hooks/use-auth";
 import { formatLastSeen } from "@/lib/format-date";
 import {
-  filterTripsForUser,
   portalService,
   type PortalTripRow,
 } from "@/services/portal.service";
@@ -53,10 +52,7 @@ export function PortalRidesPanel({ area }: PortalRidesPanelProps) {
     retry: false,
   });
 
-  const trips: PortalTripRow[] =
-    user && historyQ.data?.trips
-      ? filterTripsForUser(historyQ.data.trips, user.id, area)
-      : [];
+  const trips: PortalTripRow[] = historyQ.data?.trips ?? [];
 
   const active = activeQ.data?.trip as { id?: string; status?: string } | null;
 

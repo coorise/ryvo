@@ -1405,13 +1405,16 @@
       "subtitle": "Verification documents for your driver account.",
       "unavailable": "Could not load KYC status. Contact support if this persists.",
       "statusLabel": "Verification status",
-      "noDocuments": "No documents on file yet."
+      "noDocuments": "No documents on file yet.",
+      "uploadHint": "Document upload uses secure storage — submit files from the mobile app or contact support to complete verification."
     },
     "chat": {
       "subtitle": "Ephemeral chat during an active trip.",
       "title": "Trip chat",
       "description": "Messages disappear after pickup.",
-      "empty": "Open the live map when you have an active trip to chat with your match."
+      "empty": "Open the live map when you have an active trip to chat with your match.",
+      "noMessages": "No messages yet — say hello.",
+      "inputPlaceholder": "Type a message…"
     },
     "messages": {
       "subtitle": "Campaign messages you send to clients.",
@@ -1442,6 +1445,46 @@
         "goTo": "Go to",
         "requesting": "Requesting"
       }
+    },
+    "ride": {
+      "bookTitle": "Request a ride",
+      "bookHint": "Set pickup and dropoff, then request a driver.",
+      "pickupPlaceholder": "Pickup address",
+      "dropoffPlaceholder": "Dropoff address",
+      "setPickup": "Use demo pickup",
+      "setDropoff": "Use demo dropoff",
+      "estimate": "Estimate fare",
+      "estimated": "Estimated fare: ${{amount}}",
+      "estimateFailed": "Could not estimate fare.",
+      "requestRide": "Request ride",
+      "requestSent": "Ride requested — waiting for a driver.",
+      "requestFailed": "Could not request ride.",
+      "incomingTitle": "Incoming ride request",
+      "incomingDesc": "Accept to proceed to client payment, or reject to skip.",
+      "accept": "Accept",
+      "reject": "Reject",
+      "accepted": "Ride accepted — client can pay.",
+      "rejected": "Ride declined.",
+      "requestingTitle": "Awaiting driver",
+      "requestingStatus": "Status: {{status}}",
+      "payNow": "Proceed to payment",
+      "paymentStarted": "Payment initiated.",
+      "paymentFailed": "Payment could not start.",
+      "cancelRequest": "Cancel request",
+      "cancelled": "Request cancelled.",
+      "activeTitle": "Active trip",
+      "tripStatus": "Trip status: {{status}}",
+      "awaitingTrip": "Payment confirmed — trip starting soon.",
+      "advance": "Mark as {{status}}",
+      "noActiveWorkflow": "No active workflow for this tab."
+    },
+    "analytics": {
+      "unavailable": "Could not load your analytics.",
+      "totalTrips": "Total trips",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "area": "Role",
+      "hint": "Summary from your trip history. Detailed charts will expand in a later release."
     }
   }
 }

@@ -23,7 +23,7 @@ import { compareSortable, useListControls } from "@/hooks/use-list-controls";
 import { usePaginatedSlice } from "@/hooks/use-paginated-slice";
 import { formatLastSeen } from "@/lib/format-date";
 import type { PaymentAdminRow } from "@/services/admin.service";
-import { filterPaymentsForUser, portalService } from "@/services/portal.service";
+import { portalService } from "@/services/portal.service";
 
 function paymentStatusVariant(status: string): "success" | "warning" | "danger" | "default" {
   if (status === "succeeded") return "success";
@@ -51,10 +51,7 @@ export function PortalPaymentsPanel() {
     retry: false,
   });
 
-  const allPayments = useMemo(() => {
-    if (!user?.id || !data?.payments) return [];
-    return filterPaymentsForUser(data.payments, user.id);
-  }, [data?.payments, user?.id]);
+  const allPayments = useMemo(() => data?.payments ?? [], [data?.payments]);
 
   const stats = useMemo(() => {
     const succeeded = allPayments.filter((p) => p.status === "succeeded");
@@ -96,7 +93,7 @@ export function PortalPaymentsPanel() {
             <AdminStatCard
               icon={CheckCircle2}
               label={t("portal.payments.stats.volume")}
-              value={`$${(stats.volume / 100).toFixed(2)}`}
+              value={`$${stats.volume.toFixed(2)}`}
             />
             <AdminStatCard
               icon={Clock}
@@ -155,7 +152,7 @@ export function PortalPaymentsPanel() {
                     >
                       <td className="text-sm">{formatLastSeen(p.created_at)}</td>
                       <td className="text-sm font-medium">
-                        ${(p.amount / 100).toFixed(2)} {p.currency.toUpperCase()}
+                        ${p.amount.toFixed(2)} {p.currency.toUpperCase()}
                       </td>
                       <td>
                         <StatusBadge variant={paymentStatusVariant(p.status)}>{p.status}</StatusBadge>

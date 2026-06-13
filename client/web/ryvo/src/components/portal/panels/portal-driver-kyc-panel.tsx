@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { AdminListStack, StatusBadge } from "@/components/admin/admin-list-ui";
 import { KYC_DOC_LABEL_KEYS, KYC_STATUS } from "@/configs/const";
 import { useAuth } from "@/hooks/use-auth";
-import { driversService } from "@/services/drivers.service";
+import { kycService } from "@/services/kyc.service";
 import { cn } from "@/lib/utils";
 
 const DOC_STATUS_CLASS: Record<string, string> = {
@@ -17,44 +17,43 @@ const DOC_STATUS_CLASS: Record<string, string> = {
 
 export function PortalDriverKycPanel() {
   const { t } = useTranslation();
-  const { accessToken, user } = useAuth();
+  const { accessToken } = useAuth();
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["portal", "driver-kyc", user?.id],
-    queryFn: () => driversService.getDriver(accessToken, user!.id),
-    enabled: Boolean(accessToken) && Boolean(user?.id),
+    queryKey: ["portal", "driver-kyc-checklist"],
+    queryFn: () => kycService.getChecklist(accessToken),
+    enabled: Boolean(accessToken),
     retry: false,
   });
-
-  const driver = data?.driver;
 
   if (isLoading) {
     return <p className="text-muted-foreground text-sm">{t("common.loading")}</p>;
   }
 
-  if (isError || !driver) {
-    return (
-      <p className="text-muted-foreground text-sm">
-        {t("portal.kyc.unavailable")}
-      </p>
-    );
+  if (isError || !data) {
+    return <p className="text-muted-foreground text-sm">{t("portal.kyc.unavailable")}</p>;
   }
+
+  const docs = data.required.map((docType) => {
+    const doc = data.documents[docType];
+    return { doc_type: docType, status: doc?.status ?? "missing", rejection_reason: doc?.rejection_reason };
+  });
 
   return (
     <AdminListStack>
       <div className="border-border flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4">
         <div>
-          <p className="font-semibold">{driver.full_name ?? driver.email}</p>
+          <p className="font-semibold">{t("portal.nav.driverKyc")}</p>
           <p className="text-muted-foreground text-sm">{t("portal.kyc.statusLabel")}</p>
         </div>
-        <StatusBadge variant={driver.kyc_status === KYC_STATUS.approved ? "success" : "warning"}>
-          {driver.kyc_status}
+        <StatusBadge variant={data.kyc_status === KYC_STATUS.approved ? "success" : "warning"}>
+          {data.kyc_status}
         </StatusBadge>
       </div>
       <ul className="space-y-3">
-        {(driver.documents ?? []).map((doc) => (
+        {docs.map((doc) => (
           <li
-            key={doc.id}
+            key={doc.doc_type}
             className="border-border flex items-center justify-between gap-3 rounded-2xl border px-4 py-3"
           >
             <div>
@@ -76,9 +75,7 @@ export function PortalDriverKycPanel() {
           </li>
         ))}
       </ul>
-      {(driver.documents ?? []).length === 0 ? (
-        <p className="text-muted-foreground text-sm">{t("portal.kyc.noDocuments")}</p>
-      ) : null}
+      <p className="text-muted-foreground text-xs">{t("portal.kyc.uploadHint")}</p>
     </AdminListStack>
   );
 }

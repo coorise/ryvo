@@ -250,3 +250,19 @@ export function portalNavGroupsForPath(pathname: string, config: PortalNavConfig
   }
   return active;
 }
+
+export const PORTAL_PATH_PREFIXES: Record<
+  PortalArea,
+  { prefix: string; item: PortalNavItemConfig }[]
+> = {
+  driver: (() => {
+    const config = DRIVER_PORTAL_NAV;
+    const items = [config.overview, ...config.groups.flatMap((g) => g.items)];
+    return items.map((item) => ({ prefix: item.href, item }));
+  })(),
+  client: (() => {
+    const config = CLIENT_PORTAL_NAV;
+    const items = [config.overview, ...config.groups.flatMap((g) => g.items)];
+    return items.map((item) => ({ prefix: item.href, item }));
+  })(),
+};

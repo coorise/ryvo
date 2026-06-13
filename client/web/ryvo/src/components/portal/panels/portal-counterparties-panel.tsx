@@ -12,7 +12,7 @@ import {
   AdminTableHead,
 } from "@/components/admin/admin-list-ui";
 import { useAuth } from "@/hooks/use-auth";
-import { filterTripsForUser, portalService } from "@/services/portal.service";
+import { portalService } from "@/services/portal.service";
 import type { PortalArea } from "@/configs/portal-nav";
 
 type PortalCounterpartiesPanelProps = {
@@ -31,8 +31,7 @@ export function PortalCounterpartiesPanel({ area }: PortalCounterpartiesPanelPro
   });
 
   const rows = useMemo(() => {
-    if (!user?.id || !data?.trips) return [];
-    const mine = filterTripsForUser(data.trips, user.id, area);
+    const mine = data?.trips ?? [];
     const map = new Map<string, { id: string; trips: number }>();
     for (const trip of mine) {
       const otherId = area === "driver" ? trip.client_id : trip.driver_id;

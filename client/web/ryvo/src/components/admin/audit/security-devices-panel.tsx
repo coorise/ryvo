@@ -57,36 +57,32 @@ export function SecurityDevicesPanel({ variant = "admin" }: SecurityDevicesPanel
   const { hasPermission } = useRbac();
   const qc = useQueryClient();
   const isPortal = variant === "portal";
-  const canUpdate = !isPortal && hasPermission(PERMISSIONS.audit.update);
+  const canUpdate = isPortal || (!isPortal && hasPermission(PERMISSIONS.audit.update));
   const [statusFilter, setStatusFilter] = useState("all");
   const [revokeTarget, setRevokeTarget] = useState<UserDeviceRow | null>(null);
   const list = useListControls(SORT_KEYS.updatedAt);
 
   const { data, isLoading } = useQuery({
     queryKey: isPortal ? ["portal", "security", "devices", user?.id] : ["admin", "security", "devices"],
-    queryFn: () => auditService.listDevices(accessToken, true),
+    queryFn: () =>
+      isPortal ? auditService.listMyDevices(accessToken, true) : auditService.listDevices(accessToken, true),
     enabled:
       Boolean(accessToken) && (isPortal || hasPermission(PERMISSIONS.audit.read)),
   });
 
   const revoke = useMutation({
-    mutationFn: (id: string) => auditService.revokeDevice(accessToken, id),
+    mutationFn: (id: string) =>
+      isPortal ? auditService.revokeMyDevice(accessToken, id) : auditService.revokeDevice(accessToken, id),
     onSuccess: () => {
       toast.success(t("security.deviceRevoked"));
       setRevokeTarget(null);
-      void qc.invalidateQueries({ queryKey: ["admin", "security", "devices"] });
-      void qc.invalidateQueries({ queryKey: ["admin", "security", "auth"] });
+      void qc.invalidateQueries({ queryKey: isPortal ? ["portal", "security", "devices"] : ["admin", "security", "devices"] });
+      void qc.invalidateQueries({ queryKey: isPortal ? ["portal", "security", "auth"] : ["admin", "security", "auth"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const allDevices = useMemo(() => {
-    const devices = data?.devices ?? [];
-    if (isPortal && user?.id) {
-      return devices.filter((d) => d.user_id === user.id);
-    }
-    return devices;
-  }, [data?.devices, isPortal, user?.id]);
+  const allDevices = useMemo(() => data?.devices ?? [], [data?.devices]);
 
   const stats = useMemo(() => {
     const active = allDevices.filter((d) => !d.revoked_at).length;
