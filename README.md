@@ -6,145 +6,136 @@ Production-grade Uber-like ride-hailing platform.
 
 | Layer | Technology |
 |-------|------------|
-| BaaS | Supabase (self-hosted Docker, port **8400**) |
+| BaaS | Supabase (self-hosted Docker) |
 | Microservices | Bun JS edge functions |
 | Events | Apache Kafka |
 | Tasks | Bunqueue |
 | Cache | Redis |
-| Storage | MinIO (dev) / S3 (prod) |
-| Web | Next.js 16 (Turborepo monorepo) |
+| Web | Next.js 16 |
 | Mobile | Flutter (`com.ryvo.app`) |
 
-## Repository structure
+## Repository layout
 
-High-level layout:
+| Path | Role |
+|------|------|
+| `server/supabase/` | Postgres, Auth, Kong, edge functions |
+| `client/web/ryvo_admin/` | Admin portal |
+| `client/web/ryvo/` | Customer / driver / client portal |
+| `network/caddy/` | Reverse proxy (edge routing) |
+| `deploy/vps/` | VPS templates, bootstrap, blue/green deploy |
+| `compose/` | Local Docker Compose env (`local.env`) |
+| `docs/env-guide.md` | **Full env & compose reference** |
 
-- **`client/web/ryvo_admin/`**: Next.js admin portal (VPS host: `ryvo-line-admin.dev.agglomy.com`)
-- **`client/web/ryvo/`**: Next.js customer portal (VPS host: `ryvo-line.dev.agglomy.com`)
-- **`server/supabase/`**: Supabase stack (Postgres, Auth, Storage, Kong, etc.)
-- **`deploy/vps/`**: VPS automation (env templating, blue/green deploy, Caddy routing)
-- **`network/caddy/`**: Edge routing templates (generated Caddyfiles on VPS are gitignored)
+---
 
-## Environment files (how env actually works)
+## Environment: one rule
 
-There are **two different env worlds**:
+**Edit secrets in one place:** `server/supabase/.env`  
+(`ANON_KEY`, `GOOGLE_MAPS_API_KEY`, JWT, DB password, Stripe, SMTP, …)
 
-- **Docker runtime env**: used by containers at runtime (Compose `env_file`, etc.)
-- **Next.js build-time env**: `NEXT_PUBLIC_*` is **inlined into the browser bundle during `next build`**, so the value must exist **while building the image**.
+Scripts derive everything else. Do **not** maintain duplicate keys across many files.
 
-### Next.js + Docker: which file is used?
+| Mode | Compose file | Generated env file | Run once |
+|------|--------------|------------------|----------|
+| **Local** | `docker-compose.yaml` | `compose/local.env` | `bash scripts/ensure-env.sh` |
+| **VPS dev** | `docker-compose.dev.yaml` | `deploy/vps/compose/.env.dev` | `bash deploy/vps/scripts/bootstrap.sh dev` |
+| **VPS prod** | `docker-compose.prod.yaml` | `deploy/vps/compose/.env.prod` | `bash deploy/vps/scripts/bootstrap.sh prod` |
 
-When building Docker images, `next build` runs with `NODE_ENV=production`, so Next.js loads:
+**Next.js note:** `NEXT_PUBLIC_*` is inlined at **`next build`** from `client/web/*/.env.production`, not from runtime container env. See [docs/env-guide.md](docs/env-guide.md).
 
-- **`client/web/*/.env.production`** (and `*.production.local` if present)
+---
 
-It does **not** use `.env.local` / `.env.dev` for the production build step.
-
-That’s why the repo includes scripts that write `.env.production` right before building images:
-
-- `deploy/vps/scripts/write-web-env-production.sh` (VPS deploy + local Docker builds)
-- `scripts/ensure-env.sh` (local convenience for localhost URLs)
-
-### Per-service env files
-
-Each service has its own `.env` (gitignored). Local/VPS workflows generate/patch these automatically, but you can also manage them manually.
+## Fresh local install
 
 ```bash
+git clone <repo> && cd ryvo
+
+# 1. Create backend secrets (first time only)
+cp server/supabase/.env.example server/supabase/.env
+# Edit server/supabase/.env — at minimum set GOOGLE_MAPS_API_KEY for admin map
+
+# 2. Generate all derived env files
 bash scripts/ensure-env.sh
-# or manually:
-cp server/supabase/.env.example server/supabase/.env   # if you maintain an example
-cp server/kafka/.env.example server/kafka/.env
-cp server/redis/.env.example server/redis/.env
-cp server/bunqueue/.env.example server/bunqueue/.env
-```
 
-| Path | Purpose |
-|------|---------|
-| `server/supabase/.env` | Postgres, JWT, Kong port 8400, SMTP, MinIO |
-| `server/kafka/.env` | Broker ports, cluster id, `KAFKA_BROKER` for apps |
-| `server/redis/.env` | Port, optional password, `REDIS_URL` for apps |
-| `server/bunqueue/.env` | HTTP/TCP ports, `BUNQUEUE_HOST` for apps |
-
-Root `docker-compose.yaml` loads each via `include` → `env_file` + `project_directory`.
-
-## Get started (local development)
-
-### Prerequisites
-
-- Docker + Docker Compose plugin
-- Bun (for local `bun run dev`)
-
-### One command (full local stack)
-
-```bash
-# 1. One command — full stack (Caddy + Supabase + web)
+# 3. Start full stack (Caddy + Supabase + web containers)
 ./scripts/ryvo-up.sh
-# or: bash scripts/ensure-env.sh && docker compose up -d --build
-```
 
-**VPS dev:** see [deploy/vps/README.md](deploy/vps/README.md) — `bash deploy/vps/scripts/setup-dev.sh`
-
-```bash
-# Legacy / manual local
-bash scripts/dev-up.sh
-# or: docker compose up -d   (after ensure-env.sh)
-
-# 2. Seed test users (after Supabase is healthy)
+# 4. Seed demo users (after Supabase is healthy)
 bash server/supabase/scripts/seed-users.sh
-
-# 3. Web app
-cd client/web/ryvo && bun install && bun run dev
-
-# 4. Flutter (Phase 5)
-cd client/mobile/flutter/ryvo && flutter pub get
 ```
 
-### Local: Docker builds of Next.js apps
+**Local URLs**
 
-If you build the Next.js images locally (instead of running `bun run dev`), make sure `.env.production` exists:
+| Service | URL |
+|---------|-----|
+| API (Kong via Caddy) | http://localhost:8400 |
+| Admin web (Docker) | http://localhost:3200 |
+| Client web (Docker) | http://localhost:3300 |
+
+**Web without Docker (hot reload)**
 
 ```bash
-bash scripts/ensure-env.sh
-# this writes:
-# - client/web/ryvo/.env.production
-# - client/web/ryvo_admin/.env.production
+cd client/web/ryvo_admin && bun install && bun run dev   # :3200
+cd client/web/ryvo && bun install && bun run dev         # :3300
 ```
 
-## Documentation
+Uses `client/web/*/.env.local` (also generated by `ensure-env.sh`).
 
-- **Agent spec:** `docs/project/instructions.md`
-- **Checkpoints:** `docs/commits/` (resume context for any agent)
-- **Credentials template:** `docs/project/credentials.txt` (not committed)
+**Files you touch locally:** only `server/supabase/.env` (+ optional edits to `server/kafka|redis|bunqueue/.env` if defaults are wrong).
 
-## CI/CD (dev VPS)
+**Do not use:** root `.env` (deprecated → use `compose/local.env`).
 
-The GitHub Actions workflow `.github/workflows/deploy_dev.yml` does:
+---
 
-- Build and push Docker images (web admin, web client, functions gateway)
-- SSH to the VPS and run a blue/green deploy (`deploy/vps/scripts/deploy-bluegreen.sh`)
+## Fresh VPS install
+
+```bash
+ssh user@vps
+git clone <repo> && cd ryvo && git checkout dev   # or main for prod
+
+cp server/supabase/.env.example server/supabase/.env
+# Edit server/supabase/.env on the VPS (ANON_KEY, GOOGLE_MAPS_API_KEY, …)
+
+bash deploy/vps/scripts/bootstrap.sh dev          # or prod
+bash deploy/vps/scripts/setup-dev.sh             # git pull + bootstrap + deploy
+```
+
+Details: [deploy/vps/README.md](deploy/vps/README.md) · [docs/env-guide.md](docs/env-guide.md)
+
+**VPS dev URLs:** `ryvo-line.dev.agglomy.com` · `ryvo-line-admin.dev.agglomy.com` · API `:8500`
+
+---
+
+## CI/CD (GitHub Actions)
+
+| Workflow | Branch | Deploy script |
+|----------|--------|---------------|
+| `.github/workflows/deploy_dev.yml` | `dev` | `deploy-bluegreen.sh dev` |
+| `.github/workflows/deploy_main.yml` | `main` | `deploy-bluegreen.sh prod` |
 
 ### Required GitHub secrets
 
-- **Docker registry**
-  - `DOCKER_USERNAME`
-  - `DOCKER_TOKEN`
-- **VPS SSH**
-  - `VPS_HOST` (e.g. `vps1.agglomy.com`)
-  - `VPS_USER` (e.g. `coorise`)
-  - `VPS_SSH_KEY` (private key contents)
-  - `VPS_SSH_PORT` (optional; defaults to 22)
-- **Supabase (Next.js build-time)**
-  - `DEV_SUPABASE_ANON_KEY` (value = `ANON_KEY` from `server/supabase/.env`)
+| Secret | Purpose |
+|--------|---------|
+| `DOCKER_USERNAME` | Docker Hub namespace |
+| `DOCKER_TOKEN` | Docker Hub PAT |
+| `VPS_HOST` | VPS hostname |
+| `VPS_USER` | SSH user |
+| `VPS_SSH_KEY` | Private key (full PEM) |
+| `VPS_SSH_PORT` | Optional (default 22) |
 
-### Fallback behavior for missing `DEV_SUPABASE_ANON_KEY`
+### Optional secrets (else CI reads from VPS `server/supabase/.env`)
 
-If `DEV_SUPABASE_ANON_KEY` is **not** set in GitHub, the workflow will **SSH into the VPS** (using the same VPS SSH secrets) and read:
+| Dev | Prod |
+|-----|------|
+| `DEV_SUPABASE_ANON_KEY` | `PROD_SUPABASE_ANON_KEY` |
+| `DEV_GOOGLE_MAPS_API_KEY` | `PROD_GOOGLE_MAPS_API_KEY` |
 
-- `server/supabase/.env` → `ANON_KEY`
+**First CI run:** clone repo on VPS and set `server/supabase/.env` **or** add the optional secrets in GitHub → Settings → Secrets.
 
-Then it uses that value for Next.js image builds (writes `client/web/*/.env.production` and passes `--build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=...`).
+**Flow:** CI builds/pushes images → SSH to VPS → `git pull` → `deploy-bluegreen.sh` (also rebuilds web images on VPS with `.env.production` from `apply-env.sh`).
 
-If SSH secrets are missing, or the key cannot be read from the VPS, the CI build fails (to avoid shipping a Next.js bundle with an empty anon key).
+---
 
 ## Test accounts
 
@@ -154,11 +145,9 @@ If SSH secrets are missing, or the key cannot be read from the VPS, the CI build
 | Driver | driver@ryvo-line.com | Driver@123 |
 | Client | client@ryvo-line.com | Client@123 |
 
-## Phases
+## Documentation
 
-1. Scaffolding & harmonization
-2. Supabase BaaS (PostGIS, schema, RLS, MinIO)
-3. Edge functions (Bun microservices)
-4. Next.js web (admin / driver / client)
-5. Flutter mobile
-6. Alpha / beta testing
+- **Env & compose (detailed):** [docs/env-guide.md](docs/env-guide.md)
+- **VPS deploy:** [deploy/vps/README.md](deploy/vps/README.md)
+- **Agent spec:** `docs/project/instructions.md`
+- **Credentials template:** `docs/project/credentials.txt` (not committed)

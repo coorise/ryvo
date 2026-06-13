@@ -39,12 +39,20 @@ if [[ -z "$ANON" || "$ANON" == REPLACE_* ]]; then
 fi
 
 MAPS_KEY=""
-for f in client/web/ryvo_admin/.env.local deploy/vps/client/web/ryvo_admin/env.${ENV_NAME}.example; do
-  if [[ -f "$f" ]]; then
-    val="$(grep '^NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=' "$f" 2>/dev/null | cut -d= -f2- | tr -d "'\"" | head -1 || true)"
-    [[ -n "$val" && "$val" != REPLACE_* ]] && MAPS_KEY="$val" && break
-  fi
-done
+if [[ -f server/supabase/.env ]]; then
+  MAPS_KEY="$(grep '^GOOGLE_MAPS_API_KEY=' server/supabase/.env 2>/dev/null | cut -d= -f2- | tr -d "'\"" | head -1 || true)"
+fi
+if [[ -z "$MAPS_KEY" || "$MAPS_KEY" == REPLACE_* ]]; then
+  MAPS_KEY="${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-}"
+fi
+if [[ -z "$MAPS_KEY" || "$MAPS_KEY" == REPLACE_* ]]; then
+  for f in client/web/ryvo_admin/.env.local deploy/vps/client/web/ryvo_admin/env.${ENV_NAME}.example; do
+    if [[ -f "$f" ]]; then
+      val="$(grep '^NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=' "$f" 2>/dev/null | cut -d= -f2- | tr -d "'\"" | head -1 || true)"
+      [[ -n "$val" && "$val" != REPLACE_* ]] && MAPS_KEY="$val" && break
+    fi
+  done
+fi
 
 write_one() {
   local app_dir="$1"

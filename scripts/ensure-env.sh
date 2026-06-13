@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Create server/*/.env from .env.example when missing (never overwrites existing).
+# Derives compose/local.env + client/web/*/.env.local + .env.production from server/supabase/.env.
+# See docs/env-guide.md
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -39,6 +41,12 @@ patch_kv() {
 }
 
 if [[ -f "$SUPABASE_ENV" ]]; then
+  mkdir -p "${ROOT}/compose"
+  if [[ -f "${ROOT}/.env" && ! -f "${ROOT}/compose/local.env" ]]; then
+    cp "${ROOT}/.env" "${ROOT}/compose/local.env"
+    echo "Migrated root .env -> compose/local.env (root .env is deprecated)"
+  fi
+
   anon="$(read_kv "$SUPABASE_ENV" "ANON_KEY")"
   maps="$(read_kv "$SUPABASE_ENV" "GOOGLE_MAPS_API_KEY")"
   pub_url="$(read_kv "$SUPABASE_ENV" "SUPABASE_PUBLIC_URL")"
@@ -49,7 +57,7 @@ if [[ -f "$SUPABASE_ENV" ]]; then
   for f in \
     "${ROOT}/client/web/ryvo/.env.local" \
     "${ROOT}/client/web/ryvo_admin/.env.local" \
-    "${ROOT}/.env"; do
+    "${ROOT}/compose/local.env"; do
     # For local dev, always point to localhost (Supabase/Kong is exposed via Caddy on 8400).
     patch_kv "$f" "NEXT_PUBLIC_SUPABASE_URL" "${local_url}"
     patch_kv "$f" "NEXT_PUBLIC_FUNCTIONS_URL" "${functions_url}"

@@ -1,8 +1,6 @@
 # Ryvo-Line — local development
-# Usage: docker compose up -d --build
-#
-# Ports: admin 3200 | client 3300 | API 8400 (via network/caddy)
-# First time: bash scripts/ensure-env.sh
+# Usage: bash scripts/ensure-env.sh && ./scripts/ryvo-up.sh
+# Compose env: compose/local.env (generated — see docs/env-guide.md)
 
 name: ryvo
 

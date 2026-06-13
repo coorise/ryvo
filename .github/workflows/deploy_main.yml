@@ -6,6 +6,10 @@ on:
       - main
   workflow_dispatch:
 
+concurrency:
+  group: deploy-prod-vps
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,13 +27,87 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Validate web build env
+      - name: Resolve PROD web build secrets (GitHub secrets or VPS fallback)
         env:
-          ANON: ${{ secrets.PROD_SUPABASE_ANON_KEY }}
+          ANON_FROM_SECRET: ${{ secrets.PROD_SUPABASE_ANON_KEY }}
+          MAPS_FROM_SECRET: ${{ secrets.PROD_GOOGLE_MAPS_API_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_SSH_PORT: ${{ secrets.VPS_SSH_PORT || 22 }}
         run: |
-          if [ -z "$ANON" ]; then
-            echo "::warning::PROD_SUPABASE_ANON_KEY not set — CI web images will lack the anon key; VPS deploy rebuilds web images from server/supabase/.env"
+          set -euo pipefail
+
+          ANON="${ANON_FROM_SECRET:-}"
+          MAPS="${MAPS_FROM_SECRET:-}"
+
+          if [[ -n "$ANON" && -n "$MAPS" ]]; then
+            echo "::notice::Using PROD_SUPABASE_ANON_KEY and PROD_GOOGLE_MAPS_API_KEY from GitHub secrets."
+          else
+            echo "::warning::Missing PROD secrets — reading from VPS over SSH where needed."
+            if [[ -z "${VPS_HOST:-}" || -z "${VPS_USER:-}" || -z "${VPS_SSH_KEY:-}" ]]; then
+              echo "::error::VPS fallback requires VPS_HOST, VPS_USER, and VPS_SSH_KEY."
+              exit 1
+            fi
+            install -m 700 -d ~/.ssh
+            printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_vps
+            chmod 600 ~/.ssh/id_vps
+            set +e
+            VPS_SECRETS="$(
+              ssh -i ~/.ssh/id_vps -p "${VPS_SSH_PORT}" -o StrictHostKeyChecking=accept-new "${VPS_USER}@${VPS_HOST}" \
+                'bash -c '"'"'set -euo pipefail;
+                  for p in "$HOME/Projects/Web/ryvo/server/supabase/.env" "$HOME/ryvo/server/supabase/.env" "/opt/ryvo/server/supabase/.env"; do
+                    if [ -f "$p" ]; then
+                      grep -E "^ANON_KEY=" "$p" | head -1 | cut -d= -f2- | sed "s/^/ANON_KEY=/" || true
+                      grep -E "^GOOGLE_MAPS_API_KEY=" "$p" | head -1 | cut -d= -f2- | sed "s/^/GOOGLE_MAPS_API_KEY=/" || true
+                      exit 0
+                    fi
+                  done
+                  echo ANON_KEY=
+                  echo GOOGLE_MAPS_API_KEY='"'"''
+            )"
+            ssh_rc=$?
+            set -e
+            if [[ "$ssh_rc" -ne 0 ]]; then
+              echo "::error::SSH to VPS failed (exit $ssh_rc)."
+              exit 1
+            fi
+            [[ -z "$ANON" ]] && ANON="$(printf '%s\n' "$VPS_SECRETS" | grep '^ANON_KEY=' | head -1 | cut -d= -f2- || true)"
+            [[ -z "$MAPS" ]] && MAPS="$(printf '%s\n' "$VPS_SECRETS" | grep '^GOOGLE_MAPS_API_KEY=' | head -1 | cut -d= -f2- || true)"
           fi
+
+          if [[ -z "$ANON" ]]; then
+            echo "::error::PROD_SUPABASE_ANON_KEY not resolved."
+            exit 1
+          fi
+
+          echo "::add-mask::${ANON}"
+          echo "PROD_SUPABASE_ANON_KEY=${ANON}" >> "$GITHUB_ENV"
+          if [[ -n "$MAPS" ]]; then
+            echo "::add-mask::${MAPS}"
+            echo "PROD_GOOGLE_MAPS_API_KEY=${MAPS}" >> "$GITHUB_ENV"
+          else
+            echo "::warning::PROD_GOOGLE_MAPS_API_KEY not set — admin map may not work."
+          fi
+
+      - name: Write .env.production for Next.js Docker build
+        run: |
+          set -euo pipefail
+          ANON="${PROD_SUPABASE_ANON_KEY:-}"
+          MAPS="${PROD_GOOGLE_MAPS_API_KEY:-}"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=https://ryvo-line-server.agglomy.com"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON}"
+            echo "NEXT_PUBLIC_FUNCTIONS_URL=https://ryvo-line-server.agglomy.com/functions/v1"
+            echo "NEXT_PUBLIC_APP_ENV=production"
+            [[ -n "$MAPS" ]] && echo "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${MAPS}"
+          } > client/web/ryvo_admin/.env.production
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=https://ryvo-line-server.agglomy.com"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON}"
+            echo "NEXT_PUBLIC_FUNCTIONS_URL=https://ryvo-line-server.agglomy.com/functions/v1"
+            echo "NEXT_PUBLIC_APP_ENV=production"
+          } > client/web/ryvo/.env.production
 
       - name: Build + push web admin image
         uses: docker/build-push-action@v6
@@ -39,9 +117,10 @@ jobs:
           push: true
           build-args: |
             NEXT_PUBLIC_SUPABASE_URL=https://ryvo-line-server.agglomy.com
-            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.PROD_SUPABASE_ANON_KEY }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ env.PROD_SUPABASE_ANON_KEY }}
             NEXT_PUBLIC_FUNCTIONS_URL=https://ryvo-line-server.agglomy.com/functions/v1
             NEXT_PUBLIC_APP_ENV=production
+            NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${{ env.PROD_GOOGLE_MAPS_API_KEY }}
           tags: |
             ${{ env.IMAGE_PREFIX }}/ryvo-web-admin:sha-${{ github.sha }}
             ${{ env.IMAGE_PREFIX }}/ryvo-web-admin:prod
@@ -56,7 +135,7 @@ jobs:
           push: true
           build-args: |
             NEXT_PUBLIC_SUPABASE_URL=https://ryvo-line-server.agglomy.com
-            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.PROD_SUPABASE_ANON_KEY }}
+            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ env.PROD_SUPABASE_ANON_KEY }}
             NEXT_PUBLIC_FUNCTIONS_URL=https://ryvo-line-server.agglomy.com/functions/v1
             NEXT_PUBLIC_APP_ENV=production
           tags: |
@@ -101,5 +180,7 @@ jobs:
               [[ -d "$d/.git" ]] && cd "$d" && break
             done
             pwd
-            git fetch origin main && git checkout main && git pull origin main
+            git fetch origin main && git checkout main
+            git checkout -- network/caddy/Caddyfile.prod deploy/vps/compose/functions-router.prod.Caddyfile 2>/dev/null || true
+            git pull --ff-only origin main
             bash deploy/vps/scripts/deploy-bluegreen.sh prod sha-${{ github.sha }}'
