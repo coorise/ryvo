@@ -34,6 +34,7 @@ import {
 import { storageService } from "@/services/storage.service";
 import { vehiclesService, type DriverVehicle } from "@/services/vehicles.service";
 import { cn } from "@/lib/utils";
+import { isRealStorageKey } from "@/lib/storage-keys";
 
 type PortalVehicleFormProps = {
   mode: "create" | "edit";
@@ -210,11 +211,13 @@ export function PortalVehicleForm({ mode, vehicleId }: PortalVehicleFormProps) {
   }
 
   function docForType(docType: string) {
-    return vehicle?.documents.find((d) => d.doc_type === docType);
+    const doc = vehicle?.documents.find((d) => d.doc_type === docType);
+    if (!doc || !isRealStorageKey(doc.s3_key)) return undefined;
+    return doc;
   }
 
   const otherDocs = vehicle?.documents.filter((d) => d.doc_type === "other") ?? [];
-  const galleryCount = vehicle?.image_keys?.length ?? 0;
+  const galleryCount = (vehicle?.image_keys ?? []).filter(isRealStorageKey).length;
 
   const fileInputClass =
     "border-input bg-background file:text-foreground file:border-0 file:bg-muted file:mr-3 file:rounded-md file:px-3 file:py-1 file:text-sm h-10 w-full rounded-md border px-3 py-1.5 text-sm";
@@ -321,7 +324,7 @@ export function PortalVehicleForm({ mode, vehicleId }: PortalVehicleFormProps) {
               e.target.value = "";
             }}
           />
-          {vehicle?.banner_key ? (
+          {vehicle?.banner_key && isRealStorageKey(vehicle.banner_key) ? (
             <RyvoButton intent="outline" size="sm" className="mt-2" onClick={() => setViewMediaKey(vehicle.banner_key!)}>
               <Eye className="size-3.5" /> {t("portal.kyc.viewBanner")}
             </RyvoButton>
@@ -343,9 +346,9 @@ export function PortalVehicleForm({ mode, vehicleId }: PortalVehicleFormProps) {
               e.target.value = "";
             }}
           />
-          {(vehicle?.image_keys ?? []).length > 0 ? (
+          {(vehicle?.image_keys ?? []).filter(isRealStorageKey).length > 0 ? (
             <div className="mt-2 flex flex-wrap gap-2">
-              {(vehicle?.image_keys ?? []).map((key, i) => (
+              {(vehicle?.image_keys ?? []).filter(isRealStorageKey).map((key, i) => (
                 <div key={key} className="border-border flex items-center gap-1 rounded-lg border px-2 py-1 text-xs">
                   <button type="button" className="text-primary" onClick={() => setViewMediaKey(key)}>
                     {t("portal.kyc.galleryImage")} {i + 1}
@@ -372,7 +375,7 @@ export function PortalVehicleForm({ mode, vehicleId }: PortalVehicleFormProps) {
               e.target.value = "";
             }}
           />
-          {vehicle?.video_key ? (
+          {vehicle?.video_key && isRealStorageKey(vehicle.video_key) ? (
             <RyvoButton intent="outline" size="sm" className="mt-2" onClick={() => setViewMediaKey(vehicle.video_key!)}>
               <Eye className="size-3.5" /> {t("portal.kyc.viewVideo")}
             </RyvoButton>
@@ -387,7 +390,9 @@ export function PortalVehicleForm({ mode, vehicleId }: PortalVehicleFormProps) {
         </div>
 
         {(["registration", "insurance"] as const).map((docType) => {
-          const doc = docForType(docType);
+          const doc = vehicle?.documents.find((d) => d.doc_type === docType);
+          const hasFile = isRealStorageKey(doc?.s3_key);
+          const displayStatus = hasFile ? (doc?.status ?? KYC_STATUS.pending) : "missing";
           return (
             <div key={docType} className="space-y-2 rounded-xl border p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -398,17 +403,17 @@ export function PortalVehicleForm({ mode, vehicleId }: PortalVehicleFormProps) {
                   <span
                     className={cn(
                       "mt-1 inline-block rounded px-2 py-0.5 text-[10px] font-bold uppercase",
-                      doc?.status === KYC_STATUS.approved
+                      displayStatus === KYC_STATUS.approved
                         ? "bg-primary/15 text-primary"
-                        : doc
-                          ? "bg-amber-500/15 text-amber-700"
-                          : "bg-muted text-muted-foreground",
+                        : displayStatus === "missing"
+                          ? "bg-muted text-muted-foreground"
+                          : "bg-amber-500/15 text-amber-700",
                     )}
                   >
-                    {doc?.status ?? t("portal.kyc.docMissing")}
+                    {displayStatus === "missing" ? t("portal.kyc.docMissing") : displayStatus}
                   </span>
                 </div>
-                {doc ? (
+                {hasFile && doc ? (
                   <RyvoButton intent="outline" size="sm" onClick={() => setViewDocId(doc.id)}>
                     <Eye className="size-3.5" /> {t("portal.kyc.viewDocument")}
                   </RyvoButton>
@@ -455,7 +460,7 @@ export function PortalVehicleForm({ mode, vehicleId }: PortalVehicleFormProps) {
             }}
           />
           <ul className="space-y-2">
-            {otherDocs.map((d) => (
+            {otherDocs.filter((d) => isRealStorageKey(d.s3_key)).map((d) => (
               <li
                 key={d.id}
                 className="border-border flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm"

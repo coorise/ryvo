@@ -1,10 +1,16 @@
 import { getAdminClient } from "./supabase.ts";
-import { KYC_DOC_TYPES } from "./rbac-admin.ts";
 import { queueNotification, emitAudit } from "./events.ts";
 import type { AuthLike } from "./dynamic-rbac.ts";
 import { hasPerm } from "./dynamic-rbac.ts";
 import { loadReviewsForUser, type AdminReviewRow } from "./admin-users.ts";
 import { listDriverVehicles } from "./driver-vehicles.ts";
+import { isRealStorageKey } from "./storage-keys.ts";
+import {
+  buildPersonalKycChecklist,
+  normalizeKycDocumentRow,
+  PERSONAL_KYC_DOC_TYPES,
+  syncDriverKycStatus,
+} from "./kyc-documents.ts";
 
 export async function listDrivers(limit = 150) {
   const db = getAdminClient();
@@ -25,6 +31,8 @@ export async function getDriverDetail(driverId: string) {
   const db = getAdminClient();
   const { data: authUser } = await db.auth.admin.getUserById(driverId);
   if (!authUser.user) return null;
+
+  await syncDriverKycStatus(driverId);
 
   const { data: profile } = await db
     .from("driver_profiles")
@@ -60,6 +68,11 @@ export async function getDriverDetail(driverId: string) {
   const reviews: AdminReviewRow[] = await loadReviewsForUser(driverId);
   const vehicles = await listDriverVehicles(driverId);
 
+  const { documents: checklistDocs } = buildPersonalKycChecklist(driverId, docs ?? []);
+  const legacyDocs = (docs ?? [])
+    .filter((d) => !(PERSONAL_KYC_DOC_TYPES as readonly string[]).includes(d.doc_type))
+    .map((d) => normalizeKycDocumentRow(d, d.doc_type, driverId));
+
   return {
     id: driverId,
     email: authUser.user.email ?? "",
@@ -74,7 +87,7 @@ export async function getDriverDetail(driverId: string) {
     email_verified,
     profile_verified: profile?.kyc_status === "approved",
     profile,
-    documents: docs ?? [],
+    documents: [...Object.values(checklistDocs), ...legacyDocs],
     roles: (roles ?? []).map((r) => (r.roles as { name: string })?.name).filter(Boolean),
     reviews,
     vehicles,
@@ -114,18 +127,6 @@ export async function createDriverManual(
     kyc_status: "pending",
   });
 
-  for (const docType of KYC_DOC_TYPES) {
-    await db.from("kyc_documents").upsert(
-      {
-        driver_id: userId,
-        doc_type: docType,
-        s3_key: `pending/${userId}/${docType}`,
-        status: "pending",
-      },
-      { onConflict: "driver_id,doc_type" },
-    );
-  }
-
   await emitAudit(actor.userId, "driver.create", "user", userId, { email: input.email });
   return getDriverDetail(userId);
 }
@@ -163,9 +164,7 @@ export async function getDriverDocumentViewUrl(
     .eq("doc_type", docType)
     .maybeSingle();
   if (error || !doc) throw new Error("NOT_FOUND");
-  if (!doc.s3_key || doc.s3_key.startsWith("pending/")) {
-    throw new Error("NO_FILE");
-  }
+  if (!isRealStorageKey(doc.s3_key)) throw new Error("NO_FILE");
 
   const { data: signed, error: signErr } = await db.storage
     .from(STORAGE_BUCKET)
@@ -189,6 +188,16 @@ export async function reviewDriverDocument(
   if (!hasPerm(actor, "drivers:kyc:verify")) throw new Error("FORBIDDEN");
 
   const db = getAdminClient();
+  const { data: existing } = await db
+    .from("kyc_documents")
+    .select("s3_key")
+    .eq("driver_id", driverId)
+    .eq("doc_type", docType)
+    .maybeSingle();
+  if (status === "approved" && !isRealStorageKey(existing?.s3_key)) {
+    throw new Error("NO_FILE");
+  }
+
   const { error } = await db
     .from("kyc_documents")
     .update({
@@ -217,21 +226,4 @@ export async function reviewDriverDocument(
 
   await emitAudit(actor.userId, "kyc.document_review", "driver", driverId, { doc_type: docType, status });
   return getDriverDetail(driverId);
-}
-
-async function syncDriverKycStatus(driverId: string) {
-  const db = getAdminClient();
-  const { data: docs } = await db.from("kyc_documents").select("doc_type,status").eq("driver_id", driverId);
-
-  const required = ["national_id", "selfie_with_id", "driver_license", "bank_statement"];
-  const approved = new Set((docs ?? []).filter((d) => d.status === "approved").map((d) => d.doc_type));
-  const hasId = approved.has("national_id") || approved.has("passport");
-  const allApproved = hasId && required.filter((t) => t !== "national_id").every((t) => approved.has(t));
-  const anyRejected = (docs ?? []).some((d) => d.status === "rejected");
-
-  let status = "pending";
-  if (allApproved) status = "approved";
-  else if (anyRejected) status = "rejected";
-
-  await db.from("driver_profiles").update({ kyc_status: status }).eq("user_id", driverId);
 }

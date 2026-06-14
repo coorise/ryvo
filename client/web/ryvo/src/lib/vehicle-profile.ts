@@ -1,4 +1,5 @@
 import type { DriverVehicle } from "@/services/vehicles.service";
+import { isRealStorageKey } from "@/lib/storage-keys";
 
 export const MAX_VIDEO_BYTES = 30 * 1024 * 1024;
 export const MAX_VIDEO_SECONDS = 30;
@@ -93,13 +94,13 @@ export function buildVehicleChecklist(
     ENERGY_TYPES.includes(form.energy_type as (typeof ENERGY_TYPES)[number]) &&
     Boolean(form.plate.trim());
 
-  const hasBanner = Boolean(vehicle?.banner_key);
-  const galleryCount = vehicle?.image_keys?.length ?? 0;
+  const hasBanner = isRealStorageKey(vehicle?.banner_key);
+  const galleryCount = (vehicle?.image_keys ?? []).filter(isRealStorageKey).length;
   const hasRegistration = Boolean(
-    vehicle?.documents.some((d) => d.doc_type === "registration" && d.s3_key),
+    vehicle?.documents.some((d) => d.doc_type === "registration" && isRealStorageKey(d.s3_key)),
   );
   const hasInsurance = Boolean(
-    vehicle?.documents.some((d) => d.doc_type === "insurance" && d.s3_key),
+    vehicle?.documents.some((d) => d.doc_type === "insurance" && isRealStorageKey(d.s3_key)),
   );
 
   return {

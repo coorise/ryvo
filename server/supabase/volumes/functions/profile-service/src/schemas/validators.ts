@@ -34,7 +34,12 @@ export const selfProfileSchema = z.object({
   display_name: z.string().max(120).optional().nullable(),
   full_name: z.string().max(120).optional().nullable(),
   phone: z.string().max(32).optional().nullable(),
-  avatar_url: z.string().url().max(500).optional().nullable().or(z.literal("")),
+  avatar_url: z
+    .string()
+    .max(500)
+    .optional()
+    .nullable()
+    .or(z.literal("")),
   address_line1: z.string().max(200).optional().nullable(),
   address_line2: z.string().max(200).optional().nullable(),
   city: z.string().max(100).optional().nullable(),

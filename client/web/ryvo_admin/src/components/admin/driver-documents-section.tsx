@@ -22,6 +22,7 @@ import { driversService, type KycDocument } from "@/services/drivers.service";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { isRealStorageKey } from "@/lib/storage-keys";
 
 const PERSONAL_KYC_DOC_TYPES = [
   "national_id",
@@ -56,7 +57,11 @@ function isResubmitted(doc: KycDocument): boolean {
 }
 
 function canApprove(doc: KycDocument): boolean {
-  return doc.status === KYC_STATUS.pending;
+  return doc.status === KYC_STATUS.pending && isRealStorageKey(doc.s3_key);
+}
+
+function canView(doc: KycDocument): boolean {
+  return doc.status !== "missing" && isRealStorageKey(doc.s3_key);
 }
 
 function canReject(doc: KycDocument): boolean {
@@ -129,21 +134,22 @@ export function DriverDocumentsSection({ driverId, documents }: DriverDocumentsS
           <DocumentRow
             key={doc.doc_type}
             doc={doc}
-            onView={() => doc.status !== "missing" && setViewDocType(doc.doc_type)}
+            onView={() => canView(doc) && setViewDocType(doc.doc_type)}
             onApprove={() => review.mutate({ docType: doc.doc_type, status: "approved" })}
             onReject={() => setRejectDocType(doc.doc_type)}
             reviewPending={review.isPending}
-            viewDisabled={doc.status === "missing"}
+            viewDisabled={!canView(doc)}
           />
         ))}
         {legacyDocs.map((doc) => (
           <DocumentRow
             key={doc.doc_type}
             doc={doc}
-            onView={() => setViewDocType(doc.doc_type)}
+            onView={() => canView(doc) && setViewDocType(doc.doc_type)}
             onApprove={() => review.mutate({ docType: doc.doc_type, status: "approved" })}
             onReject={() => setRejectDocType(doc.doc_type)}
             reviewPending={review.isPending}
+            viewDisabled={!canView(doc)}
           />
         ))}
       </div>

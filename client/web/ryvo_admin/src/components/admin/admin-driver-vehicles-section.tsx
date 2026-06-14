@@ -27,6 +27,7 @@ import {
   type VehicleDocument,
 } from "@/services/vehicles.service";
 import { cn } from "@/lib/utils";
+import { isRealStorageKey } from "@/lib/storage-keys";
 
 type AdminDriverVehiclesSectionProps = {
   driverId: string;
@@ -348,7 +349,7 @@ function VehicleReviewCard({
       <div className="mb-4">
         <p className="mb-2 text-sm font-semibold">{t("drivers.vehicleMedia")}</p>
         <div className="flex flex-wrap gap-2">
-          {v.banner_key ? (
+          {v.banner_key && isRealStorageKey(v.banner_key) ? (
             <RyvoButton
               intent="outline"
               size="sm"
@@ -359,7 +360,7 @@ function VehicleReviewCard({
           ) : (
             <span className="text-muted-foreground text-xs">{t("drivers.noBanner")}</span>
           )}
-          {(v.image_keys ?? []).map((key, i) => (
+          {(v.image_keys ?? []).filter(isRealStorageKey).map((key, i) => (
             <RyvoButton
               key={key}
               intent="outline"
@@ -369,7 +370,7 @@ function VehicleReviewCard({
               <Eye className="size-3.5" /> {t("drivers.mediaGallery")} {i + 1}
             </RyvoButton>
           ))}
-          {v.video_key ? (
+          {v.video_key && isRealStorageKey(v.video_key) ? (
             <RyvoButton
               intent="outline"
               size="sm"
@@ -454,9 +455,11 @@ function VehicleDocRow({ doc: d, onView, onApprove, onReject, reviewPending }: V
       </div>
       <PermissionGate permissions={[PERMISSIONS.drivers.kycRead, PERMISSIONS.drivers.kycVerify]}>
         <div className="flex flex-wrap gap-1">
-          <RyvoButton intent="outline" size="sm" onClick={onView}>
-            <Eye className="size-3" /> {t("drivers.viewDocument")}
-          </RyvoButton>
+          {isRealStorageKey(d.s3_key) ? (
+            <RyvoButton intent="outline" size="sm" onClick={onView}>
+              <Eye className="size-3" /> {t("drivers.viewDocument")}
+            </RyvoButton>
+          ) : null}
           <PermissionGate permissions={[PERMISSIONS.drivers.kycVerify]}>
             {d.status === KYC_STATUS.pending && (
               <>

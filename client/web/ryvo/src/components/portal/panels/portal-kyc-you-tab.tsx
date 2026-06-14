@@ -21,6 +21,7 @@ import { kycService } from "@/services/kyc.service";
 import { storageService } from "@/services/storage.service";
 import type { KycDocument } from "@/services/drivers.service";
 import { cn } from "@/lib/utils";
+import { isRealStorageKey } from "@/lib/storage-keys";
 
 const PERSONAL_DOC_TYPES = [
   "national_id",
@@ -33,7 +34,7 @@ const PERSONAL_DOC_TYPES = [
 const DOC_STATUS_CLASS: Record<string, string> = {
   [KYC_STATUS.approved]: "bg-primary/15 text-primary",
   [KYC_STATUS.pending]: "bg-amber-500/15 text-amber-700",
-  [KYC_STATUS.rejected]: "bg-destructive/15 text-destructive",
+  missing: "bg-muted text-muted-foreground",
 };
 
 function docRow(docType: string, doc?: KycDocument): KycDocument {
@@ -117,8 +118,7 @@ export function PortalKycYouTab() {
         <p className="mb-4 text-lg font-bold">{t("drivers.documents")}</p>
         <div className="space-y-3">
           {rows.map((doc) => {
-            const hasFile = Boolean(doc.s3_key && !doc.s3_key.startsWith("pending/"));
-            const canView = hasFile;
+            const canView = doc.status !== "missing" && isRealStorageKey(doc.s3_key);
             return (
               <div
                 key={doc.doc_type}
@@ -134,7 +134,7 @@ export function PortalKycYouTab() {
                       DOC_STATUS_CLASS[doc.status] ?? "bg-muted",
                     )}
                   >
-                    {doc.status}
+                    {doc.status === "missing" ? t("portal.kyc.docMissing") : doc.status}
                   </span>
                   {doc.rejection_reason && doc.status === KYC_STATUS.rejected ? (
                     <p className="text-destructive mt-1 text-xs">{doc.rejection_reason}</p>

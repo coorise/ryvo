@@ -2,16 +2,9 @@ import { getAdminClient } from "./supabase.ts";
 import { emitAudit, queueNotification } from "./events.ts";
 import type { AuthLike } from "./dynamic-rbac.ts";
 import { hasPerm } from "./dynamic-rbac.ts";
+import { isRealStorageKey } from "./storage-keys.ts";
 
-const STORAGE_BUCKET = "ryvo-storage";
-
-export const PERSONAL_KYC_DOC_TYPES = [
-  "national_id",
-  "passport",
-  "selfie_with_id",
-  "driver_license",
-  "bank_statement",
-] as const;
+export { PERSONAL_KYC_DOC_TYPES } from "./kyc-documents.ts";
 
 export const VEHICLE_DOC_TYPES = ["registration", "insurance", "other"] as const;
 
@@ -26,9 +19,11 @@ function mimeFromKey(key: string): string {
   return "application/octet-stream";
 }
 
+const STORAGE_BUCKET = "ryvo-storage";
+
 async function signedUrlForKey(key: string): Promise<string> {
   const db = getAdminClient();
-  if (!key || key.startsWith("pending/")) throw new Error("NO_FILE");
+  if (!isRealStorageKey(key)) throw new Error("NO_FILE");
   const { data: signed, error } = await db.storage.from(STORAGE_BUCKET).createSignedUrl(key, 3600);
   if (error || !signed?.signedUrl) throw new Error(error?.message ?? "STORAGE_ERROR");
   return signed.signedUrl;
@@ -172,12 +167,15 @@ export async function deleteDriverVehicle(driverId: string, vehicleId: string) {
   return { deleted: true };
 }
 
+import { isRealStorageKey } from "./storage-keys.ts";
+
 export async function submitVehicleDocument(
   driverId: string,
   vehicleId: string,
   input: { doc_type: string; s3_key: string; label?: string },
 ) {
   const db = getAdminClient();
+  if (!isRealStorageKey(input.s3_key)) throw new Error("INVALID_STORAGE_KEY");
   const vehicle = await getDriverVehicle(driverId, vehicleId);
   if (vehicle.driver_id !== driverId) throw new Error("FORBIDDEN");
 
