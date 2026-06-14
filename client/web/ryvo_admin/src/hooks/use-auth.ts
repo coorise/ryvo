@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+import { clearLegacySharedAuthCookies } from "@/lib/clear-legacy-auth-cookies";
 import { authService } from "@/services";
 import { useAuthStore } from "@/stores/auth.store";
 
@@ -13,6 +14,7 @@ export function useAuth() {
   const clear = useAuthStore((s) => s.clear);
 
   useEffect(() => {
+    clearLegacySharedAuthCookies();
     let mounted = true;
     authService.getSession().then((session) => {
       if (!mounted) return;

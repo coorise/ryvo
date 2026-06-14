@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { isInternalPortalUser } from "@/guards/internal-user";
 import { enrichSessionUser } from "@/guards/enrich-session-user";
+import { clearLegacySharedAuthCookies } from "@/lib/clear-legacy-auth-cookies";
 import { authService } from "@/services";
 import { useAuthStore } from "@/stores/auth.store";
 
@@ -25,6 +26,7 @@ export function useAuth() {
   const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
+    clearLegacySharedAuthCookies();
     let mounted = true;
     authService.getSession().then(async (session) => {
       if (!mounted) return;

@@ -56,14 +56,9 @@ export function SiteHeader() {
               <Link href={dashboardHref}>{t("landing.goToDashboard")}</Link>
             </RyvoButton>
           ) : (
-            <>
-              <RyvoButton intent="outline" size="sm" className="hidden sm:flex" asChild>
-                <Link href={ROUTES.auth.login}>{t("common.signIn")}</Link>
-              </RyvoButton>
-              <RyvoButton intent="cta" size="sm" className="hidden sm:flex" asChild>
-                <Link href={ROUTES.auth.login}>{t("landing.staffSignIn")}</Link>
-              </RyvoButton>
-            </>
+            <RyvoButton intent="cta" size="sm" className="hidden sm:flex" asChild>
+              <Link href={ROUTES.auth.login}>{t("common.signIn")}</Link>
+            </RyvoButton>
           )}
           {isMobile && (
             <button
@@ -99,18 +94,11 @@ export function SiteHeader() {
                 </Link>
               </RyvoButton>
             ) : (
-              <div className="flex gap-2">
-                <RyvoButton intent="outline" className="flex-1" asChild>
-                  <Link href={ROUTES.auth.login} onClick={() => setMenuOpen(false)}>
-                    {t("common.signIn")}
-                  </Link>
-                </RyvoButton>
-                <RyvoButton intent="cta" className="flex-1" asChild>
-                  <Link href={ROUTES.auth.login} onClick={() => setMenuOpen(false)}>
-                    {t("landing.staffSignIn")}
-                  </Link>
-                </RyvoButton>
-              </div>
+              <RyvoButton intent="cta" className="w-full" asChild>
+                <Link href={ROUTES.auth.login} onClick={() => setMenuOpen(false)}>
+                  {t("common.signIn")}
+                </Link>
+              </RyvoButton>
             )}
           </div>
         </nav>
