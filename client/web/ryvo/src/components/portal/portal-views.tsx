@@ -5,7 +5,8 @@ import { useState } from "react";
 
 import { ActivityLogsPanel } from "@/components/admin/audit/activity-logs-panel";
 import { SecurityTabs, SECURITY_TABS } from "@/components/admin/audit/security-tabs";
-import { AnalyticsDashboard } from "@/components/admin/analytics/analytics-dashboard";
+import { PortalAnalyticsPanel } from "@/components/portal/panels/portal-analytics-panel";
+import { PortalRideWorkflowPanel } from "@/components/portal/panels/portal-ride-workflow-panel";
 import { NotificationsInboxPanel } from "@/components/admin/communication/notifications-inbox-panel";
 import { PortalChatSupportPanel } from "@/components/portal/panels/portal-chat-support-panel";
 import { FeedbackTabAnalytics } from "@/components/admin/hr/feedback-tab-analytics";
@@ -65,7 +66,7 @@ export function PortalAnalyticsView({ area }: { area: PortalArea }) {
   const { title } = usePortalTitle("portal.nav.analytics");
   return (
     <PortalPageShell title={title}>
-      <AnalyticsDashboard lockedAudience={area === "driver" ? "drivers" : "clients"} />
+      <PortalAnalyticsPanel area={area} />
     </PortalPageShell>
   );
 }
@@ -174,16 +175,27 @@ export function PortalLiveMapView({ area }: { area: PortalArea }) {
         <PortalTabShell
           defaultTab="live"
           tabs={[
-            { id: "live", label: t("portal.liveMap.tabs.live"), content: <LiveMapPanel /> },
+            {
+              id: "live",
+              label: t("portal.liveMap.tabs.live"),
+              content: (
+                <>
+                  <LiveMapPanel apiScope="portal" />
+                  <div className="mt-4">
+                    <PortalRideWorkflowPanel area="driver" mode="booking" />
+                  </div>
+                </>
+              ),
+            },
             {
               id: "incoming",
               label: t("portal.liveMap.tabs.incoming"),
-              content: <PortalRidesPanel area="driver" />,
+              content: <PortalRideWorkflowPanel area="driver" mode="incoming" />,
             },
             {
               id: "driving",
               label: t("portal.liveMap.tabs.driving"),
-              content: <PortalRidesPanel area="driver" />,
+              content: <PortalRideWorkflowPanel area="driver" mode="driving" />,
             },
           ]}
         />
@@ -196,16 +208,27 @@ export function PortalLiveMapView({ area }: { area: PortalArea }) {
       <PortalTabShell
         defaultTab="go"
         tabs={[
-          { id: "go", label: t("portal.liveMap.tabs.goTo"), content: <LiveMapPanel /> },
+          {
+            id: "go",
+            label: t("portal.liveMap.tabs.goTo"),
+            content: (
+              <>
+                <LiveMapPanel apiScope="portal" />
+                <div className="mt-4">
+                  <PortalRideWorkflowPanel area="client" mode="booking" />
+                </div>
+              </>
+            ),
+          },
           {
             id: "requesting",
             label: t("portal.liveMap.tabs.requesting"),
-            content: <PortalRidesPanel area="client" />,
+            content: <PortalRideWorkflowPanel area="client" mode="requesting" />,
           },
           {
             id: "driving",
             label: t("portal.liveMap.tabs.driving"),
-            content: <PortalRidesPanel area="client" />,
+            content: <PortalRideWorkflowPanel area="client" mode="driving" />,
           },
         ]}
       />

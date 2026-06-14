@@ -5,40 +5,18 @@ import { publishEvent, TOPICS } from "../../../../_shared/lib/kafka.ts";
 import { requirePermission, requireRole } from "../../../../_shared/middleware/auth.ts";
 import { queueNotification } from "../../../../_shared/lib/events.ts";
 import { REQUIRED_KYC_DOCS } from "../../../../_shared/lib/trip-flow.ts";
+import {
+  getPersonalKycDocumentViewUrl,
+  PERSONAL_KYC_DOC_TYPES,
+} from "../../../../_shared/lib/driver-vehicles.ts";
+import {
+  buildPersonalKycChecklist,
+  syncDriverKycStatus,
+} from "../../../../_shared/lib/kyc-documents.ts";
+import { isRealStorageKey } from "../../../../_shared/lib/storage-keys.ts";
 import { z } from "zod";
 
-const docTypeSchema = z.enum([
-  "national_id",
-  "passport",
-  "selfie_with_id",
-  "driver_license",
-  "bank_statement",
-]);
-
-async function syncDriverKycStatus(driverId: string): Promise<void> {
-  const db = getAdminClient();
-  const { data: docs } = await db
-    .from("kyc_documents")
-    .select("doc_type,status")
-    .eq("driver_id", driverId);
-
-  const approved = new Set(
-    (docs ?? []).filter((d) => d.status === "approved").map((d) => d.doc_type),
-  );
-  const hasId = approved.has("national_id") || approved.has("passport");
-  const complete =
-    hasId &&
-    ["selfie_with_id", "driver_license", "bank_statement"].every((t) => approved.has(t));
-
-  const anyRejected = (docs ?? []).some((d) => d.status === "rejected");
-  const anyPending = (docs ?? []).some((d) => d.status === "pending");
-
-  let status = "pending";
-  if (complete) status = "approved";
-  else if (anyRejected && !anyPending) status = "rejected";
-
-  await db.from("driver_profiles").update({ kyc_status: status }).eq("user_id", driverId);
-}
+const docTypeSchema = z.enum(PERSONAL_KYC_DOC_TYPES);
 
 import type { RouteDef } from "../../../../_shared/core/router.ts";
 
@@ -49,22 +27,37 @@ export const routes: RouteDef[] = [{
     handler: async (_req, ctx) => {
       const denied = requireRole(ctx.auth!, "driver");
       if (denied) return denied;
+      const kyc_status = await syncDriverKycStatus(ctx.auth!.userId);
       const db = getAdminClient();
       const { data: docs } = await db
         .from("kyc_documents")
         .select("*")
         .eq("driver_id", ctx.auth!.userId);
-      const { data: profile } = await db
-        .from("driver_profiles")
-        .select("kyc_status")
-        .eq("user_id", ctx.auth!.userId)
-        .single();
-      const byType = Object.fromEntries((docs ?? []).map((d) => [d.doc_type, d]));
+      const checklist = buildPersonalKycChecklist(ctx.auth!.userId, docs ?? []);
       return ok({
-        kyc_status: profile?.kyc_status ?? "pending",
+        kyc_status,
         required: REQUIRED_KYC_DOCS,
-        documents: byType,
+        documents: checklist.documents,
+        items: checklist.items,
       });
+    },
+  },
+{
+    method: "GET",
+    path: "/v1/documents/:doc_type/view-url",
+    auth: true,
+    handler: async (_req, ctx, params) => {
+      const denied = requireRole(ctx.auth!, "driver");
+      if (denied) return denied;
+      try {
+        const view = await getPersonalKycDocumentViewUrl(ctx.auth!.userId, params.doc_type);
+        return ok(view);
+      } catch (e) {
+        const msg = (e as Error).message;
+        if (msg === "NOT_FOUND") return fail("NOT_FOUND", "Document not found", 404);
+        if (msg === "NO_FILE") return fail("NO_FILE", "No file uploaded yet", 404);
+        return fail("VIEW_FAILED", msg, 400);
+      }
     },
   },
 {
@@ -77,6 +70,7 @@ export const routes: RouteDef[] = [{
       const { doc_type, s3_key } = z
         .object({ doc_type: docTypeSchema, s3_key: z.string().min(1) })
         .parse(await req.json());
+      if (!isRealStorageKey(s3_key)) return fail("INVALID_STORAGE_KEY", "Invalid storage key", 422);
       const db = getAdminClient();
       const { data, error } = await db
         .from("kyc_documents")
@@ -95,7 +89,7 @@ export const routes: RouteDef[] = [{
         .select()
         .single();
       if (error) return fail("SUBMIT_FAILED", error.message, 500);
-      await db.from("driver_profiles").update({ kyc_status: "pending" }).eq("user_id", ctx.auth!.userId);
+      await syncDriverKycStatus(ctx.auth!.userId);
 
       const { data: roleRows } = await db
         .from("roles")
@@ -138,19 +132,14 @@ export const routes: RouteDef[] = [{
         .eq("doc_type", doc_type);
       if (error) return fail("REVIEW_FAILED", error.message, 500);
 
-      await syncDriverKycStatus(driver_id);
+      const kyc_status = await syncDriverKycStatus(driver_id);
       await publishEvent(TOPICS.KYC_STATUS_CHANGED, { driver_id, doc_type, status }, driver_id);
       await queueNotification(driver_id, "in_app", "kyc.document_reviewed", {
         doc_type,
         status,
         rejection_reason,
       });
-      const { data: profile } = await db
-        .from("driver_profiles")
-        .select("kyc_status")
-        .eq("user_id", driver_id)
-        .single();
-      return ok({ driver_id, doc_type, status, kyc_status: profile?.kyc_status });
+      return ok({ driver_id, doc_type, status, kyc_status });
     },
   },
 {

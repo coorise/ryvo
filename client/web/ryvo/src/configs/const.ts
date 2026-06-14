@@ -4,10 +4,13 @@ export const SUPPORTED_LANGUAGES = ["en", "fr", "es", "zh", "de"] as const;
 export type AppLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 export const STORAGE_KEYS = {
-  auth: "ryvo.auth.v1",
-  theme: "ryvo.theme",
-  language: "ryvo.lang",
+  auth: "ryvo.portal.auth.v1",
+  theme: "ryvo.portal.theme",
+  language: "ryvo.portal.lang",
 } as const;
+
+/** Isolated from ryvo_admin — localhost cookies are shared across ports. */
+export const SUPABASE_AUTH_COOKIE = "ryvo-portal-auth" as const;
 
 export const STORAGE_KEYS_RESET = "ryvo.password-reset.v1" as const;
 

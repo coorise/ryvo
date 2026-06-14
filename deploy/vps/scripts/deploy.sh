@@ -44,7 +44,7 @@ docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" build --pull
 docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" up -d
 
 # DB seeds/bootstrap (one-shot) then recreate API gateway only.
-docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" --profile migrate run --rm ryvo-migrate
+docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" --profile migrate run --rm --pull always ryvo-migrate
 docker compose -f "$COMPOSE_FILE" --env-file "$COMPOSE_ENV" up -d --force-recreate ryvo-functions
 
 # shellcheck source=/dev/null

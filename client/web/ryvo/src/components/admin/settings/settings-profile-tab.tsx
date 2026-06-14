@@ -1,15 +1,18 @@
 "use client";
 
-import { User } from "lucide-react";
+import { User, Upload } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { SettingsFormCard } from "@/components/admin/settings/settings-form-card";
+import { RyvoButton } from "@/components/ryvo/ryvo-button";
 import { UI } from "@/configs/const";
 import { useAuth } from "@/hooks/use-auth";
 import { settingsService, type SelfProfile } from "@/services/settings.service";
+import { storageService } from "@/services/storage.service";
+import { vehiclesService } from "@/services/vehicles.service";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthStore } from "@/stores/auth.store";
@@ -19,6 +22,17 @@ export function SettingsProfileTab() {
   const { accessToken, user } = useAuth();
   const queryClient = useQueryClient();
   const setAuth = useAuthStore((s) => s.setAuth);
+  const avatarRef = useRef<HTMLInputElement>(null);
+  const isDriver = user?.roles?.includes("driver");
+
+  const vehiclesQ = useQuery({
+    queryKey: ["portal", "vehicles-approved"],
+    queryFn: () => vehiclesService.listMine(accessToken),
+    enabled: Boolean(accessToken) && isDriver,
+  });
+
+  const [activeVehicleId, setActiveVehicleId] = useState<string>("");
+  const approvedVehicles = (vehiclesQ.data?.vehicles ?? []).filter((v) => v.status === "approved");
 
   const { data, isLoading } = useQuery({
     queryKey: ["settings", "profile"],
@@ -33,7 +47,16 @@ export function SettingsProfileTab() {
   }, [data?.profile]);
 
   const save = useMutation({
-    mutationFn: () => settingsService.updateMyProfile(accessToken, form),
+    mutationFn: async () => {
+      const res = await settingsService.updateMyProfile(accessToken, form);
+      if (isDriver) {
+        await vehiclesService.setActiveVehicle(
+          accessToken,
+          !activeVehicleId || activeVehicleId === "none" ? null : activeVehicleId,
+        );
+      }
+      return res;
+    },
     onSuccess: (res) => {
       toast.success(t("settingsHub.profile.saved"));
       void queryClient.invalidateQueries({ queryKey: ["settings", "profile"] });
@@ -44,11 +67,31 @@ export function SettingsProfileTab() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const avatarUpload = useMutation({
+    mutationFn: async (file: File) => {
+      const path = `users/${user!.id}/avatar/${Date.now()}.${file.name.split(".").pop() ?? "jpg"}`;
+      const key = await storageService.uploadFile(accessToken, file, path);
+      setForm((f) => ({ ...f, avatar_url: key }));
+      return key;
+    },
+    onSuccess: () => toast.success(t("settingsHub.profile.avatarUploaded")),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const avatarPreviewQ = useQuery({
+    queryKey: ["avatar-preview", form.avatar_url],
+    queryFn: () => storageService.getSignedReadUrl(accessToken, form.avatar_url!),
+    enabled: Boolean(accessToken && form.avatar_url && !form.avatar_url.startsWith("http")),
+  });
+
+  const avatarSrc =
+    form.avatar_url?.startsWith("http") ? form.avatar_url : avatarPreviewQ.data ?? undefined;
+
+  const displayName = form.display_name ?? form.full_name ?? form.email ?? "";
+
   if (isLoading) {
     return <p className="text-muted-foreground text-sm">{t("common.loading")}</p>;
   }
-
-  const displayName = form.display_name ?? form.full_name ?? form.email ?? "";
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -59,9 +102,9 @@ export function SettingsProfileTab() {
             className="border-background bg-muted absolute -top-12 flex items-center justify-center overflow-hidden rounded-full border-4"
             style={{ width: UI.profileAvatarSize, height: UI.profileAvatarSize }}
           >
-            {form.avatar_url ? (
+            {avatarSrc ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={form.avatar_url} alt="" className="size-full object-cover" />
+              <img src={avatarSrc} alt="" className="size-full object-cover" />
             ) : (
               <User className="text-muted-foreground size-10" />
             )}
@@ -69,6 +112,26 @@ export function SettingsProfileTab() {
           <div className="pt-14">
             <h2 className="text-xl font-bold">{displayName}</h2>
             <p className="text-muted-foreground text-sm">{form.email}</p>
+            <RyvoButton
+              intent="outline"
+              size="sm"
+              className="mt-3"
+              type="button"
+              onClick={() => avatarRef.current?.click()}
+            >
+              <Upload className="size-4" /> {t("settingsHub.profile.uploadAvatar")}
+            </RyvoButton>
+            <input
+              ref={avatarRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) avatarUpload.mutate(file);
+                e.target.value = "";
+              }}
+            />
           </div>
         </div>
       </div>
@@ -172,6 +235,25 @@ export function SettingsProfileTab() {
               onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
             />
           </div>
+          {isDriver ? (
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="active_vehicle">{t("settingsHub.profile.activeVehicle")}</Label>
+              <select
+                id="active_vehicle"
+                className="border-border bg-background w-full rounded-xl border px-3 py-2 text-sm"
+                value={activeVehicleId}
+                onChange={(e) => setActiveVehicleId(e.target.value)}
+              >
+                <option value="none">{t("settingsHub.profile.noActiveVehicle")}</option>
+                {approvedVehicles.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {[v.brand || v.make, v.name || v.model, v.plate].filter(Boolean).join(" · ")}
+                  </option>
+                ))}
+              </select>
+              <p className="text-muted-foreground text-xs">{t("settingsHub.profile.activeVehicleHint")}</p>
+            </div>
+          ) : null}
         </div>
       </SettingsFormCard>
     </div>

@@ -31,9 +31,19 @@ export class MapService extends BaseService {
     return this.get<{ drivers: OnlineDriver[] }>(`/v1/admin/map/online-drivers${qs}`, token);
   }
 
+  listNearbyDrivers(token: string | null, query?: string) {
+    const qs = query ? `?q=${encodeURIComponent(query)}` : "";
+    return this.get<{ drivers: OnlineDriver[] }>(`/v1/map/nearby-drivers${qs}`, token);
+  }
+
   searchPlaces(token: string | null, q: string) {
     const qs = `?q=${encodeURIComponent(q)}`;
     return this.get<{ places: PlaceResult[] }>(`/v1/admin/map/search${qs}`, token);
+  }
+
+  searchPlacesPortal(token: string | null, q: string) {
+    const qs = `?q=${encodeURIComponent(q)}`;
+    return this.get<{ places: PlaceResult[] }>(`/v1/map/search${qs}`, token);
   }
 }
 

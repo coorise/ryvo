@@ -28,17 +28,23 @@ export class StorageService extends BaseService {
     return res;
   }
 
-  async uploadPng(token: string | null, file: File, storagePath: string): Promise<string> {
+  async uploadFile(token: string | null, file: File, storagePath: string): Promise<string> {
     const { signedUrl, path, token: uploadToken } = await this.createUploadUrl(
       token,
       storagePath,
-      file.type || "image/png",
+      file.type || "application/octet-stream",
     );
-    const headers: Record<string, string> = { "Content-Type": file.type || "image/png" };
+    const headers: Record<string, string> = {
+      "Content-Type": file.type || "application/octet-stream",
+    };
     if (uploadToken) headers["x-upsert"] = "true";
     const put = await fetch(signedUrl, { method: "PUT", headers, body: file });
     if (!put.ok) throw new Error(`Upload failed (${put.status})`);
     return path;
+  }
+
+  async uploadPng(token: string | null, file: File, storagePath: string): Promise<string> {
+    return this.uploadFile(token, file, storagePath);
   }
 
   async getSignedReadUrl(token: string | null, path: string, expiresIn = 3600): Promise<string> {

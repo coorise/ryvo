@@ -50,14 +50,8 @@ SQL
 
   if [[ "$role" == "driver" ]]; then
     psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -v ON_ERROR_STOP=1 <<SQL
-INSERT INTO public.driver_profiles (user_id, kyc_status) VALUES ('${user_id}', 'approved')
-ON CONFLICT (user_id) DO UPDATE SET kyc_status = 'approved';
-SQL
-    psql -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$PGDATABASE" -v ON_ERROR_STOP=1 <<SQL
-INSERT INTO public.kyc_documents (driver_id, doc_type, s3_key, status)
-SELECT '${user_id}', t, 'seed/dev/' || t, 'approved'
-FROM unnest(ARRAY['national_id','selfie_with_id','driver_license','bank_statement']::text[]) AS t
-ON CONFLICT (driver_id, doc_type) DO UPDATE SET status = 'approved';
+INSERT INTO public.driver_profiles (user_id, kyc_status) VALUES ('${user_id}', 'pending')
+ON CONFLICT (user_id) DO NOTHING;
 SQL
   fi
 

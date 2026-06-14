@@ -2,15 +2,16 @@
 
 import type { ReactNode } from "react";
 
-import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { PortalShell } from "@/components/layout/portal-shell";
+import { PortalPathGuard } from "@/guards/portal-path-guard";
 import { RouteGuard } from "@/guards/route-guard";
 
 export default function ClientLayout({ children }: { children: ReactNode }) {
   return (
     <RouteGuard dashboard="client" requireVerifiedEmail>
-      <DashboardShell area="client" portal="client" title="Client" subtitle="Book rides and manage your trips">
-        {children}
-      </DashboardShell>
+      <PortalPathGuard area="client">
+        <PortalShell area="client">{children}</PortalShell>
+      </PortalPathGuard>
     </RouteGuard>
   );
 }

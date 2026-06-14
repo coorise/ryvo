@@ -54,18 +54,16 @@ export function ActivityLogsPanel({ variant = "admin" }: ActivityLogsPanelProps)
 
   const { data, isLoading } = useQuery({
     queryKey: isPortal ? ["portal", "activity", user?.id] : ["admin", "activity"],
-    queryFn: () => auditService.listActivityLogs(accessToken),
-    enabled:
-      Boolean(accessToken) && (isPortal || hasPermission(PERMISSIONS.audit.read)),
+    queryFn: () =>
+      isPortal ? auditService.listMyActivityLogs(accessToken) : auditService.listActivityLogs(accessToken),
+    enabled: Boolean(accessToken) && (isPortal || hasPermission(PERMISSIONS.audit.read)),
   });
 
   const allLogs = useMemo(() => {
     const logs = data?.logs ?? [];
-    if (isPortal && user?.id) {
-      return logs.filter((l) => l.actor_id === user.id);
-    }
+    if (isPortal) return logs;
     return logs;
-  }, [data?.logs, isPortal, user?.id]);
+  }, [data?.logs, isPortal]);
 
   const stats = useMemo(() => {
     const dayAgo = Date.now() - 24 * 60 * 60 * 1000;

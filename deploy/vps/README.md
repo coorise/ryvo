@@ -2,7 +2,16 @@
 
 Portable bootstrap: **one secrets file** (`server/supabase/.env`) + generated env everywhere else.
 
-Full reference: [docs/env-guide.md](../docs/env-guide.md)
+Full reference: [docs/env-guide.md](../docs/env-guide.md) · release flow & dev/prod isolation: [README.md](../README.md#branches--release-flow)
+
+## Dev and prod on one VPS
+
+Dev and prod are **separate Docker Compose projects** with isolated data and services:
+
+- **Dev:** project `ryvo-dev`, network `ryvo-net-dev`, volumes `*_dev`, containers `*_dev`, images tagged from `dev` CI.
+- **Prod:** project `ryvo`, network `ryvo-net`, volumes under `data/`, containers `*_prod`, images tagged from `main` CI.
+
+Only **secrets** (`server/supabase/.env`) and **git templates** (`deploy/vps/**`) are shared. Deploying dev never replaces prod data; each `deploy-bluegreen.sh dev|prod` runs `apply-env.sh` for that stack only.
 
 ## Layout (committed templates only)
 
@@ -21,7 +30,10 @@ deploy/vps/
     bootstrap.sh          # fresh install: ensure-env + apply-env
     apply-env.sh          # regenerate VPS env from templates + supabase secrets
     write-web-env-production.sh
-    deploy-bluegreen.sh   # CI/CD + manual redeploy
+    deploy-bluegreen.sh   # CI/CD + manual redeploy (pull images, auto migrations, blue/green)
+    pull-deploy-images.sh # pull admin + client + functions CI images
+    run-migrations.sh     # idempotent SQL seeds (every deploy)
+    pull-web-images.sh    # legacy: admin + client only (prefer pull-deploy-images.sh)
     setup-dev.sh | setup-prod.sh
 ```
 
@@ -53,19 +65,28 @@ bash deploy/vps/scripts/deploy-bluegreen.sh dev sha-$(git rev-parse HEAD)
 | `DOCKER_*` in compose `.env.*` or GitHub secrets | `client/web/*/.env.local` |
 | | `client/web/*/.env.production` (Next.js Docker build) |
 
-## Ports (dev VPS)
+## Ports
 
-| Service | Host port |
-|---------|-----------|
-| Admin | 3400 |
-| Client | 3500 |
-| API (Caddy) | 8500 |
+| Stack | Admin | Client | API (Caddy) |
+|-------|-------|--------|-------------|
+| Dev | 3400 | 3500 | 8500 |
+| Prod | 3200 | 3300 | 8400 |
 
 Caddy routes to blue/green web containers on internal `:3000`.  
-`network/caddy/Caddyfile.dev` is generated on deploy (gitignored).
+`network/caddy/Caddyfile.dev` / `Caddyfile.prod` are generated on deploy (gitignored).
 
 ## CI/CD secrets
 
 See root [README.md](../README.md#cicd-github-actions). Optional `DEV_*` / `PROD_*` keys fall back to reading `server/supabase/.env` on the VPS over SSH.
+
+## Database migrations (automatic)
+
+Every push to `dev` or `main` runs migrations via GitHub Actions — **no manual VPS commands needed**.
+
+1. CI builds `ryvo-functions:sha-<gitsha>` with `server/supabase/scripts/seeds/` baked into the image.
+2. `deploy-bluegreen.sh` pulls that image, then runs `run-migrations.sh`.
+3. `migrate-idempotent.sh` applies only **new or changed** `NNN_*.sql` files (tracked in `ryvo.schema_migrations`).
+
+Add a migration: create `server/supabase/scripts/seeds/049_your_change.sql`, push to `dev` or `main`. CI deploy applies it automatically.
 
 Test account: `admin@ryvo-line.com` / `Admin@123`

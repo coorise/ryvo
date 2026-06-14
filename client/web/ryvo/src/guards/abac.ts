@@ -122,9 +122,25 @@ export function canEditSettingsTab(
   return false;
 }
 
+/** Role membership without super_admin implied access (portal routing). */
+export function hasStrictRole(user: SessionUser | null, ...roles: string[]): boolean {
+  if (!user) return false;
+  return roles.some((r) => user.roles.includes(r));
+}
+
 export function dashboardPathForUser(user: SessionUser | null): string {
+  return portalDashboardPathForUser(user);
+}
+
+/** Customer portal (driver/client app) — never routes to /admin; staff use ryvo_admin. */
+export function portalDashboardPathForUser(user: SessionUser | null): string {
   if (!user) return "/auth/login";
-  if (canAccessDashboard(user, "admin")) return "/admin";
-  if (hasRole(user, "driver")) return "/driver";
-  return "/client";
+  if (hasStrictRole(user, "driver")) return "/driver";
+  if (hasStrictRole(user, "client")) return "/client";
+  return "/auth/login";
+}
+
+export function isPortalUser(user: SessionUser | null): boolean {
+  if (!user) return false;
+  return hasStrictRole(user, "driver") || hasStrictRole(user, "client");
 }

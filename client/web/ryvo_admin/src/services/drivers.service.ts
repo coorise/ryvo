@@ -30,6 +30,8 @@ export type DriverDetail = {
   documents: KycDocument[];
   roles: string[];
   reviews: AdminReviewRow[];
+  vehicles?: import("@/services/vehicles.service").DriverVehicle[];
+  active_vehicle_id?: string | null;
 };
 
 export class DriversService extends BaseService {

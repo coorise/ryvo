@@ -57,21 +57,20 @@ export function SecurityAuthLogsPanel({ variant = "admin" }: SecurityAuthLogsPan
       ? ["portal", "security", "auth", user?.id, severityFilter]
       : ["admin", "security", "auth", severityFilter],
     queryFn: () =>
-      auditService.listSecurityAuthEvents(
-        accessToken,
-        severityFilter === "all" ? undefined : severityFilter,
-      ),
+      isPortal
+        ? auditService.listMySecurityAuthEvents(
+            accessToken,
+            severityFilter === "all" ? undefined : severityFilter,
+          )
+        : auditService.listSecurityAuthEvents(
+            accessToken,
+            severityFilter === "all" ? undefined : severityFilter,
+          ),
     enabled:
       Boolean(accessToken) && (isPortal || hasPermission(PERMISSIONS.audit.read)),
   });
 
-  const allEvents = useMemo(() => {
-    const events = data?.events ?? [];
-    if (isPortal && user?.id) {
-      return events.filter((e) => e.actor_id === user.id);
-    }
-    return events;
-  }, [data?.events, isPortal, user?.id]);
+  const allEvents = useMemo(() => data?.events ?? [], [data?.events]);
 
   const stats = useMemo(() => {
     const dayAgo = Date.now() - 24 * 60 * 60 * 1000;

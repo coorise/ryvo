@@ -856,7 +856,48 @@
     "docPassport": "Passport",
     "docSelfie": "Selfie with ID",
     "docBank": "Bank statement",
-    "reviewsFromClients": "Reviews from clients"
+    "reviewsFromClients": "Reviews from clients",
+    "profileSections": "Driver verification",
+    "tabs": {
+      "driver": "Driver",
+      "cars": "Driver's cars"
+    },
+    "carsTitle": "Know your car — vehicles",
+    "carsHint": "Review each car profile, media, and documents. Approve or reject individually.",
+    "noCarsYet": "This driver has not registered any cars yet.",
+    "documentsHint": "Required personal documents for driver verification. Missing items are shown explicitly.",
+    "docMissing": "Missing",
+    "vehicleDocRegistration": "Registration",
+    "vehicleDocInsurance": "Insurance",
+    "vehicleDocOther": "Other document",
+    "vehicleMedia": "Photos & video",
+    "vehicleDocuments": "Car documents",
+    "noBanner": "No banner uploaded",
+    "noVehicleDocs": "No documents uploaded for this car.",
+    "viewMedia": "View media",
+    "approveVehicle": "Approve car",
+    "rejectVehicle": "Reject car",
+    "mediaBanner": "Banner image",
+    "mediaGallery": "Gallery image",
+    "mediaVideo": "Short video",
+    "vehicleFields": {
+      "brand": "Brand",
+      "name": "Name",
+      "plate": "Plate",
+      "year": "Year",
+      "energy": "Energy",
+      "speed": "Max speed",
+      "age": "Age",
+      "tyres": "Tyres",
+      "carbon": "Carbon print",
+      "color": "Color",
+      "category": "Category"
+    },
+    "energy": {
+      "electric": "Electric",
+      "fuel": "Fuel",
+      "hybrid": "Hybrid"
+    }
   },
   "tickets": {
     "subtitle": "Support inbox — reply to clients and drivers.",

@@ -10,7 +10,7 @@ import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { BrandLogo } from "@/components/ryvo/brand-logo";
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
 import { LANDING_NAV_LINKS, ROUTES } from "@/configs";
-import { dashboardPathForUser } from "@/guards/abac";
+import { portalDashboardPathForUser, isPortalUser } from "@/guards/abac";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-media-query";
 
@@ -21,8 +21,8 @@ export function SiteHeader() {
   const isMobile = useIsMobile();
   const [menuOpen, setMenuOpen] = useState(false);
   const dark = theme === "dark";
-  const loggedIn = isReady && Boolean(user);
-  const dashboardHref = loggedIn ? dashboardPathForUser(user) : ROUTES.auth.login;
+  const loggedIn = isReady && isPortalUser(user);
+  const dashboardHref = loggedIn ? portalDashboardPathForUser(user) : ROUTES.auth.login;
 
   return (
     <header className="bg-background/75 sticky top-0 z-40 border-b border-border/60 backdrop-blur-xl">

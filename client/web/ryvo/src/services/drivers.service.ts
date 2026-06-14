@@ -30,6 +30,8 @@ export type DriverDetail = {
   documents: KycDocument[];
   roles: string[];
   reviews: AdminReviewRow[];
+  vehicles?: import("@/services/vehicles.service").DriverVehicle[];
+  active_vehicle_id?: string | null;
 };
 
 export class DriversService extends BaseService {
@@ -62,6 +64,13 @@ export class DriversService extends BaseService {
     return this.post<{ driver: DriverDetail }>(
       `/v1/admin/drivers/${driverId}/documents/${docType}/review`,
       { status, rejection_reason: rejectionReason },
+      token,
+    );
+  }
+
+  getDocumentViewUrl(token: string | null, driverId: string, docType: string) {
+    return this.get<{ url: string; mime_type: string; status: string }>(
+      `/v1/admin/drivers/${driverId}/documents/${docType}/view-url`,
       token,
     );
   }

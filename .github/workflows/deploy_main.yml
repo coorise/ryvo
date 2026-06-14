@@ -1,5 +1,8 @@
 name: Deploy production to VPS
 
+# On every push to main: build images (web + ryvo-functions with SQL seeds), deploy to VPS,
+# run idempotent DB migrations automatically, then blue/green switch. No manual VPS steps.
+
 on:
   push:
     branches:
@@ -184,6 +187,9 @@ jobs:
             pwd
             git fetch origin main dev
             git checkout -- network/caddy/Caddyfile.dev deploy/vps/compose/functions-router.dev.Caddyfile network/caddy/Caddyfile.prod deploy/vps/compose/functions-router.prod.Caddyfile 2>/dev/null || true
+            rm -f server/supabase/volumes/functions/bun.lockb 2>/dev/null || true
             git checkout main
             git pull --ff-only origin main
+            # deploy-bluegreen.sh: pull CI images, run DB migrations automatically
+            # (server/supabase/scripts/seeds via ryvo-migrate), blue/green switch — no manual VPS steps.
             bash deploy/vps/scripts/deploy-bluegreen.sh prod sha-${{ github.sha }}'

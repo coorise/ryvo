@@ -28,6 +28,57 @@ Production-grade Uber-like ride-hailing platform.
 
 ---
 
+## Branches & release flow
+
+| Branch | Role | VPS stack | Public URLs |
+|--------|------|-----------|-------------|
+| **`dev`** | Beta / QA — full end-to-end testing | `docker-compose.dev.yaml` | `*.dev.agglomy.com` |
+| **`main`** | Production — live users | `docker-compose.prod.yaml` | `ryvo-line*.agglomy.com` |
+
+**Workflow**
+
+1. Push to **`dev`** → GitHub Actions builds Docker images → deploys to the **dev** VPS stack (`deploy_dev.yml`).
+2. Beta team tests on dev URLs; fix issues on `dev` and redeploy until approved.
+3. Merge **`dev` → `main`** (GitHub or CLI below) → GitHub Actions builds **prod** images → deploys the **prod** stack (`deploy_main.yml`).
+
+Dev and prod on the same VPS are **independent**: separate databases, volumes, container names, Docker networks, image tags, and compose env files. They only share **git templates** under `deploy/vps/` and **secrets** in `server/supabase/.env` (anon key, JWT, Maps key, …). Each deploy runs `apply-env.sh dev|prod` first so URL overlays match the target stack.
+
+### Merge dev → main (GitHub website)
+
+1. Open the repo on GitHub → **Pull requests** → **New pull request**.
+2. Set **base:** `main`, **compare:** `dev`.
+3. Review the diff, add a short summary, create the PR.
+4. When beta sign-off is done, click **Merge pull request** (merge commit is fine).
+5. Watch **Actions** → **Deploy production to VPS** on the `main` push.
+
+Direct link pattern: `https://github.com/<org>/ryvo/compare/main...dev`
+
+### Merge dev → main (CLI)
+
+```bash
+# From your machine (needs git + gh CLI, repo cloned)
+cd ryvo
+git fetch origin
+git checkout dev && git pull origin dev
+
+# Option A — GitHub CLI (recommended)
+gh pr create --base main --head dev \
+  --title "Release: dev → main" \
+  --body "Beta approved on dev VPS. Deploying to production."
+
+gh pr view --web          # optional: review in browser
+gh pr merge --merge       # merge; triggers deploy_main.yml on main
+
+# Option B — local merge + push (also triggers CI on main)
+git checkout main && git pull origin main
+git merge origin/dev --no-ff -m "Merge dev into main for production release"
+git push origin main
+```
+
+After merge, confirm the workflow run succeeded and hit the prod URLs (see [VPS production URLs](#vps-production-urls)).
+
+---
+
 ## Environment: one rule
 
 **Edit secrets in one place:** `server/supabase/.env`  
@@ -42,6 +93,60 @@ Scripts derive everything else. Do **not** maintain duplicate keys across many f
 | **VPS prod** | `docker-compose.prod.yaml` | `deploy/vps/compose/.env.prod` | `bash deploy/vps/scripts/bootstrap.sh prod` |
 
 **Next.js note:** `NEXT_PUBLIC_*` is inlined at **`next build`** from `client/web/*/.env.production`, not from runtime container env. See [docs/env-guide.md](docs/env-guide.md).
+
+---
+
+## VPS: dev vs prod isolation (same machine)
+
+Both stacks can run on one VPS without sharing runtime data.
+
+| | **Dev** | **Prod** |
+|---|---------|----------|
+| Compose project | `ryvo-dev` | `ryvo` |
+| Compose file | `docker-compose.dev.yaml` | `docker-compose.prod.yaml` |
+| Compose env | `deploy/vps/compose/.env.dev` | `deploy/vps/compose/.env.prod` |
+| Docker network | `ryvo-net-dev` | `ryvo-net` |
+| Edge ports (Caddy) | 3400 admin / 3500 client / 8500 API | 3200 / 3300 / 8400 |
+| DB volume | `server/supabase/volumes/db/data_dev` | `…/data` |
+| Storage volume | `…/storage_dev` | `…/storage` |
+| Kafka / Redis / Bunqueue data | `*/data_dev` | `*/data` |
+| Container suffix | `*_dev` (e.g. `supabase-db_dev`) | `*_prod` or plain (e.g. `supabase-db`) |
+| Web / functions images | `coorise/ryvo-*:sha-<dev-commit>` | `coorise/ryvo-*:sha-<main-commit>` |
+| CI workflow | `deploy_dev.yml` on push to `dev` | `deploy_main.yml` on push to `main` |
+| URL templates | `deploy/vps/**/env.dev.example` | `deploy/vps/**/env.prod.example` |
+
+**Shared (by design):** `server/supabase/.env` secrets file on disk; committed templates under `deploy/vps/`.  
+**Not shared:** Postgres data, file storage, Kafka/Redis/Bunqueue state, running containers, or built web bundles.
+
+Manual redeploy on the VPS (after env or secret changes):
+
+```bash
+# Dev
+bash deploy/vps/scripts/apply-env.sh dev
+bash deploy/vps/scripts/deploy-bluegreen.sh dev sha-$(git rev-parse HEAD)
+
+# Prod (on main branch)
+bash deploy/vps/scripts/apply-env.sh prod
+bash deploy/vps/scripts/deploy-bluegreen.sh prod sha-$(git rev-parse HEAD)
+```
+
+Details: [deploy/vps/README.md](deploy/vps/README.md)
+
+### VPS dev URLs
+
+| Service | URL |
+|---------|-----|
+| Client | https://ryvo-line.dev.agglomy.com |
+| Admin | https://ryvo-line-admin.dev.agglomy.com |
+| API | https://ryvo-line-server.dev.agglomy.com |
+
+### VPS production URLs
+
+| Service | URL |
+|---------|-----|
+| Client | https://ryvo-line.agglomy.com |
+| Admin | https://ryvo-line-admin.agglomy.com |
+| API | https://ryvo-line-server.agglomy.com |
 
 ---
 
@@ -114,16 +219,20 @@ bash deploy/vps/scripts/setup-dev.sh             # git pull + bootstrap + deploy
 
 Details: [deploy/vps/README.md](deploy/vps/README.md) · [docs/env-guide.md](docs/env-guide.md)
 
-**VPS dev URLs:** `ryvo-line.dev.agglomy.com` · `ryvo-line-admin.dev.agglomy.com` · API `:8500`
+See [VPS: dev vs prod isolation](#vps-dev-vs-prod-isolation-same-machine) and [Merge dev → main](#merge-dev--main-github-website) in this README.
 
 ---
 
 ## CI/CD (GitHub Actions)
 
-| Workflow | Branch | Deploy script |
-|----------|--------|---------------|
-| `.github/workflows/deploy_dev.yml` | `dev` | `deploy-bluegreen.sh dev` |
-| `.github/workflows/deploy_main.yml` | `main` | `deploy-bluegreen.sh prod` |
+| Workflow | Branch | Trigger | VPS deploy |
+|----------|--------|---------|------------|
+| `.github/workflows/deploy_dev.yml` | `dev` | Push to `dev` | `deploy-bluegreen.sh dev sha-<sha>` |
+| `.github/workflows/deploy_main.yml` | `main` | Push to `main` (incl. merge from `dev`) | `deploy-bluegreen.sh prod sha-<sha>` |
+
+**Pipeline:** build & push `coorise/ryvo-web-admin`, `ryvo-web-client`, `ryvo-functions` → SSH to VPS → `git pull` → `apply-env` → blue/green deploy (rebuilds web images on VPS with `.env.production`).
+
+You can also trigger prod deploy manually: **Actions** → **Deploy production to VPS** → **Run workflow** (branch `main`).
 
 ### Required GitHub secrets
 
@@ -147,7 +256,7 @@ Both web apps (admin + client) receive anon key and Maps key in `.env.production
 
 **First CI run:** clone repo on VPS and set `server/supabase/.env` **or** add the optional secrets in GitHub → Settings → Secrets.
 
-**Flow:** CI builds/pushes images → SSH to VPS → `git pull` → `deploy-bluegreen.sh` (also rebuilds web images on VPS with `.env.production` from `apply-env.sh`).
+**Flow:** push/merge → CI builds/pushes images → SSH to VPS → `git pull` → `apply-env.sh` → `deploy-bluegreen.sh` (also rebuilds web images on VPS with `.env.production` from the target stack).
 
 ---
 

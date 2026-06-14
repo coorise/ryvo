@@ -6,14 +6,14 @@ import { useTranslation } from "react-i18next";
 
 import { RyvoButton } from "@/components/ryvo/ryvo-button";
 import { ROUTES } from "@/configs";
-import { dashboardPathForUser } from "@/guards/abac";
+import { portalDashboardPathForUser, isPortalUser } from "@/guards/abac";
 import { useAuth } from "@/hooks/use-auth";
 
 export function LandingHeroActions() {
   const { t } = useTranslation();
   const { user, isReady } = useAuth();
-  const loggedIn = isReady && Boolean(user);
-  const dashboardHref = loggedIn ? dashboardPathForUser(user) : ROUTES.auth.register;
+  const loggedIn = isReady && isPortalUser(user);
+  const dashboardHref = loggedIn ? portalDashboardPathForUser(user) : ROUTES.auth.register;
 
   if (loggedIn) {
     return (

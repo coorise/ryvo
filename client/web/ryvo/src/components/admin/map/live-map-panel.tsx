@@ -86,7 +86,7 @@ function DriverRow({
   );
 }
 
-export function LiveMapPanel() {
+export function LiveMapPanel({ apiScope = "admin" }: { apiScope?: "admin" | "portal" }) {
   const { t } = useTranslation();
   const { accessToken } = useAuth();
   const [selectedDriver, setSelectedDriver] = useState<OnlineDriver | null>(null);
@@ -115,7 +115,10 @@ export function LiveMapPanel() {
 
   const { data, refetch, isLoading } = useQuery({
     queryKey: [...QUERY_KEYS.admin.liveMapDrivers, driverQuery],
-    queryFn: () => mapService.listOnlineDrivers(accessToken, driverQuery),
+    queryFn: () =>
+      apiScope === "portal"
+        ? mapService.listNearbyDrivers(accessToken, driverQuery)
+        : mapService.listOnlineDrivers(accessToken, driverQuery),
     enabled: Boolean(accessToken),
     refetchInterval: 8000,
   });
@@ -136,7 +139,9 @@ export function LiveMapPanel() {
       }
       const q = (input.query ?? "").trim();
       if (!q) throw new Error("Empty query");
-      const res = await mapService.searchPlaces(accessToken, q);
+      const res = await (apiScope === "portal"
+        ? mapService.searchPlacesPortal(accessToken, q)
+        : mapService.searchPlaces(accessToken, q));
       const hit = res.places[0];
       if (!hit) throw new Error("No results");
       return hit;
@@ -150,7 +155,10 @@ export function LiveMapPanel() {
   });
 
   const searchPlaces = useMutation({
-    mutationFn: (q: string) => mapService.searchPlaces(accessToken, q),
+    mutationFn: (q: string) =>
+      apiScope === "portal"
+        ? mapService.searchPlacesPortal(accessToken, q)
+        : mapService.searchPlaces(accessToken, q),
     onSuccess: (res) => {
       const first = res.places[0];
       if (first) {

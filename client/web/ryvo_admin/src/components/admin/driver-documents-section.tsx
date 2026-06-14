@@ -22,24 +22,58 @@ import { driversService, type KycDocument } from "@/services/drivers.service";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { isRealStorageKey } from "@/lib/storage-keys";
 
-const DOC_STATUS_CLASS: Record<string, string> = {
-  [KYC_STATUS.approved]: "bg-primary/15 text-primary",
-  [KYC_STATUS.pending]: "bg-amber-500/15 text-amber-700",
-  [KYC_STATUS.rejected]: "bg-destructive/15 text-destructive",
-};
+const PERSONAL_KYC_DOC_TYPES = [
+  "national_id",
+  "passport",
+  "selfie_with_id",
+  "driver_license",
+  "bank_statement",
+] as const;
+
+function docByType(documents: KycDocument[], docType: string): KycDocument | undefined {
+  return documents.find((d) => d.doc_type === docType);
+}
+
+function docRow(docType: string, doc?: KycDocument): KycDocument {
+  return (
+    doc ?? {
+      id: docType,
+      driver_id: "",
+      doc_type: docType,
+      s3_key: "",
+      status: "missing",
+      rejection_reason: null,
+      reviewed_by: null,
+      reviewed_at: null,
+      created_at: "",
+    }
+  );
+}
 
 function isResubmitted(doc: KycDocument): boolean {
   return doc.status === KYC_STATUS.pending && Boolean(doc.reviewed_at);
 }
 
 function canApprove(doc: KycDocument): boolean {
-  return doc.status === KYC_STATUS.pending;
+  return doc.status === KYC_STATUS.pending && isRealStorageKey(doc.s3_key);
+}
+
+function canView(doc: KycDocument): boolean {
+  return doc.status !== "missing" && isRealStorageKey(doc.s3_key);
 }
 
 function canReject(doc: KycDocument): boolean {
   return doc.status === KYC_STATUS.approved || doc.status === KYC_STATUS.pending;
 }
+
+const DOC_STATUS_CLASS: Record<string, string> = {
+  [KYC_STATUS.approved]: "bg-primary/15 text-primary",
+  [KYC_STATUS.pending]: "bg-amber-500/15 text-amber-700",
+  [KYC_STATUS.rejected]: "bg-destructive/15 text-destructive",
+  missing: "bg-muted text-muted-foreground",
+};
 
 type DriverDocumentsSectionProps = {
   driverId: string;
@@ -84,73 +118,40 @@ export function DriverDocumentsSection({ driverId, documents }: DriverDocumentsS
   const isPdf = viewMime.includes("pdf");
   const isImage = viewMime.startsWith("image/");
 
+  const checklist = PERSONAL_KYC_DOC_TYPES.map((docType) =>
+    docRow(docType, docByType(documents, docType)),
+  );
+  const legacyDocs = documents.filter(
+    (d) => !(PERSONAL_KYC_DOC_TYPES as readonly string[]).includes(d.doc_type),
+  );
+
   return (
     <div className="border-border bg-card rounded-3xl border p-6">
-      <p className="mb-4 text-lg font-bold">{t("drivers.documents")}</p>
+      <p className="mb-1 text-lg font-bold">{t("drivers.documents")}</p>
+      <p className="text-muted-foreground mb-4 text-sm">{t("drivers.documentsHint")}</p>
       <div className="space-y-3">
-        {documents.map((doc) => (
-          <div
+        {checklist.map((doc) => (
+          <DocumentRow
             key={doc.doc_type}
-            className="border-border flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4"
-          >
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="font-semibold">
-                  {t(KYC_DOC_LABEL_KEYS[doc.doc_type] ?? doc.doc_type)}
-                </p>
-                {isResubmitted(doc) && (
-                  <span className="bg-primary rounded-md px-2 py-0.5 text-[10px] font-bold uppercase text-primary-foreground">
-                    {t("drivers.newUpload")}
-                  </span>
-                )}
-              </div>
-              <span
-                className={cn(
-                  "mt-1 inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase",
-                  DOC_STATUS_CLASS[doc.status] ?? "bg-muted",
-                )}
-              >
-                {doc.status}
-              </span>
-              {doc.rejection_reason && doc.status === KYC_STATUS.rejected && (
-                <p className="text-destructive mt-1 text-xs">{doc.rejection_reason}</p>
-              )}
-            </div>
-            <PermissionGate permissions={[PERMISSIONS.drivers.kycRead, PERMISSIONS.drivers.kycVerify]}>
-              <div className="flex flex-wrap gap-2">
-                <RyvoButton intent="outline" size="sm" onClick={() => setViewDocType(doc.doc_type)}>
-                  <Eye className="mr-1 size-3.5" />
-                  {t("drivers.viewDocument")}
-                </RyvoButton>
-                <PermissionGate permissions={[PERMISSIONS.drivers.kycVerify]}>
-                  {canApprove(doc) && (
-                    <RyvoButton
-                      intent="cta"
-                      size="sm"
-                      disabled={review.isPending}
-                      onClick={() => review.mutate({ docType: doc.doc_type, status: "approved" })}
-                    >
-                      {t("drivers.approve")}
-                    </RyvoButton>
-                  )}
-                  {canReject(doc) && (
-                    <RyvoButton
-                      intent="danger"
-                      size="sm"
-                      disabled={review.isPending}
-                      onClick={() => setRejectDocType(doc.doc_type)}
-                    >
-                      {t("drivers.reject")}
-                    </RyvoButton>
-                  )}
-                </PermissionGate>
-              </div>
-            </PermissionGate>
-          </div>
+            doc={doc}
+            onView={() => canView(doc) && setViewDocType(doc.doc_type)}
+            onApprove={() => review.mutate({ docType: doc.doc_type, status: "approved" })}
+            onReject={() => setRejectDocType(doc.doc_type)}
+            reviewPending={review.isPending}
+            viewDisabled={!canView(doc)}
+          />
         ))}
-        {!documents.length && (
-          <p className="text-muted-foreground text-sm">{t("common.noData")}</p>
-        )}
+        {legacyDocs.map((doc) => (
+          <DocumentRow
+            key={doc.doc_type}
+            doc={doc}
+            onView={() => canView(doc) && setViewDocType(doc.doc_type)}
+            onApprove={() => review.mutate({ docType: doc.doc_type, status: "approved" })}
+            onReject={() => setRejectDocType(doc.doc_type)}
+            reviewPending={review.isPending}
+            viewDisabled={!canView(doc)}
+          />
+        ))}
       </div>
 
       <Dialog open={Boolean(viewDocType)} onOpenChange={(open) => !open && setViewDocType(null)}>
@@ -236,6 +237,72 @@ export function DriverDocumentsSection({ driverId, documents }: DriverDocumentsS
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+type DocumentRowProps = {
+  doc: KycDocument;
+  onView: () => void;
+  onApprove: () => void;
+  onReject: () => void;
+  reviewPending: boolean;
+  viewDisabled?: boolean;
+};
+
+function DocumentRow({
+  doc,
+  onView,
+  onApprove,
+  onReject,
+  reviewPending,
+  viewDisabled,
+}: DocumentRowProps) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="border-border flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
+      <div>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="font-semibold">{t(KYC_DOC_LABEL_KEYS[doc.doc_type] ?? doc.doc_type)}</p>
+          {isResubmitted(doc) && (
+            <span className="bg-primary rounded-md px-2 py-0.5 text-[10px] font-bold uppercase text-primary-foreground">
+              {t("drivers.newUpload")}
+            </span>
+          )}
+        </div>
+        <span
+          className={cn(
+            "mt-1 inline-block rounded-md px-2 py-0.5 text-[10px] font-bold uppercase",
+            DOC_STATUS_CLASS[doc.status] ?? "bg-muted",
+          )}
+        >
+          {doc.status === "missing" ? t("drivers.docMissing") : doc.status}
+        </span>
+        {doc.rejection_reason && doc.status === KYC_STATUS.rejected && (
+          <p className="text-destructive mt-1 text-xs">{doc.rejection_reason}</p>
+        )}
+      </div>
+      <PermissionGate permissions={[PERMISSIONS.drivers.kycRead, PERMISSIONS.drivers.kycVerify]}>
+        <div className="flex flex-wrap gap-2">
+          <RyvoButton intent="outline" size="sm" disabled={viewDisabled} onClick={onView}>
+            <Eye className="mr-1 size-3.5" />
+            {t("drivers.viewDocument")}
+          </RyvoButton>
+          <PermissionGate permissions={[PERMISSIONS.drivers.kycVerify]}>
+            {canApprove(doc) && (
+              <RyvoButton intent="cta" size="sm" disabled={reviewPending} onClick={onApprove}>
+                {t("drivers.approve")}
+              </RyvoButton>
+            )}
+            {canReject(doc) && doc.status !== "missing" && (
+              <RyvoButton intent="danger" size="sm" disabled={reviewPending} onClick={onReject}>
+                {t("drivers.reject")}
+              </RyvoButton>
+            )}
+          </PermissionGate>
+        </div>
+      </PermissionGate>
     </div>
   );
 }

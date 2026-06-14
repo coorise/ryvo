@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Pull admin + client web images built by GitHub Actions (Docker Hub).
+# Prefer pull-deploy-images.sh (includes ryvo-functions for migrations).
 # Usage: bash deploy/vps/scripts/pull-web-images.sh dev|prod sha-<gitsha>
 set -euo pipefail
 

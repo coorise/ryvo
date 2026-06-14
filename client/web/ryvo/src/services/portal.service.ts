@@ -1,5 +1,4 @@
 import { BaseService } from "@/lib/base-service";
-import { apiRequest } from "@/lib/api-client";
 import type { PaymentAdminRow } from "@/services/admin.service";
 
 export type PortalTripRow = {
@@ -28,9 +27,7 @@ export class PortalService extends BaseService {
   }
 
   listMyTrips(token: string | null, limit = 100) {
-    return apiRequest<{ trips: PortalTripRow[] }>("trip-lifecycle", `/v1/admin/trips?limit=${limit}`, {
-      token,
-    });
+    return this.get<{ trips: PortalTripRow[] }>(`/v1/me/trips?limit=${limit}`, token);
   }
 
   listMyPayments(token: string | null, opts?: { status?: string; limit?: number }) {
@@ -38,9 +35,7 @@ export class PortalService extends BaseService {
     if (opts?.status) params.set("status", opts.status);
     if (opts?.limit) params.set("limit", String(opts.limit));
     const q = params.toString() ? `?${params}` : "";
-    return apiRequest<{ payments: PaymentAdminRow[] }>("payment-gateway", `/v1/admin/payments${q}`, {
-      token,
-    });
+    return this.get<{ payments: PaymentAdminRow[] }>(`/v1/me/payments${q}`, token);
   }
 }
 

@@ -51,6 +51,10 @@ export class AuditService extends BaseService {
     return this.get<{ logs: AuditLogRow[] }>(`/v1/logs?limit=${limit}`, token);
   }
 
+  listMyActivityLogs(token: string | null, limit = 200) {
+    return this.get<{ logs: AuditLogRow[] }>(`/v1/me/activity?limit=${limit}`, token);
+  }
+
   /** @deprecated use listActivityLogs */
   listLogs(token: string | null, limit = 200) {
     return this.listActivityLogs(token, limit);
@@ -61,13 +65,27 @@ export class AuditService extends BaseService {
     return this.get<{ events: SecurityAuthEvent[] }>(`/v1/security/auth-events${q}`, token);
   }
 
+  listMySecurityAuthEvents(token: string | null, severity?: string) {
+    const q = severity ? `?severity=${encodeURIComponent(severity)}` : "";
+    return this.get<{ events: SecurityAuthEvent[] }>(`/v1/me/security/auth-events${q}`, token);
+  }
+
   listDevices(token: string | null, includeRevoked = true) {
     const q = includeRevoked ? "" : "?include_revoked=false";
     return this.get<{ devices: UserDeviceRow[] }>(`/v1/security/devices${q}`, token);
   }
 
+  listMyDevices(token: string | null, includeRevoked = true) {
+    const q = includeRevoked ? "" : "?include_revoked=false";
+    return this.get<{ devices: UserDeviceRow[] }>(`/v1/me/security/devices${q}`, token);
+  }
+
   revokeDevice(token: string | null, id: string) {
     return this.post<{ device: UserDeviceRow }>(`/v1/security/devices/${id}/revoke`, {}, token);
+  }
+
+  revokeMyDevice(token: string | null, id: string) {
+    return this.post<{ device: UserDeviceRow }>(`/v1/me/security/devices/${id}/revoke`, {}, token);
   }
 }
 

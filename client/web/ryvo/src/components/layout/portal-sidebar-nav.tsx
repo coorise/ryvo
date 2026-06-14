@@ -12,6 +12,8 @@ import {
   portalNavForArea,
   portalNavGroupsForPath,
 } from "@/configs/portal-nav";
+import { canSeePortalNavItem } from "@/guards/portal-access";
+import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
 const STORAGE_PREFIX = "ryvo.portal.nav.expanded.";
@@ -38,6 +40,7 @@ type PortalSidebarNavProps = {
 export function PortalSidebarNav({ area, onNavigate }: PortalSidebarNavProps) {
   const pathname = usePathname();
   const { t } = useTranslation();
+  const { user } = useAuth();
   const config = portalNavForArea(area);
   const storageKey = `${STORAGE_PREFIX}${area}`;
 
@@ -84,29 +87,34 @@ export function PortalSidebarNav({ area, onNavigate }: PortalSidebarNavProps) {
 
   const overviewActive = isNavActive(pathname, config.overview.href);
   const OverviewIcon = config.overview.icon;
+  const showOverview = canSeePortalNavItem(user, config.overview);
 
   return (
     <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-      <div className="mb-3">
-        <p className="text-muted-foreground mb-2 px-3 text-[10px] font-bold tracking-[0.15em] uppercase">
-          {t("portal.nav.overview")}
-        </p>
-        <Link
-          href={config.overview.href}
-          onClick={onNavigate}
-          className={cn(
-            "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
-            overviewActive
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground",
-          )}
-        >
-          <OverviewIcon className="size-4 shrink-0" />
-          <span className="truncate">{t(config.overview.labelKey)}</span>
-        </Link>
-      </div>
+      {showOverview && (
+        <div className="mb-3">
+          <p className="text-muted-foreground mb-2 px-3 text-[10px] font-bold tracking-[0.15em] uppercase">
+            {t("portal.nav.overview")}
+          </p>
+          <Link
+            href={config.overview.href}
+            onClick={onNavigate}
+            className={cn(
+              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
+              overviewActive
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            <OverviewIcon className="size-4 shrink-0" />
+            <span className="truncate">{t(config.overview.labelKey)}</span>
+          </Link>
+        </div>
+      )}
 
       {config.groups.map((group) => {
+        const visibleItems = group.items.filter((item) => canSeePortalNavItem(user, item));
+        if (visibleItems.length === 0) return null;
         const isOpen = expanded[group.id] ?? group.defaultExpanded;
         return (
           <div key={group.id} className="mb-2">
@@ -124,7 +132,7 @@ export function PortalSidebarNav({ area, onNavigate }: PortalSidebarNavProps) {
             </button>
             {isOpen && (
               <div className="space-y-0.5">
-                {group.items.map((item) => {
+                {visibleItems.map((item) => {
                   const active = isNavActive(pathname, item.href);
                   const Icon = item.icon;
                   return (
