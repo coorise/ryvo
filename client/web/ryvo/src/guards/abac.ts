@@ -129,10 +129,7 @@ export function hasStrictRole(user: SessionUser | null, ...roles: string[]): boo
 }
 
 export function dashboardPathForUser(user: SessionUser | null): string {
-  if (!user) return "/auth/login";
-  if (canAccessDashboard(user, "admin")) return "/admin";
-  if (hasRole(user, "driver")) return "/driver";
-  return "/client";
+  return portalDashboardPathForUser(user);
 }
 
 /** Customer portal (driver/client app) — never routes to /admin; staff use ryvo_admin. */
