@@ -13,6 +13,8 @@ reset_vps_generated_config() {
     deploy/vps/compose/functions-router.prod.Caddyfile; do
     [[ -f "$f" ]] && git checkout -- "$f" 2>/dev/null || true
   done
+  # Bun may leave an untracked lockb on the VPS; it blocks `git pull` when tracked in repo.
+  rm -f server/supabase/volumes/functions/bun.lockb 2>/dev/null || true
 }
 reset_vps_generated_config
 

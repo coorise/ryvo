@@ -199,6 +199,7 @@ jobs:
             pwd
             git fetch origin dev && git checkout dev
             git checkout -- network/caddy/Caddyfile.dev deploy/vps/compose/functions-router.dev.Caddyfile 2>/dev/null || true
+            rm -f server/supabase/volumes/functions/bun.lockb 2>/dev/null || true
             git pull --ff-only origin dev
             # deploy-bluegreen.sh: pull CI images, run DB migrations automatically
             # (server/supabase/scripts/seeds via ryvo-migrate), blue/green switch — no manual VPS steps.

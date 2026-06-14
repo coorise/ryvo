@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { STORAGE_KEYS } from "@/configs/const";
+import { isInternalPortalUser } from "@/guards/internal-user";
 import type { SessionUser } from "@/types/interfaces/schemas";
 
 type AuthSnapshot = {
@@ -29,7 +30,12 @@ export const useAuthStore = create<AuthState>()(
     {
       name: STORAGE_KEYS.auth,
       partialize: (s) => ({ user: s.user, accessToken: s.accessToken }),
-      onRehydrateStorage: () => (state) => state?.setHydrated(true),
+      onRehydrateStorage: () => (state) => {
+        if (state?.user && isInternalPortalUser(state.user)) {
+          state.clear();
+        }
+        state?.setHydrated(true);
+      },
     },
   ),
 );

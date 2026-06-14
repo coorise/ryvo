@@ -28,6 +28,7 @@ server/bunqueue/data/
 **/node_modules/
 **/.next/
 **/.turbo/
+**/bun.lockb
 **/**/out
 **/**/dist
 client/mobile/flutter/ryvo/.dart_tool/
