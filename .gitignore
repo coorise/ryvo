@@ -1,4 +1,6 @@
 docs/project
+client/mobile/*
+
 .env
 compose/local.env
 **/**/.env
